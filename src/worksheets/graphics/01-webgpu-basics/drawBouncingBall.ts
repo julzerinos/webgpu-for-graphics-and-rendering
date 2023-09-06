@@ -1,7 +1,7 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { Square } from "../../../libs/util/shapes"
-import { flatten, vec2, vec3 } from "../../../libs/util/vector"
+import { flatten, vec2 } from "../../../libs/util/vector"
 
 import {
     createCanvas,
@@ -29,15 +29,9 @@ const execute: Executable = async () => {
     const backgroundSquare = Square(vec2(0, 0), 2)
     const vertexArray = new Float32Array(flatten(backgroundSquare))
 
-    const getHeight = watchInput<number>(
-        document.getElementById("ball-height") as HTMLInputElement
-    )
-    const getSize = watchInput<number>(
-        document.getElementById("ball-size") as HTMLInputElement
-    )
-    const getSpeed = watchInput<number>(
-        document.getElementById("ball-speed") as HTMLInputElement
-    )
+    const getHeight = watchInput<number>("ball-height")
+    const getSize = watchInput<number>("ball-size")
+    const getSpeed = watchInput<number>("ball-speed")
 
     const frame = (time: number) => {
         const { pass, executePass } = createPass(device, context, {
