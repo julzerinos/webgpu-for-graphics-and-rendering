@@ -17,43 +17,50 @@ import {
     createText,
     createTitle,
     subscribeToButton,
+    subscribeToCanvasClick,
     watchInput,
 } from "../../../libs/web"
 
-import { Square, flatten, hexToColor } from "../../../libs/util"
+import { Square, flatten, hexToColor, vec2, vectorSizes } from "../../../libs/util"
+
+import shaderBlack from "./shaderBlack.wgsl?raw"
 
 const execute: Executable = async () => {
     const { device, canvas, context, canvasFormat } = await initializeWebGPU("drawing")
 
     const getColor = watchInput<string>("drawing-background-color")
 
+    const vertexArray = new Float32Array(6 * 1000 * vectorSizes["float32x2"])
+    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateBuffer(
+        device,
+        vertexArray,
+        "float32x2"
+    )
+
+    const pipeline = setupShaderPipeline(device, [vertexBufferLayout], canvasFormat, shaderBlack)
+
+    let lastFloatIndex = 0
+    const addPoint = (x: number, y: number) => {
+        const point = Square(vec2(x, y), 1)
+        const array = new Float32Array(flatten(point))
+
+        device.queue.writeBuffer(vertexBuffer, lastFloatIndex, array)
+
+        draw()
+    }
+    subscribeToCanvasClick("drawing", addPoint)
+
     const draw = () => {
         const { pass, executePass } = createPass(device, context, hexToColor(getColor()))
+        pass.setPipeline(pipeline)
+        pass.setVertexBuffer(0, vertexBuffer)
+        pass.draw(1000)
 
         executePass()
     }
 
     subscribeToButton("redraw", draw)
     draw()
-
-    // const squares = ([] as number[]).concat(
-    //     flatten(Square([0, 0], 10 * (2 / canvas.height))),
-    //     flatten(Square([1, 0], 10 * (2 / canvas.height))),
-    //     flatten(Square([1, 1], 10 * (2 / canvas.height)))
-    // )
-
-    // const vertexArray = new Float32Array(squares)
-    // const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateBuffer(
-    //     device,
-    //     vertexArray,
-    //     "float32x2"
-    // )
-
-    // const pipeline = setupShaderPipeline(device, [vertexBufferLayout], canvasFormat, shaderBlack)
-
-    // pass.setPipeline(pipeline)
-    // pass.setVertexBuffer(0, vertexBuffer)
-    // pass.draw(squares.length / 2)
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {

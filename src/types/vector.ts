@@ -14,3 +14,5 @@ export interface Vector4 {
     z: number
     w: number
 }
+
+export type VectorFormat = "float32x2" | "float32x3" | "float32x4"

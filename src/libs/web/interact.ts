@@ -12,3 +12,16 @@ export const subscribeToButton = (id: string, callback: () => void) => {
 
     button.addEventListener("click", callback)
 }
+
+export const subscribeToCanvasClick = (id: string, callback: (x: number, y: number) => void) => {
+    const canvas = document.getElementById(id)
+    if (!canvas) throw new Error(`Could not locate canvas with id ${id}`)
+
+    canvas.addEventListener("click", (event: MouseEvent) => {
+        const rect = canvas.getBoundingClientRect()
+        const x = event.clientX - rect.left
+        const y = event.clientY - rect.top
+
+        callback(x, y)
+    })
+}

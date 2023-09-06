@@ -1,5 +1,7 @@
 // Adapted from https://github.com/esangel/WebGL/blob/master/Common/MV.js
 
+import { VectorFormat } from "../../types"
+
 export const vec2 = (x: number = 0.0, y: number = 0.0): [number, number] => [x, y]
 export const vec3 = (
     x: number = 0.0,
@@ -48,7 +50,7 @@ export const flatten = (vectors: number[][]): number[] => ([] as Array<number>).
 
 //----------------------------------------------------------------------------
 
-export const vectorSizes: { [key: string]: number } = {
+export const vectorSizes: { [key in VectorFormat]: number } = {
     float32x2: new Float32Array(vec2()).byteLength,
     float32x3: new Float32Array(vec3()).byteLength,
     float32x4: new Float32Array(vec4()).byteLength,
