@@ -26,3 +26,10 @@ export interface IDefineInteractables {
 }
 
 export type InteractableType = "slider" | "range"
+
+export type Executable = () => void
+
+export type ExecutableQueue = Executable[]
+
+export type ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => void
+

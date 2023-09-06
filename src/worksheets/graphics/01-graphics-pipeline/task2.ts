@@ -1,7 +1,7 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { Square } from "../../../libs/util/shapes"
-import { flatten } from "../../../libs/util/vector"
+import { flatten, vec2, vec3 } from "../../../libs/util/vector"
 
 import { createCanvas, createText, createTitle } from "../../../libs/web"
 import {
@@ -11,10 +11,10 @@ import {
     setupShaderPipeline,
 } from "../../../libs/webgpu"
 
-import shaderBlack from "./shaderBlack.wgsl?raw"
+import shaderColor from "./shaderColor.wgsl?raw"
 
 const execute: Executable = async () => {
-    const { device, canvas, context, canvasFormat } = await initializeWebGPU("task1")
+    const { device, context, canvasFormat } = await initializeWebGPU("task2")
 
     const { pass, executePass } = createPass(device, context, {
         r: 0.3921,
@@ -23,32 +23,44 @@ const execute: Executable = async () => {
         a: 1.0,
     })
 
-    const squares = ([] as number[]).concat(
-        flatten(Square([0, 0], 10 * (2 / canvas.height))),
-        flatten(Square([1, 0], 10 * (2 / canvas.height))),
-        flatten(Square([1, 1], 10 * (2 / canvas.height)))
-    )
+    const triangle = [vec2(0, 0), vec2(1, 0), vec2(1, 1)]
+    const colors = [vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)]
 
-    const vertexArray = new Float32Array(squares)
+    const vertexArray = new Float32Array(flatten(triangle))
+    const colorArray = new Float32Array(flatten(colors))
+
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateBuffer(
         device,
         vertexArray,
         "float32x2"
     )
+    const { buffer: colorBuffer, bufferLayout: colorBufferLayout } = genreateBuffer(
+        device,
+        colorArray,
+        "float32x3",
+        1
+    )
 
-    const pipeline = setupShaderPipeline(device, [vertexBufferLayout], canvasFormat, shaderBlack)
+    const pipeline = setupShaderPipeline(
+        device,
+        [vertexBufferLayout, colorBufferLayout],
+        canvasFormat,
+        shaderColor
+    )
 
     pass.setPipeline(pipeline)
+
     pass.setVertexBuffer(0, vertexBuffer)
-    pass.draw(squares.length / 2)
+    pass.setVertexBuffer(1, colorBuffer)
+    pass.draw(triangle.length)
 
     executePass()
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("The three pixeleers")
+    const title = createTitle("Triangles all the way down.")
     const description = createText("This is a test description.")
-    const canvas = createCanvas("task1")
+    const canvas = createCanvas("task2")
 
     div.append(title, description, canvas)
 
