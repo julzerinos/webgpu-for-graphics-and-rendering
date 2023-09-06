@@ -11,7 +11,7 @@ import {
     createRange,
     createText,
     createTitle,
-    subscribeToInput,
+    watchInput,
 } from "../../../libs/web"
 import {
     initializeWebGPU,
@@ -29,13 +29,13 @@ const execute: Executable = async () => {
     const backgroundSquare = Square(vec2(0, 0), 2)
     const vertexArray = new Float32Array(flatten(backgroundSquare))
 
-    const getHeight = subscribeToInput<number>(
+    const getHeight = watchInput<number>(
         document.getElementById("ball-height") as HTMLInputElement
     )
-    const getSize = subscribeToInput<number>(
+    const getSize = watchInput<number>(
         document.getElementById("ball-size") as HTMLInputElement
     )
-    const getSpeed = subscribeToInput<number>(
+    const getSpeed = watchInput<number>(
         document.getElementById("ball-speed") as HTMLInputElement
     )
 

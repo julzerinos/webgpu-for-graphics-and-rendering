@@ -40,6 +40,24 @@ export const createRange = (
     return input
 }
 
+export const createColorPicker = (id: string, value: string): HTMLInputElement => {
+    const colorPicker = document.createElement("input")
+    colorPicker.id = id
+    colorPicker.type = "color"
+
+    colorPicker.value = value
+
+    return colorPicker
+}
+
+export const createButton = (id: string, text: string): HTMLButtonElement => {
+    const button = document.createElement("button")
+    button.id = id
+    button.textContent = text
+
+    return button
+}
+
 export const createInputWithLabel = (input: HTMLInputElement, labelText: string): HTMLElement => {
     const wrapper = document.createElement("div")
 

@@ -1,8 +1,5 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { Square } from "../../../libs/util/shapes"
-import { flatten } from "../../../libs/util/vector"
-
 import { createCanvas, createText, createTitle } from "../../../libs/web"
 import {
     initializeWebGPU,
@@ -10,6 +7,8 @@ import {
     genreateBuffer,
     setupShaderPipeline,
 } from "../../../libs/webgpu"
+
+import { Square, flatten } from "../../../libs/util"
 
 import shaderBlack from "./shaderBlack.wgsl?raw"
 
