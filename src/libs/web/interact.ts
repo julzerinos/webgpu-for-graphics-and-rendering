@@ -6,6 +6,13 @@ export const watchInput = <T>(id: string): (() => T) => {
     return getValue
 }
 
+export const subscribeToInput = <T>(id: string, callback: (value: T) => void) => {
+    const input = document.getElementById(id) as HTMLInputElement
+    if (!input) throw new Error(`Could not locate input with id ${id}`)
+
+    input.addEventListener("input", () => callback(input.value as T))
+}
+
 export const subscribeToButton = (id: string, callback: () => void) => {
     const button = document.getElementById(id) as HTMLButtonElement
     if (!button) throw new Error(`Could not locate button with id ${id}`)

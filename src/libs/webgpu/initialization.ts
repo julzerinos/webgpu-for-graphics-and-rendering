@@ -1,5 +1,5 @@
 import { VectorFormat } from "../../types"
-import { vectorSizes } from "../util/vector"
+import { vectorByteLength } from "../util/vector"
 
 export const initializeWebGPU = async (canvasId: string) => {
     if (!navigator.gpu) window.alert("WebGPU is not enabled for this browser.")
@@ -64,7 +64,8 @@ export const setupShaderPipeline = (
     device: GPUDevice,
     bufferLayouts: GPUVertexBufferLayout[],
     canvasFormat: GPUTextureFormat,
-    shaderCode: string
+    shaderCode: string,
+    topology: GPUPrimitiveTopology = "triangle-list"
 ): GPURenderPipeline => {
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -82,7 +83,7 @@ export const setupShaderPipeline = (
             targets: [{ format: canvasFormat }],
         },
         primitive: {
-            topology: "triangle-list",
+            topology,
             // GPUPrimitiveTopology { "point-list", "line-list", "line-strip", "triangle-list", "triangle-strip" };
         },
     })
@@ -102,7 +103,7 @@ export const genreateBuffer = (
     })
 
     const bufferLayout: GPUVertexBufferLayout = {
-        arrayStride: vectorSizes[format],
+        arrayStride: vectorByteLength[format],
         attributes: [
             {
                 format,
@@ -121,7 +122,7 @@ export const createBind = (
     pipeline: GPURenderPipeline,
     array: Float32Array,
     groupIndex: number = 0
-) => {
+): GPUBindGroup => {
     const uniformBuffer = device.createBuffer({
         size: array.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,

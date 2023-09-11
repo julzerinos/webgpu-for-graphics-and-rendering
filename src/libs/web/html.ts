@@ -78,9 +78,14 @@ export const createCanvasSection = (): HTMLDivElement => {
     return div
 }
 
-export const createCanvas = (canvasId: string, size: number = 512): HTMLCanvasElement => {
+export const createCanvas = (
+    canvasId: string,
+    width: number = 512,
+    height: number = 512
+): HTMLCanvasElement => {
     const canvas = document.createElement("canvas")
-    canvas.width = canvas.height = size
+    canvas.width = width
+    canvas.height = height
     canvas.id = canvasId
 
     return canvas

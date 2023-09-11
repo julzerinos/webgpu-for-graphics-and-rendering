@@ -50,7 +50,7 @@ export const flatten = (vectors: number[][]): number[] => ([] as Array<number>).
 
 //----------------------------------------------------------------------------
 
-export const vectorSizes: { [key in VectorFormat]: number } = {
+export const vectorByteLength: { [key in VectorFormat]: number } = {
     float32x2: new Float32Array(vec2()).byteLength,
     float32x3: new Float32Array(vec3()).byteLength,
     float32x4: new Float32Array(vec4()).byteLength,
