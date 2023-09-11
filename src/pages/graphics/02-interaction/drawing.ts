@@ -46,6 +46,7 @@ const DRAWING_MODES = ["POINT", "TRIANGLE", "CIRCLE"]
 const POINT_COLOR_INPUT_ID = "points-color"
 const BG_COLOR_INPUT_ID = "drawing-background-color"
 const CIRCLE_GRANULARITY_SLIDER_ID = "granularity-slider"
+const POINT_SIZE_SLIDER_ID = "size-slider"
 const CLEAR_BTN_ID = "clear"
 
 const execute: Executable = async () => {
@@ -59,6 +60,7 @@ const execute: Executable = async () => {
     const getPointsColor = watchInput<string>(POINT_COLOR_INPUT_ID)
     const getDrawingMode = watchInput<string>(DRAWING_MODE_SELECT_ID)
     const getCircleGranularity = watchInput<number>(CIRCLE_GRANULARITY_SLIDER_ID)
+    const getPointSize = watchInput<number>(POINT_SIZE_SLIDER_ID)
 
     const maxPoints = 1000
     const pointsArray = new Float32Array(6 * maxPoints * vectorByteLength["float32x2"])
@@ -110,7 +112,7 @@ const execute: Executable = async () => {
         const u = mapRange(x, 0, canvas.width, -1, 1)
         const v = -1 * mapRange(y, 0, canvas.height, -1, 1)
 
-        const point = Square(vec2(u, v), 10 / canvas.height)
+        const point = Square(vec2(u, v), getPointSize() / canvas.height)
         const pointArray = new Float32Array(flatten(point))
         device.queue.writeBuffer(pointsBuffer, lastPointIndex, pointArray)
         lastPointIndex += 6 * vectorByteLength["float32x2"]
@@ -166,7 +168,7 @@ const execute: Executable = async () => {
             lastPointColorIndex - 2 * 6 * vectorByteLength["float32x3"],
             triangleColorArray
         )
-        lastPointIndex += vectorByteLength["float32x3"] * (3 - 2 * 6)
+        lastPointColorIndex += vectorByteLength["float32x3"] * (3 - 2 * 6)
 
         clearTracking()
     }
@@ -264,11 +266,15 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const select = createSelect(DRAWING_MODE_SELECT_ID, DRAWING_MODES)
     const pointColorPicker = createInputWithLabel(
         createColorPicker(POINT_COLOR_INPUT_ID, "#000000"),
-        "Points color"
+        "Draw color"
     )
     const backgroundColorPicker = createInputWithLabel(
         createColorPicker(BG_COLOR_INPUT_ID, "#ffffff"),
         "Background color"
+    )
+    const pointSizeSlider = createInputWithLabel(
+        createRange(POINT_SIZE_SLIDER_ID, 10, 2, 100),
+        "Point size"
     )
     const granularitySlider = createInputWithLabel(
         createRange(CIRCLE_GRANULARITY_SLIDER_ID, 12, 4, 32),
@@ -279,6 +285,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     interactableSection.append(
         select,
         pointColorPicker,
+        pointSizeSlider,
         granularitySlider,
         backgroundColorPicker,
         drawButton

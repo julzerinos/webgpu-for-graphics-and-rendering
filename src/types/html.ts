@@ -8,3 +8,9 @@ export interface ICanvasCoordinates {
     x: number
     y: number
 }
+
+export interface IRoute {
+    parent: string | null
+    path: string
+    generator: ViewGenerator
+}

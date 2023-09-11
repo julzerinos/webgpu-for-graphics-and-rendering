@@ -1,15 +1,13 @@
-import { instantiateApp } from "./libs/web"
+import { instantiateApp, route } from "./libs/web"
 
 import "./style.css"
 import { ExecutableQueue } from "./types"
-
-import { HitInfo } from "./worksheets/rendering/01-ray-casting"
-import { Drawing } from "./worksheets/graphics/02-interaction"
+import { allRoutes } from "./pages"
 
 const app = instantiateApp()
 const executeQueue: ExecutableQueue = []
 
-Drawing(app, executeQueue)
-HitInfo(app, executeQueue)
+const generator = route(allRoutes)
+generator(app, executeQueue)
 
 for (const e of executeQueue) e()

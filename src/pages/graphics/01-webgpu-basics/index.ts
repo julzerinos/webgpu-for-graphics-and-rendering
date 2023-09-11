@@ -5,14 +5,9 @@ import drawTriangle from "./drawTriangle"
 import drawRotatingSquare from "./drawRotatingSquare"
 import drawBouncingBall from "./drawBouncingBall"
 
-export {
-    drawPoints as Task1,
-    drawTriangle as Task2,
-    drawRotatingSquare as Task3,
-    drawBouncingBall as Task4,
-}
+export { drawPoints, drawTriangle, drawRotatingSquare, drawBouncingBall }
 
-export const worksheet1: ViewGenerator = (
+export const WebGPUBasics: ViewGenerator = (
     container: HTMLElement,
     executeQueue: ExecutableQueue
 ) => {
