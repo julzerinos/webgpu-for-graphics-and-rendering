@@ -1,6 +1,5 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { Square } from "../../../libs/util/shapes"
 import { flatten, vec2, vec3 } from "../../../libs/util/vector"
 
 import { createCanvas, createText, createTitle } from "../../../libs/web"

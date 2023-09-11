@@ -17,6 +17,41 @@ export const vec4 = (
 
 export const flatten = (vectors: number[][]): number[] => ([] as Array<number>).concat(...vectors)
 
+export const add = (v1: number[], v2: number[]): number[] => {
+    const output = []
+    for (let i = 0; i < Math.min(v1.length, v2.length); i++) output.push(v1[i] + v2[i])
+    return output
+}
+
+export const subtact = (v1: number[], v2: number[]): number[] => {
+    const output = []
+    for (let i = 0; i < Math.min(v1.length, v2.length); i++) output.push(v1[i] - v2[i])
+    return output
+}
+
+export const scale = (v: number[], scale: number): number[] => {
+    const output = []
+    for (let i = 0; i < v.length; i++) output.push(scale * v[i])
+    return output
+}
+
+export const dot = (v1: number[], v2: number[]): number => {
+    let sum = 0
+    for (let i = 0; i < Math.min(v1.length, v2.length); i++) sum += v1[i] * v2[i]
+    return sum
+}
+
+export const magnitude = (v: number[]): number => Math.sqrt(dot(v, v))
+
+export const vectorByteLength: { [key in VectorFormat]: number } = {
+    float32x2: new Float32Array(vec2()).byteLength,
+    float32x3: new Float32Array(vec3()).byteLength,
+    float32x4: new Float32Array(vec4()).byteLength,
+    // mat2: new Float32Array(flatten(mat2())).byteLength,
+    // mat3: new Float32Array(flatten(mat3())).byteLength,
+    // mat4: new Float32Array(flatten(mat4())).byteLength,
+}
+
 // function flatten(v:any) {
 //     if (v.matrix === true) {
 //         v = transpose(v)
@@ -49,15 +84,6 @@ export const flatten = (vectors: number[][]): number[] => ([] as Array<number>).
 // }
 
 //----------------------------------------------------------------------------
-
-export const vectorByteLength: { [key in VectorFormat]: number } = {
-    float32x2: new Float32Array(vec2()).byteLength,
-    float32x3: new Float32Array(vec3()).byteLength,
-    float32x4: new Float32Array(vec4()).byteLength,
-    // mat2: new Float32Array(flatten(mat2())).byteLength,
-    // mat3: new Float32Array(flatten(mat3())).byteLength,
-    // mat4: new Float32Array(flatten(mat4())).byteLength,
-}
 
 // function mat2() {
 //     var v = _argumentsToArray(arguments)

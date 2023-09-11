@@ -95,11 +95,12 @@ export const genreateBuffer = (
     device: GPUDevice,
     array: Float32Array,
     format: VectorFormat,
-    shaderLocation: number = 0
+    shaderLocation: number = 0,
+    usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
 ) => {
     const buffer = device.createBuffer({
         size: array.byteLength,
-        usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+        usage,
     })
 
     const bufferLayout: GPUVertexBufferLayout = {

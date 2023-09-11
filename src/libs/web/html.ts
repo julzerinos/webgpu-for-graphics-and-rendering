@@ -71,6 +71,22 @@ export const createInputWithLabel = (input: HTMLInputElement, labelText: string)
     return wrapper
 }
 
+export const createSelect = (id: string, options: string[]): HTMLSelectElement => {
+    const select = document.createElement("select")
+    select.id = id
+
+    select.append(
+        ...options.map(o => {
+            const optionElement = document.createElement("option")
+            optionElement.text = o
+            optionElement.value = o
+            return optionElement
+        })
+    )
+
+    return select
+}
+
 export const createCanvasSection = (): HTMLDivElement => {
     const div = document.createElement("div")
     div.className = "canvas-section"

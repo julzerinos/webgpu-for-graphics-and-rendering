@@ -1,3 +1,5 @@
+import { ICanvasCoordinates } from "../../types"
+
 export const watchInput = <T>(id: string): (() => T) => {
     const input = document.getElementById(id) as HTMLInputElement
     if (!input) throw new Error(`Could not locate input with id ${id}`)
@@ -6,11 +8,13 @@ export const watchInput = <T>(id: string): (() => T) => {
     return getValue
 }
 
-export const subscribeToInput = <T>(id: string, callback: (value: T) => void) => {
+export const subscribeToInput = <T>(id: string, callback: (value: T) => void): T => {
     const input = document.getElementById(id) as HTMLInputElement
     if (!input) throw new Error(`Could not locate input with id ${id}`)
 
     input.addEventListener("input", () => callback(input.value as T))
+
+    return input.value as T
 }
 
 export const subscribeToButton = (id: string, callback: () => void) => {
@@ -20,7 +24,10 @@ export const subscribeToButton = (id: string, callback: () => void) => {
     button.addEventListener("click", callback)
 }
 
-export const subscribeToCanvasClick = (id: string, callback: (x: number, y: number) => void) => {
+export const subscribeToCanvasClick = (
+    id: string,
+    callback: (coordinates: ICanvasCoordinates) => void
+) => {
     const canvas = document.getElementById(id)
     if (!canvas) throw new Error(`Could not locate canvas with id ${id}`)
 
@@ -29,6 +36,6 @@ export const subscribeToCanvasClick = (id: string, callback: (x: number, y: numb
         const x = event.clientX - rect.left
         const y = event.clientY - rect.top
 
-        callback(x, y)
+        callback({ x, y })
     })
 }
