@@ -12,5 +12,5 @@ export const SimpleRaycasting: ViewGenerator = (
 ) => {
     RayCast(container, executeQueue)
     HitInfo(container, executeQueue)
-    RayCast(container, executeQueue)
+    Light(container, executeQueue)
 }

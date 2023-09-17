@@ -6,7 +6,7 @@ import { flatten, vec2 } from "../../../libs/util/vector"
 import {
     createCanvas,
     createCanvasSection,
-    createInputWithLabel,
+    createWithLabel,
     createInteractableSection,
     createRange,
     createText,
@@ -81,15 +81,15 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const canvas = createCanvas("task4")
     const interactableSection = createInteractableSection()
 
-    const heightInput = createInputWithLabel(
+    const heightInput = createWithLabel(
         createRange("ball-height", 0.3, 0.1, 0.9, 0.1),
         "Ball bounce height"
     )
-    const speedInput = createInputWithLabel(
+    const speedInput = createWithLabel(
         createRange("ball-speed", 4, 1, 16),
         "Ball bounce speed"
     )
-    const sizeInput = createInputWithLabel(
+    const sizeInput = createWithLabel(
         createRange("ball-size", 1.05, 1.01, 1.5, 0.01),
         "Ball size"
     )

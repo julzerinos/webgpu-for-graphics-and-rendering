@@ -1,10 +1,13 @@
 import { ICanvasCoordinates } from "../../types"
 
-export const watchInput = <T>(id: string): (() => T) => {
+export const watchInput = <T>(
+    id: string,
+    property: keyof HTMLInputElement = "value"
+): (() => T) => {
     const input = document.getElementById(id) as HTMLInputElement
     if (!input) throw new Error(`Could not locate input with id ${id}`)
 
-    const getValue = () => input.value as T
+    const getValue = () => input[property] as T
     return getValue
 }
 

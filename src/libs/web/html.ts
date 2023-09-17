@@ -31,6 +31,7 @@ export const createRange = (
     const input = document.createElement("input")
     input.id = id
     input.type = "range"
+    input.className = "slider-input"
 
     input.min = String(min)
     input.max = String(max)
@@ -50,6 +51,19 @@ export const createColorPicker = (id: string, value: string): HTMLInputElement =
     return colorPicker
 }
 
+export const createBoolInput = (id: string, value: boolean): HTMLInputElement => {
+    const checkbox = document.createElement("input")
+    checkbox.id = id
+    checkbox.type = "checkbox"
+
+    checkbox.checked = value
+    checkbox.value = String(value)
+
+    checkbox.addEventListener("input", () => (checkbox.value = String(checkbox.checked)))
+
+    return checkbox
+}
+
 export const createButton = (id: string, text: string): HTMLButtonElement => {
     const button = document.createElement("button")
     button.id = id
@@ -58,16 +72,19 @@ export const createButton = (id: string, text: string): HTMLButtonElement => {
     return button
 }
 
-export const createInputWithLabel = (input: HTMLInputElement, labelText: string): HTMLElement => {
+export const createWithLabel = (element: HTMLElement, labelText: string): HTMLElement => {
     const wrapper = document.createElement("div")
+    wrapper.className = "label-group"
 
     const label = document.createElement("label")
-    const setLabelText = () => (label.textContent = `${labelText} [${input.value}]`)
 
-    input.addEventListener("input", setLabelText)
-    setLabelText()
+    if ("value" in element) {
+        const setLabelText = () => (label.textContent = `${labelText} [${element.value}]`)
+        element.addEventListener("input", setLabelText)
+        setLabelText()
+    }
 
-    wrapper.append(label, input)
+    wrapper.append(label, element)
     return wrapper
 }
 

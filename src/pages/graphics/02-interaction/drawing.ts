@@ -12,7 +12,7 @@ import {
     createCanvas,
     createCanvasSection,
     createColorPicker,
-    createInputWithLabel,
+    createWithLabel,
     createInteractableSection,
     createRange,
     createSelect,
@@ -264,19 +264,19 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const interactableSection = createInteractableSection()
 
     const select = createSelect(DRAWING_MODE_SELECT_ID, DRAWING_MODES)
-    const pointColorPicker = createInputWithLabel(
+    const pointColorPicker = createWithLabel(
         createColorPicker(POINT_COLOR_INPUT_ID, "#000000"),
         "Draw color"
     )
-    const backgroundColorPicker = createInputWithLabel(
+    const backgroundColorPicker = createWithLabel(
         createColorPicker(BG_COLOR_INPUT_ID, "#ffffff"),
         "Background color"
     )
-    const pointSizeSlider = createInputWithLabel(
+    const pointSizeSlider = createWithLabel(
         createRange(POINT_SIZE_SLIDER_ID, 10, 2, 100),
         "Point size"
     )
-    const granularitySlider = createInputWithLabel(
+    const granularitySlider = createWithLabel(
         createRange(CIRCLE_GRANULARITY_SLIDER_ID, 12, 4, 32),
         "Circle granularity"
     )
