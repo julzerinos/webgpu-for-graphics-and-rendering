@@ -10,7 +10,7 @@ export interface ICanvasCoordinates {
 }
 
 export interface IRoute {
-    parent: string | null
-    path: string
+    name: string
     generator: ViewGenerator
+    children: IRoute[]
 }

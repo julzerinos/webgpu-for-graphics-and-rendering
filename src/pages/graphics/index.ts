@@ -8,20 +8,19 @@ export const Graphics: ViewGenerator = (container: HTMLElement, executeQueue: Ex
     Drawing(container, executeQueue)
 }
 
-export const grapichsRoutes: IRoute[] = [
-    {
-        parent: "graphics",
-        path: "01-webgpu-basics",
-        generator: WebGPUBasics,
-    },
-    {
-        parent: "graphics",
-        path: "02-drawing-with-shaders",
-        generator: Drawing,
-    },
-    {
-        parent: null,
-        path: "graphics",
-        generator: Graphics,
-    },
-]
+export const grapichsRoutes: IRoute = {
+    name: "graphics",
+    generator: Graphics,
+    children: [
+        {
+            name: "01-webgpu-basics",
+            generator: WebGPUBasics,
+            children: [],
+        },
+        {
+            name: "02-drawing-with-shaders",
+            generator: Drawing,
+            children: [],
+        },
+    ],
+}

@@ -5,7 +5,7 @@ import { default as SimpleLight } from "./simpleLight"
 
 export { RaycastAnatomy, SimpleLight }
 
-export const SimpleRaycasting: ViewGenerator = (
+export const RaycastingIntroduction: ViewGenerator = (
     container: HTMLElement,
     executeQueue: ExecutableQueue
 ) => {
