@@ -25,12 +25,14 @@ const LIGHT_POSX_ID = "light-position-x-input"
 const LIGHT_POSY_ID = "light-position-y-input"
 const LIGHT_POSZ_ID = "light-position-z-input"
 const SHADE_ALL_ID = "shade-all-visible-objects"
+const REFRACTIVE_ID = "refractive-index-slider"
 
 const execute: Executable = async () => {
     const { device, context, canvas, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
     const getZoom = watchInput<number>(ZOOM_RANGE_ID)
     const getLightIntensity = watchInput<number>(LIGHT_RANGE_ID)
+    const getRefractiveIndex = watchInput<number>(REFRACTIVE_ID)
     const getLightPosX = watchInput<number>(LIGHT_POSX_ID)
     const getLightPosY = watchInput<number>(LIGHT_POSY_ID)
     const getLightPosZ = watchInput<number>(LIGHT_POSZ_ID)
@@ -54,7 +56,7 @@ const execute: Executable = async () => {
             getLightPosZ(),
             getLightIntensity(),
             shadeAllObjects() ? 1.0 : 0.0,
-            0,
+            getRefractiveIndex(),
             0,
             0,
         ])
@@ -77,7 +79,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, 512 + 128, 512 - 128)
+    const canvas = createCanvas(CANVAS_ID, 512 + 128, 512 - 64)
 
     const interactables = createInteractableSection()
 
@@ -88,6 +90,10 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const lightIntensity = createWithLabel(
         createRange(LIGHT_RANGE_ID, 3.14, 0, 10, 0.01),
         "Light intensity"
+    )
+    const refractiveIndex = createWithLabel(
+        createRange(REFRACTIVE_ID, 1.5, -1, 10, 0.1),
+        "Refractive index"
     )
     const lightPositionX = createWithLabel(
         createRange(LIGHT_POSX_ID, 0, -5, 5, 0.1),
@@ -101,14 +107,12 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         createRange(LIGHT_POSZ_ID, 0, -5, 5, 0.1),
         "Light Z position"
     )
-    const shadeAllCheck = createWithLabel(
-        createBoolInput(SHADE_ALL_ID, true),
-        "Shade triangle & plane"
-    )
+    const shadeAllCheck = createWithLabel(createBoolInput(SHADE_ALL_ID, true), "Shading on")
 
     interactables.append(
         zoomRange,
         lightIntensity,
+        refractiveIndex,
         lightPositionX,
         lightPositionY,
         lightPositionZ,

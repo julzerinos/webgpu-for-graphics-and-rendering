@@ -6,7 +6,8 @@ struct ViewboxOptions {
 struct LightSettings {
     light_position : vec3f,
     light_intensity : f32,
-    shade_all : f32
+    shade_all : f32,
+    refractive_index : f32
 };
 
 @group(0) @binding(0) var<uniform> viewbox : ViewboxOptions;
@@ -83,7 +84,7 @@ fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, no
     (*hit).color = select((*hit).color, vec3f(.1, .7, 0.), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normal, has_hit);
-    (*hit).shade = select((*hit).shade, select(false, true, light_settings.shade_all > 0), has_hit);
+    (*hit).shade = select((*hit).shade, true, has_hit);
 
     return has_hit;
 }
@@ -106,9 +107,8 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, v : array<vec3f, 
     (*hit).dist = select((*hit).dist, intersection, has_hit);
     (*hit).color = select((*hit).color, vec3f(.4, .3, .2), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
-    (*hit).normal = select((*hit).normal, n, has_hit);
-    (*hit).shade = select((*hit).shade, select(false, true, light_settings.shade_all > 0), has_hit);
-
+    (*hit).normal = select((*hit).normal, normalize(n), has_hit);
+    (*hit).shade = select((*hit).shade, true, has_hit);
 
     return has_hit;
 }
@@ -120,15 +120,16 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, rad
     var b_half_2_c = b_half_2 - c;
 
     var does_intersection_exist = b_half_2_c >= 0;
-    var intersection = min(-b_half - sqrt(abs(b_half_2_c)), -b_half + sqrt(abs(b_half_2_c)));
+    var distance = min(-b_half - sqrt(abs(b_half_2_c)), -b_half + sqrt(abs(b_half_2_c)));
 
+    var intersection = r.origin + distance * r.direction;
     var n = normalize(intersection - center);
 
-    var has_hit = does_intersection_exist && intersection > r.tmin && intersection < r.tmax;
+    var has_hit = does_intersection_exist && distance > r.tmin && distance < r.tmax;
     (*hit).has_hit = (*hit).has_hit || has_hit;
-    (*hit).dist = select((*hit).dist, intersection, has_hit);
+    (*hit).dist = select((*hit).dist, distance, has_hit);
     (*hit).color = select((*hit).color, sphere_color, has_hit);
-    (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
+    (*hit).position = select((*hit).position, intersection, has_hit);
     (*hit).normal = select((*hit).normal, n, has_hit);
     (*hit).shade = select((*hit).shade, true, has_hit);
 
@@ -147,38 +148,41 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
 
     var has_hit_lightbulb = intersect_sphere(*r, hit, light_settings.light_position, .03, vec3f(1., .95, 0.) * light_settings.light_intensity);
+    (*hit).shade = select((*hit).shade, false, has_hit_lightbulb);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_lightbulb);
 
     return (*hit).has_hit;
 }
 
 fn sample_point_light(pos : vec3f) -> Light {
-    var incident_light = light_settings.light_intensity / length(light_settings.light_position - pos);
+    var direction = light_settings.light_position - pos;
+    var dist = length(direction);
+    var incident_light = light_settings.light_intensity / (dist * dist);
 
     var light : Light;
     light.L_i = vec3f(incident_light);
+    light.w_i = direction;
+    light.dist = dist;
 
     return light;
 }
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 {
-    var L_emitted = vec3f();
-    var L_ambient = vec3f();
+    var L_emitted = vec3f(0);
+    var L_ambient = vec3f(.1);
 
     var light_info = sample_point_light((*hit).position);
-
-    var direction_to_light = normalize(light_settings.light_position - (*hit).position);
-    var transformed_light = 1.5 / 3.14 * light_info.L_i * max(0, dot((*hit).normal, direction_to_light));
+    var transformed_light = light_settings.refractive_index / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
 
     var L_observed = L_emitted + transformed_light + L_ambient;
 
-    return L_observed + (*hit).color;
+    return L_observed * (*hit).color;
 }
 
 fn shade(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 {
-    return select((*hit).color, lambertian(r, hit), (*hit).shade);
+    return select((*hit).color, lambertian(r, hit), (*hit).shade && light_settings.shade_all > 0);
 }
 
 @fragment
