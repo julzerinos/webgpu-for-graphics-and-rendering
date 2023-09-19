@@ -16,7 +16,7 @@ import {
 
 import { Colors } from "../../../libs/util"
 
-import shaderCode from "./light.wgsl?raw"
+import shaderCode from "./simpleLight.wgsl?raw"
 
 const CANVAS_ID = "light"
 const ZOOM_RANGE_ID = "zoom"
@@ -75,7 +75,7 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Let me shine some light on the situation")
+    const title = createTitle("A simple lighting system")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()

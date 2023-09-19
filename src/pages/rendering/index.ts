@@ -1,6 +1,6 @@
 import { ExecutableQueue, IRoute, ViewGenerator } from "../../types"
 
-import { SimpleRaycasting } from "./01-ray-casting"
+import { SimpleRaycasting } from "./01-raycasting-introduction"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     SimpleRaycasting(container, executeQueue)
@@ -9,7 +9,7 @@ export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: E
 export const renderingRoutes: IRoute[] = [
     {
         parent: "rendering",
-        path: "01-simple-raycasting",
+        path: "01-raycasting-introduction",
         generator: SimpleRaycasting,
     },
     {

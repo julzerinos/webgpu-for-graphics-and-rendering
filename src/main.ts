@@ -1,8 +1,9 @@
-import { instantiateApp, route } from "./libs/web"
-
 import "./style.css"
+
 import { ExecutableQueue } from "./types"
+
 import { allRoutes } from "./pages"
+import { instantiateApp, route } from "./libs/web"
 
 const app = instantiateApp()
 const executeQueue: ExecutableQueue = []

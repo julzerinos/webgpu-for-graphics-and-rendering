@@ -1,12 +1,14 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { initializeWebGPU, createPass, setupShaderPipeline } from "../../../libs/webgpu"
+
 import { createCanvas, createText, createTitle } from "../../../libs/web"
+
 import { Colors } from "../../../libs/util"
 
-import shaderCode from "./hitInfo.wgsl?raw"
+import shaderCode from "./raycastAnatomy.wgsl?raw"
 
-const CANVAS_ID = "hitinfo"
+const CANVAS_ID = "raycast-anatomy"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
@@ -22,7 +24,7 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Interpreting hit info")
+    const title = createTitle("The anatomy of a ray cast")
     const description = createText("No description yet")
 
     const canvas = createCanvas(CANVAS_ID)
