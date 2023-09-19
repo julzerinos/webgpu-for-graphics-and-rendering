@@ -11,13 +11,24 @@ import {
     createText,
     createTitle,
     watchInput,
+    createSelect,
 } from "../../../libs/web"
 
 import { Colors } from "../../../libs/util"
 
-import shaderCode from "./shadows.wgsl?raw"
+import shaderCode from "./mirrors.wgsl?raw"
 
-const CANVAS_ID = "lighting"
+const CANVAS_ID = "mirrors"
+const SHADER_TYPE_MAP: { [key: string]: number } = {
+    "Base color": 0,
+    Lambertian: 1,
+    Mirror: 2,
+    Refractive: 3,
+    Phong: 4,
+    Glossy: 5,
+}
+
+const SPHERE_SHADER_SELECT_ID = CANVAS_ID + "-sphere-shader"
 const LIGHT_POSX_ID = CANVAS_ID + "-light-position-x-input"
 const LIGHT_POSY_ID = CANVAS_ID + "-light-position-y-input"
 const LIGHT_POSZ_ID = CANVAS_ID + "-light-position-z-input"
@@ -28,6 +39,7 @@ const execute: Executable = async () => {
     const getLightPosX = watchInput<number>(LIGHT_POSX_ID)
     const getLightPosY = watchInput<number>(LIGHT_POSY_ID)
     const getLightPosZ = watchInput<number>(LIGHT_POSZ_ID)
+    const getSphereShaderType = watchInput<string>(SPHERE_SHADER_SELECT_ID)
 
     const aspectRatio = canvas.width / canvas.height
 
@@ -41,11 +53,12 @@ const execute: Executable = async () => {
         const viewboxOptions = new Float32Array([aspectRatio])
         const viewboxOptionsBind = createBind(device, pipeline, viewboxOptions)
 
+        const sphereShader = SHADER_TYPE_MAP[getSphereShaderType()]
         const lightSettings = new Float32Array([
             getLightPosX(),
             getLightPosY(),
             getLightPosZ(),
-            0,
+            sphereShader,
             0,
             0,
             0,
@@ -67,7 +80,7 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("A simple lighting system")
+    const title = createTitle("Mirrors")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
@@ -75,6 +88,11 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
 
     const interactables = createInteractableSection()
 
+    const selectSphereShaderType = createWithLabel(
+        createSelect(SPHERE_SHADER_SELECT_ID, Object.keys(SHADER_TYPE_MAP), "Mirror"),
+        "Sphere shader type",
+        false
+    )
     const lightPositionX = createWithLabel(
         createRange(LIGHT_POSX_ID, 0, -5, 5, 0.1),
         "Light X position"
@@ -88,7 +106,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         "Light Z position"
     )
 
-    interactables.append(lightPositionX, lightPositionY, lightPositionZ)
+    interactables.append(selectSphereShaderType, lightPositionX, lightPositionY, lightPositionZ)
 
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)

@@ -14,13 +14,18 @@ export const createTitle = (title: string): HTMLHeadingElement => {
     return h1
 }
 
-export const createWithLabel = (element: HTMLElement, labelText: string): HTMLElement => {
+export const createWithLabel = (
+    element: HTMLElement,
+    labelText: string,
+    showValue: boolean = true
+): HTMLElement => {
     const wrapper = document.createElement("div")
     wrapper.className = "label-group"
 
     const label = document.createElement("label")
+    label.textContent = labelText
 
-    if ("value" in element) {
+    if (showValue && "value" in element) {
         const setLabelText = () => (label.textContent = `${labelText} [${element.value}]`)
         element.addEventListener("input", setLabelText)
         setLabelText()

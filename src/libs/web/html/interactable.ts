@@ -49,7 +49,11 @@ export const createButton = (id: string, text: string): HTMLButtonElement => {
     return button
 }
 
-export const createSelect = (id: string, options: string[]): HTMLSelectElement => {
+export const createSelect = (
+    id: string,
+    options: string[],
+    defaultValue: string
+): HTMLSelectElement => {
     const select = document.createElement("select")
     select.id = id
 
@@ -58,6 +62,7 @@ export const createSelect = (id: string, options: string[]): HTMLSelectElement =
             const optionElement = document.createElement("option")
             optionElement.text = o
             optionElement.value = o
+            optionElement.selected = o === defaultValue
             return optionElement
         })
     )

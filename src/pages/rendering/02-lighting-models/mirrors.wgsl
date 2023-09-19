@@ -4,6 +4,7 @@ struct ViewboxOptions {
 
 struct LightSettings {
     light_position : vec3f,
+    sphere_shader : f32
 };
 
 @group(0) @binding(0) var<uniform> viewbox : ViewboxOptions;
@@ -24,11 +25,15 @@ struct Ray {
 
 struct HitInfo {
     has_hit : bool,
+    continue_trace : bool,
     dist : f32,
     position : vec3f,
     normal : vec3f,
     color : vec3f,
-    shade : u32
+    shader : u32,
+    ior1_over_ior2 : f32,
+    specular : f32,
+    shininess : f32
 };
 
 struct VSOut {
@@ -49,6 +54,11 @@ fn main_vs(@builtin(vertex_index) VertexIndex : u32) -> VSOut
 }
 
 //Constructing rays //
+
+fn generate_default_hitinfo() -> HitInfo
+{
+    return HitInfo(false, false, 0., vec3f(0.), vec3f(0.), vec3f(0.), 0, 0., 0., 0.);
+}
 
 fn generate_ray_from_camera(uv : vec2f) -> Ray
 {
@@ -81,6 +91,7 @@ fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> R
     return ray;
 }
 
+
 //Intersecting objects //
 
 fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, normal : vec3f) -> bool {
@@ -93,7 +104,7 @@ fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, no
     (*hit).color = select((*hit).color, vec3f(.1, .7, 0.), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normal, has_hit);
-    (*hit).shade = select((*hit).shade, 1, has_hit);
+    (*hit).shader = select((*hit).shader, 1, has_hit);
 
     return has_hit;
 }
@@ -118,7 +129,7 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, v : array<vec3f, 
     (*hit).color = select((*hit).color, vec3f(.4, .3, .2), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(n), has_hit);
-    (*hit).shade = select((*hit).shade, 1, has_hit);
+    (*hit).shader = select((*hit).shader, 1, has_hit);
 
     return has_hit;
 }
@@ -142,13 +153,15 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, rad
     (*hit).color = select((*hit).color, sphere_color, has_hit);
     (*hit).position = select((*hit).position, intersection, has_hit);
     (*hit).normal = select((*hit).normal, n, has_hit);
-    (*hit).shade = select((*hit).shade, 2, has_hit);
+    (*hit).shader = select((*hit).shader, u32(light_settings.sphere_shader), has_hit);
 
     return has_hit;
 }
 
 fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
 {
+    (*hit).has_hit = false;
+
     var has_hit_plane = intersect_plane(*r, hit, vec3f(0., 0., 0.), vec3f(0., 1., 0.));
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_plane);
 
@@ -160,7 +173,7 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
 
     var has_hit_lightbulb = intersect_sphere(*r, hit, light_settings.light_position + vec3f(0, .035, 0), .03, vec3f(1., .95, 0.));
-    (*hit).shade = select((*hit).shade, 0, has_hit_lightbulb);
+    (*hit).shader = select((*hit).shader, 0, has_hit_lightbulb);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_lightbulb);
 
     return (*hit).has_hit;
@@ -192,7 +205,7 @@ fn check_occulusion(position : vec3f, light : vec3f) -> bool
     var distance = length(line) - surface_offset;
 
     var r = construct_ray(position + direction * surface_offset, direction, 0, distance);
-    var hit = HitInfo(false, 0.0, vec3f(0.0), vec3f(0.0), vec3f(0.0), 0);
+    var hit = generate_default_hitinfo();
 
     return intersect_scene(&r, &hit);
 }
@@ -214,9 +227,31 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     return L_observed;
 }
 
-fn shade(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 {
-    switch ((*hit).shade)
+    (*hit).continue_trace = true;
+
+    (*r).origin = (*hit).position;
+    (*r).direction = reflect((*r).direction, (*hit).normal);
+
+    return vec3f();
+}
+
+fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+{
+    (*hit).continue_trace = true;
+
+    (*r).origin = (*hit).position;
+    (*r).direction = reflect((*r).direction, (*hit).normal);
+
+    return vec3f();
+}
+
+fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+{
+    (*hit).continue_trace = false;
+
+    switch ((*hit).shader)
     {
         default :
         {
@@ -224,6 +259,10 @@ fn shade(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
         case 1 :
         {
             return lambertian(r, hit);
+        }
+        case 2 :
+        {
+            return mirror(r, hit);
         }
     }
 
@@ -242,7 +281,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
     var r = generate_ray_from_camera(uv);
 
     var result = vec3f(0.0);
-    var hit = HitInfo(false, 0.0, vec3f(0.0), vec3f(0.0), vec3f(0.0), 0);
+    var hit = generate_default_hitinfo();
 
     for (var i = 0; i< max_depth; i++)
     {
@@ -252,9 +291,9 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
             break;
         }
 
-        result += shade(&r, &hit);
+        result += shader(&r, &hit);
 
-        if (hit.has_hit)
+        if (!hit.continue_trace)
         {
             break;
         };
