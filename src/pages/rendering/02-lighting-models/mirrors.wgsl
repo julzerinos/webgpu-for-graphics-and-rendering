@@ -35,6 +35,7 @@ struct HitInfo {
     color : vec3f,
     shader : u32,
     ior1_over_ior2 : f32,
+    diffuse : f32,
     specular : f32,
     shininess : f32
 };
@@ -60,7 +61,7 @@ fn main_vs(@builtin(vertex_index) VertexIndex : u32) -> VSOut
 
 fn generate_default_hitinfo() -> HitInfo
 {
-    return HitInfo(false, false, 0., vec3f(0.), vec3f(0.), vec3f(0.), 0, 1., 0., 0.);
+    return HitInfo(false, false, 0., vec3f(0.), vec3f(0.), vec3f(0.), 0, 1., 0., 0., 0.);
 }
 
 fn generate_ray_from_camera(uv : vec2f) -> Ray
@@ -107,7 +108,12 @@ fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, no
     (*hit).color = select((*hit).color, vec3f(.1, .7, 0.), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normal, has_hit);
+
     (*hit).shader = select((*hit).shader, u32(light_settings.plane_shader), has_hit);
+    (*hit).diffuse = select((*hit).diffuse, 1., has_hit);
+    (*hit).ior1_over_ior2 = select((*hit).ior1_over_ior2, 1., has_hit);
+    (*hit).specular = select((*hit).specular, .2, has_hit); ;
+    (*hit).shininess = select((*hit).shininess, 60., has_hit); ;
 
     return has_hit;
 }
@@ -132,7 +138,12 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, v : array<vec3f, 
     (*hit).color = select((*hit).color, vec3f(.4, .3, .2), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(n), has_hit);
+
     (*hit).shader = select((*hit).shader, u32(light_settings.triangle_shader), has_hit);
+    (*hit).diffuse = select((*hit).diffuse, .8, has_hit);
+    (*hit).ior1_over_ior2 = select((*hit).ior1_over_ior2, 1., has_hit);
+    (*hit).specular = select((*hit).specular, .2, has_hit); ;
+    (*hit).shininess = select((*hit).shininess, 60., has_hit); ;
 
     return has_hit;
 }
@@ -162,8 +173,12 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, rad
     (*hit).color = select((*hit).color, sphere_color, has_hit);
     (*hit).position = select((*hit).position, intersection, has_hit);
     (*hit).normal = select((*hit).normal, n, has_hit);
+
     (*hit).shader = select((*hit).shader, u32(light_settings.sphere_shader), has_hit);
+    (*hit).diffuse = select((*hit).diffuse, .1, has_hit);
     (*hit).ior1_over_ior2 = select((*hit).ior1_over_ior2, context_refr_index, has_hit);
+    (*hit).specular = select((*hit).specular, .1, has_hit);
+    (*hit).shininess = select((*hit).shininess, 42., has_hit);
 
     return has_hit;
 }
@@ -183,9 +198,9 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     var has_hit_triangle = intersect_triangle(*r, hit, triangle);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
 
-    //var has_hit_lightbulb = intersect_sphere(*r, hit, light_settings.light_position + vec3f(0, .035, 0), .03, vec3f(1., .95, 0.));
-    //(*hit).shader = select((*hit).shader, 0, has_hit_lightbulb);
-    //(*r).tmax = select((*r).tmax, (*hit).dist, has_hit_lightbulb);
+    var has_hit_lightbulb = intersect_sphere(*r, hit, light_settings.light_position + vec3f(0, .035, 0), .03, vec3f(1., .95, 0.));
+    (*hit).shader = select((*hit).shader, 0, has_hit_lightbulb);
+    (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_lightbulb);
 
     return (*hit).has_hit;
 }
@@ -199,10 +214,7 @@ fn sample_point_light(pos : vec3f) -> Light {
     var dist = length(direction);
     var incident_light = light_intensity / (dist * dist);
 
-    var light : Light;
-    light.L_i = vec3f(incident_light);
-    light.w_i = direction;
-    light.dist = dist;
+    var light = Light(vec3f(incident_light), direction, dist);
 
     return light;
 }
@@ -223,16 +235,14 @@ fn check_occulusion(position : vec3f, light : vec3f) -> bool
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 {
-    const diffuse_reflectance = 1.5;
-
     var light_info = sample_point_light((*hit).position);
-    var transformed_light = diffuse_reflectance / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
+    var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
 
     var is_occluded = check_occulusion((*hit).position, light_settings.light_position);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1 * (*hit).color;
-    var L_reflected = .9 * transformed_light * (*hit).color * occlusion_modifier;
+    var L_reflected = .9 * lambertian_light * (*hit).color * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
     return L_observed;
@@ -265,6 +275,26 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     return vec3f();
 }
 
+fn phong(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+{
+    var light_info = sample_point_light((*hit).position);
+    var lighting = light_info.L_i * dot(light_info.w_i, (*hit).normal) / 3.14;
+
+    var diffuse_lighting = (*hit).diffuse * lighting;
+
+    var reflection = normalize(reflect(-light_info.w_i, (*hit).normal));
+    var specular = (*hit).specular * ((*hit).shininess + 2) * .5 * pow(dot(-(*r).direction, reflection), (*hit).shininess);
+
+    var is_occluded = check_occulusion((*hit).position, light_settings.light_position);
+    var occlusion_modifier = select(1., 0., is_occluded);
+
+    var L_ambient = .1 * (*hit).color;
+    var L_diffuse = .9 * diffuse_lighting * (*hit).color * occlusion_modifier;
+    var L_specular = specular * lighting * occlusion_modifier;
+
+    return L_ambient + L_diffuse +L_specular;
+}
+
 fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 {
     (*hit).continue_trace = false;
@@ -285,6 +315,10 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
         case 3 :
         {
             return refractive(r, hit);
+        }
+        case 4 :
+        {
+            return phong(r, hit);
         }
     }
 

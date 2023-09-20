@@ -97,7 +97,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const interactables = createInteractableSection()
 
     const selectSphereShaderType = createWithLabel(
-        createSelect(SPHERE_SHADER_SELECT_ID, Object.keys(SHADER_TYPE_MAP), "Refractive"),
+        createSelect(SPHERE_SHADER_SELECT_ID, Object.keys(SHADER_TYPE_MAP), "Phong"),
         "Sphere shader type",
         false
     )
