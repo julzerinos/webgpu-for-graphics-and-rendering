@@ -97,7 +97,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const interactables = createInteractableSection()
 
     const selectSphereShaderType = createWithLabel(
-        createSelect(SPHERE_SHADER_SELECT_ID, Object.keys(SHADER_TYPE_MAP), "Phong"),
+        createSelect(SPHERE_SHADER_SELECT_ID, Object.keys(SHADER_TYPE_MAP), "Refractive"),
         "Sphere shader type",
         false
     )
@@ -125,7 +125,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     )
     const animationSpeedSlider = createWithLabel(
         createRange(ANIM_SPEED_SLIDER_ID, 0, 0, 1, 0.1),
-        "Animation speed"
+        "Orbit animation speed"
     )
 
     interactables.append(
