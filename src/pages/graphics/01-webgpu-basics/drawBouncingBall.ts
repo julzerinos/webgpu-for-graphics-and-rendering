@@ -1,7 +1,7 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { Square } from "../../../libs/util/shapes"
-import { flatten, vec2 } from "../../../libs/util/vector"
+import { flattenVector, vec2 } from "../../../libs/util/vector"
 
 import {
     createCanvas,
@@ -16,7 +16,7 @@ import {
 import {
     initializeWebGPU,
     createPass,
-    genreateBuffer,
+    genreateVertexBuffer,
     setupShaderPipeline,
     createBind,
 } from "../../../libs/webgpu"
@@ -27,7 +27,7 @@ const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU("task4")
 
     const backgroundSquare = Square(vec2(0, 0), 2)
-    const vertexArray = new Float32Array(flatten(backgroundSquare))
+    const vertexArray = new Float32Array(flattenVector(backgroundSquare))
 
     const getHeight = watchInput<number>("ball-height")
     const getSize = watchInput<number>("ball-size")
@@ -41,7 +41,7 @@ const execute: Executable = async () => {
             a: 1.0,
         })
 
-        const { bufferLayout: vertexBufferLayout, buffer: vertexBuffer } = genreateBuffer(
+        const { bufferLayout: vertexBufferLayout, buffer: vertexBuffer } = genreateVertexBuffer(
             device,
             vertexArray,
             "float32x2"

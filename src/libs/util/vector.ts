@@ -1,89 +1,78 @@
 // Adapted from https://github.com/esangel/WebGL/blob/master/Common/MV.js
 
-import { VectorFormat } from "../../types"
+import { Vector, Vector2, Vector3, Vector4, VectorFormat } from "../../types"
 
-export const vec2 = (x: number = 0.0, y: number = 0.0): [number, number] => [x, y]
-export const vec3 = (
-    x: number = 0.0,
-    y: number = 0.0,
-    z: number = 0.0
-): [number, number, number] => [x, y, z]
+export const vec2 = (x: number = 0.0, y: number = 0.0): Vector2 => [x, y]
+export const vec3 = (x: number = 0.0, y: number = 0.0, z: number = 0.0): Vector3 => [x, y, z]
 export const vec4 = (
     x: number = 0.0,
     y: number = 0.0,
     z: number = 0.0,
-    w: number = 0.0
-): [number, number, number, number] => [x, y, z, w]
+    w: number = 1.0
+): Vector4 => [x, y, z, w]
 
-export const flatten = (vectors: number[][]): number[] => ([] as Array<number>).concat(...vectors)
+export const Vector3s: {
+    [key in "up" | "down" | "left" | "right" | "forward" | "back"]: Vector3
+} = {
+    forward: vec3(0, 0, 1),
+    back: vec3(0, 0, -1),
+    up: vec3(0, 1, 0),
+    down: vec3(0, -1, 0),
+    right: vec3(1, 0, 0),
+    left: vec3(-1, 0, 0),
+}
 
-export const add = (v1: number[], v2: number[]): number[] => {
+export const flattenVector = (vectors: Vector[]): number[] =>
+    ([] as Array<number>).concat(...vectors)
+
+export const add = <T extends Vector>(v1: T, v2: T): T => {
     const output = []
     for (let i = 0; i < Math.min(v1.length, v2.length); i++) output.push(v1[i] + v2[i])
-    return output
+    return output as T
 }
 
-export const subtact = (v1: number[], v2: number[]): number[] => {
+export const subtract = <T extends Vector>(v1: T, v2: T): T => {
     const output = []
     for (let i = 0; i < Math.min(v1.length, v2.length); i++) output.push(v1[i] - v2[i])
-    return output
+    return output as T
 }
 
-export const scale = (v: number[], scale: number): number[] => {
+export const scale = <T extends Vector>(v: T, scale: number): T => {
     const output = []
     for (let i = 0; i < v.length; i++) output.push(scale * v[i])
-    return output
+    return output as T
 }
 
-export const dot = (v1: number[], v2: number[]): number => {
+export const dot = <T extends Vector>(v1: T, v2: T): number => {
     let sum = 0
     for (let i = 0; i < Math.min(v1.length, v2.length); i++) sum += v1[i] * v2[i]
     return sum
 }
 
-export const magnitude = (v: number[]): number => Math.sqrt(dot(v, v))
+export const cross = (v1: Vector3, v2: Vector3): Vector3 => {
+    return [
+        v1[1] * v2[2] - v1[2] * v2[1],
+        v1[2] * v2[0] - v1[0] * v2[2],
+        v1[0] * v2[1] - v1[1] * v2[0],
+    ]
+}
+
+export const normalize = <T extends Vector>(v: T) => scale<T>(v, 1 / magnitude(v))
+
+export const magnitude = (v: Vector): number => Math.sqrt(dot(v, v))
 
 export const vectorByteLength: { [key in VectorFormat]: number } = {
     float32x2: new Float32Array(vec2()).byteLength,
     float32x3: new Float32Array(vec3()).byteLength,
     float32x4: new Float32Array(vec4()).byteLength,
-    // mat2: new Float32Array(flatten(mat2())).byteLength,
-    // mat3: new Float32Array(flatten(mat3())).byteLength,
-    // mat4: new Float32Array(flatten(mat4())).byteLength,
 }
 
-// function flatten(v:any) {
-//     if (v.matrix === true) {
-//         v = transpose(v)
-//     }
+export const vectorsEqual = <T extends Vector>(v1: T, v2: T): boolean => {
+    if (v1.length != v2.length) return false
 
-//     var n = v.length
-//     var elemsAreArrays = false
-
-//     if (Array.isArray(v[0])) {
-//         elemsAreArrays = true
-//         n *= v[0].length
-//     }
-
-//     var floats = new Float32Array(n)
-
-//     if (elemsAreArrays) {
-//         var idx = 0
-//         for (var i = 0; i < v.length; ++i) {
-//             for (var j = 0; j < v[i].length; ++j) {
-//                 floats[idx++] = v[i][j]
-//             }
-//         }
-//     } else {
-//         for (var i = 0; i < v.length; ++i) {
-//             floats[i] = v[i]
-//         }
-//     }
-
-//     return floats
-// }
-
-//----------------------------------------------------------------------------
+    for (let i = 0; i < Math.min(v1.length, v2.length); i++) if (v1[i] != v2[i]) return false
+    return true
+}
 
 // function mat2() {
 //     var v = _argumentsToArray(arguments)
@@ -136,38 +125,6 @@ export const vectorByteLength: { [key in VectorFormat]: number } = {
 // }
 
 // //----------------------------------------------------------------------------
-
-// function mat4() {
-//     var v = _argumentsToArray(arguments)
-
-//     var m = []
-//     switch (v.length) {
-//         case 0:
-//             v[0] = 1
-//         case 1:
-//             m = [
-//                 vec4(v[0], 0.0, 0.0, 0.0),
-//                 vec4(0.0, v[0], 0.0, 0.0),
-//                 vec4(0.0, 0.0, v[0], 0.0),
-//                 vec4(0.0, 0.0, 0.0, v[0]),
-//             ]
-//             break
-
-//         default:
-//             m.push(vec4(v))
-//             v.splice(0, 4)
-//             m.push(vec4(v))
-//             v.splice(0, 4)
-//             m.push(vec4(v))
-//             v.splice(0, 4)
-//             m.push(vec4(v))
-//             break
-//     }
-
-//     m.matrix = true
-
-//     return m
-// }
 
 //----------------------------------------------------------------------------
 //
@@ -334,53 +291,7 @@ export const vectorByteLength: { [key in VectorFormat]: number } = {
 //     }
 // }
 
-//----------------------------------------------------------------------------
-//
-//  Basic Transformation Matrix Generators
-//
-
-// function translate(x, y, z) {
-//     if (Array.isArray(x) && x.length == 3) {
-//         z = x[2]
-//         y = x[1]
-//         x = x[0]
-//     }
-
-//     var result = mat4()
-//     result[0][3] = x
-//     result[1][3] = y
-//     result[2][3] = z
-
-//     return result
-// }
-
-// //----------------------------------------------------------------------------
-
-// function rotate(angle, axis) {
-//     if (!Array.isArray(axis)) {
-//         axis = [arguments[1], arguments[2], arguments[3]]
-//     }
-
-//     var v = normalize(axis)
-
-//     var x = v[0]
-//     var y = v[1]
-//     var z = v[2]
-
-//     var c = Math.cos(radians(angle))
-//     var omc = 1.0 - c
-//     var s = Math.sin(radians(angle))
-
-//     var result = mat4(
-//         vec4(x * x * omc + c, x * y * omc - z * s, x * z * omc + y * s, 0.0),
-//         vec4(x * y * omc + z * s, y * y * omc + c, y * z * omc - x * s, 0.0),
-//         vec4(x * z * omc - y * s, y * z * omc + x * s, z * z * omc + c, 0.0),
-//         vec4()
-//     )
-
-//     return result
-// }
-
+//---------------------------------------------------------------------------
 // function rotateX(theta) {
 //     var c = Math.cos(radians(theta))
 //     var s = Math.sin(radians(theta))
@@ -417,160 +328,8 @@ export const vectorByteLength: { [key in VectorFormat]: number } = {
 //     return result
 // }
 
-//----------------------------------------------------------------------------
-//
-//  ModelView Matrix Generators
-//
 
-// function lookAt(eye, at, up) {
-//     if (!Array.isArray(eye) || eye.length != 3) {
-//         throw "lookAt(): first parameter [eye] must be an a vec3"
-//     }
 
-//     if (!Array.isArray(at) || at.length != 3) {
-//         throw "lookAt(): first parameter [at] must be an a vec3"
-//     }
-
-//     if (!Array.isArray(up) || up.length != 3) {
-//         throw "lookAt(): first parameter [up] must be an a vec3"
-//     }
-
-//     if (equal(eye, at)) {
-//         return mat4()
-//     }
-
-//     var v = normalize(subtract(at, eye)) // view direction vector
-//     var n = normalize(cross(v, up)) // perpendicular vector
-//     var u = normalize(cross(n, v)) // "new" up vector
-
-//     v = negate(v)
-
-//     var result = mat4(vec4(n, -dot(n, eye)), vec4(u, -dot(u, eye)), vec4(v, -dot(v, eye)), vec4())
-
-//     return result
-// }
-
-//----------------------------------------------------------------------------
-//
-//  Projection Matrix Generators
-//
-
-// function ortho(left, right, bottom, top, near, far) {
-//     if (left == right) {
-//         throw "ortho(): left and right are equal"
-//     }
-//     if (bottom == top) {
-//         throw "ortho(): bottom and top are equal"
-//     }
-//     if (near == far) {
-//         throw "ortho(): near and far are equal"
-//     }
-
-//     var w = right - left
-//     var h = top - bottom
-//     var d = far - near
-
-//     var result = mat4()
-//     result[0][0] = 2.0 / w
-//     result[1][1] = 2.0 / h
-//     result[2][2] = -2.0 / d
-//     result[0][3] = -(left + right) / w
-//     result[1][3] = -(top + bottom) / h
-//     result[2][3] = -(near + far) / d
-
-//     return result
-// }
-
-// //----------------------------------------------------------------------------
-
-// function perspective(fovy, aspect, near, far) {
-//     var f = 1.0 / Math.tan(radians(fovy) / 2)
-//     var d = far - near
-
-//     var result = mat4()
-//     result[0][0] = f / aspect
-//     result[1][1] = f
-//     result[2][2] = -(near + far) / d
-//     result[2][3] = (-2 * near * far) / d
-//     result[3][2] = -1
-//     result[3][3] = 0.0
-
-//     return result
-// }
-
-//----------------------------------------------------------------------------
-//
-//  Matrix Functions
-//
-
-// function transpose(m) {
-//     if (!m.matrix) {
-//         return "transpose(): trying to transpose a non-matrix"
-//     }
-
-//     var result = []
-//     for (var i = 0; i < m.length; ++i) {
-//         result.push([])
-//         for (var j = 0; j < m[i].length; ++j) {
-//             result[i].push(m[j][i])
-//         }
-//     }
-
-//     result.matrix = true
-
-//     return result
-// }
-
-//----------------------------------------------------------------------------
-//
-//  Vector Functions
-//
-
-// function dot(u, v) {
-//     if (u.length != v.length) {
-//         throw "dot(): vectors are not the same dimension"
-//     }
-
-//     var sum = 0.0
-//     for (var i = 0; i < u.length; ++i) {
-//         sum += u[i] * v[i]
-//     }
-
-//     return sum
-// }
-
-//----------------------------------------------------------------------------
-
-// function negate(u) {
-//     var result = []
-//     for (var i = 0; i < u.length; ++i) {
-//         result.push(-u[i])
-//     }
-
-//     return result
-// }
-
-// //----------------------------------------------------------------------------
-
-// function cross(u, v) {
-//     if (!Array.isArray(u) || u.length < 3) {
-//         throw "cross(): first argument is not a vector of at least 3"
-//     }
-
-//     if (!Array.isArray(v) || v.length < 3) {
-//         throw "cross(): second argument is not a vector of at least 3"
-//     }
-
-//     var result = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]]
-
-//     return result
-// }
-
-//----------------------------------------------------------------------------
-
-// function length(u) {
-//     return Math.sqrt(dot(u, u))
-// }
 
 //----------------------------------------------------------------------------
 

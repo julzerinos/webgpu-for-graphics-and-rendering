@@ -3,7 +3,7 @@ import { Executable, ExecutableQueue, ICanvasCoordinates, ViewGenerator } from "
 import {
     initializeWebGPU,
     createPass,
-    genreateBuffer,
+    genreateVertexBuffer,
     setupShaderPipeline,
 } from "../../../libs/webgpu"
 
@@ -28,11 +28,11 @@ import {
     Circle,
     Square,
     colorToVec3,
-    flatten,
+    flattenVector,
     hexToColor,
     magnitude,
     mapRange,
-    subtact,
+    subtract,
     vec2,
     vec3,
     vectorByteLength,
@@ -64,13 +64,13 @@ const execute: Executable = async () => {
 
     const maxPoints = 1000
     const pointsArray = new Float32Array(6 * maxPoints * vectorByteLength["float32x2"])
-    const { buffer: pointsBuffer, bufferLayout: pointsBufferLayout } = genreateBuffer(
+    const { buffer: pointsBuffer, bufferLayout: pointsBufferLayout } = genreateVertexBuffer(
         device,
         pointsArray,
         "float32x2"
     )
     const pointColorsArray = new Float32Array(6 * maxPoints * vectorByteLength["float32x3"])
-    const { buffer: pointColorsBuffer, bufferLayout: pointColorsBufferLayout } = genreateBuffer(
+    const { buffer: pointColorsBuffer, bufferLayout: pointColorsBufferLayout } = genreateVertexBuffer(
         device,
         pointColorsArray,
         "float32x3",
@@ -113,12 +113,12 @@ const execute: Executable = async () => {
         const v = -1 * mapRange(y, 0, canvas.height, -1, 1)
 
         const point = Square(vec2(u, v), getPointSize() / canvas.height)
-        const pointArray = new Float32Array(flatten(point))
+        const pointArray = new Float32Array(flattenVector(point))
         device.queue.writeBuffer(pointsBuffer, lastPointIndex, pointArray)
         lastPointIndex += 6 * vectorByteLength["float32x2"]
 
         const colors = Array(6).fill(colorToVec3(hexToColor(getPointsColor())))
-        const colorArray = new Float32Array(flatten(colors))
+        const colorArray = new Float32Array(flattenVector(colors))
         device.queue.writeBuffer(pointColorsBuffer, lastPointColorIndex, colorArray)
         lastPointColorIndex += 6 * vectorByteLength["float32x3"]
     }
@@ -147,7 +147,7 @@ const execute: Executable = async () => {
 
                     return vec2(u, v)
                 }),
-                flatten(Array(9).fill(vec2()))
+                flattenVector(Array(9).fill(vec2()))
             )
         )
         device.queue.writeBuffer(
@@ -159,8 +159,8 @@ const execute: Executable = async () => {
 
         const triangleColorArray = new Float32Array(
             ([] as number[]).concat(
-                ...flatten(previousColors.map(c => colorToVec3(hexToColor(c)))),
-                flatten(Array(9).fill(vec3()))
+                ...flattenVector(previousColors.map(c => colorToVec3(hexToColor(c)))),
+                flattenVector(Array(9).fill(vec3()))
             )
         )
         device.queue.writeBuffer(
@@ -192,10 +192,10 @@ const execute: Executable = async () => {
             -1 * mapRange(previousClicks[1].y, 0, canvas.height, -1, 1)
         )
 
-        const radius = magnitude(subtact(uvPoint2, uvPoint1))
+        const radius = magnitude(subtract(uvPoint2, uvPoint1))
         const circle = Circle(uvPoint1, radius, getCircleGranularity())
 
-        const vertexArray = new Float32Array(flatten(circle))
+        const vertexArray = new Float32Array(flattenVector(circle))
         device.queue.writeBuffer(
             pointsBuffer,
             lastPointIndex - 6 * vectorByteLength["float32x2"],
@@ -204,7 +204,7 @@ const execute: Executable = async () => {
         lastPointIndex += vectorByteLength["float32x2"] * (circle.length - 6)
 
         const colorArray = new Float32Array(
-            flatten(
+            flattenVector(
                 [...new Array(circle.length)].map((_, i) => {
                     const colorIndex = i % 3 === 0 ? 0 : 1
                     return colorToVec3(hexToColor(previousColors[colorIndex]))

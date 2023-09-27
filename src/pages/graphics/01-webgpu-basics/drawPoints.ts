@@ -4,11 +4,11 @@ import { createCanvas, createText, createTitle } from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
-    genreateBuffer,
+    genreateVertexBuffer,
     setupShaderPipeline,
 } from "../../../libs/webgpu"
 
-import { Square, flatten } from "../../../libs/util"
+import { Square, flattenVector } from "../../../libs/util"
 
 import shaderBlack from "./shaderBlack.wgsl?raw"
 
@@ -23,13 +23,13 @@ const execute: Executable = async () => {
     })
 
     const squares = ([] as number[]).concat(
-        flatten(Square([0, 0], 10 * (2 / canvas.height))),
-        flatten(Square([1, 0], 10 * (2 / canvas.height))),
-        flatten(Square([1, 1], 10 * (2 / canvas.height)))
+        flattenVector(Square([0, 0], 10 * (2 / canvas.height))),
+        flattenVector(Square([1, 0], 10 * (2 / canvas.height))),
+        flattenVector(Square([1, 1], 10 * (2 / canvas.height)))
     )
 
     const vertexArray = new Float32Array(squares)
-    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateBuffer(
+    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,
         vertexArray,
         "float32x2"

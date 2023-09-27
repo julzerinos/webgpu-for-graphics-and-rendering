@@ -1,12 +1,12 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { flatten, vec2, vec3 } from "../../../libs/util/vector"
+import { flattenVector, vec2, vec3 } from "../../../libs/util/vector"
 
 import { createCanvas, createText, createTitle } from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
-    genreateBuffer,
+    genreateVertexBuffer,
     setupShaderPipeline,
 } from "../../../libs/webgpu"
 
@@ -25,15 +25,15 @@ const execute: Executable = async () => {
     const triangle = [vec2(0, 0), vec2(1, 0), vec2(1, 1)]
     const colors = [vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)]
 
-    const vertexArray = new Float32Array(flatten(triangle))
-    const colorArray = new Float32Array(flatten(colors))
+    const vertexArray = new Float32Array(flattenVector(triangle))
+    const colorArray = new Float32Array(flattenVector(colors))
 
-    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateBuffer(
+    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,
         vertexArray,
         "float32x2"
     )
-    const { buffer: colorBuffer, bufferLayout: colorBufferLayout } = genreateBuffer(
+    const { buffer: colorBuffer, bufferLayout: colorBufferLayout } = genreateVertexBuffer(
         device,
         colorArray,
         "float32x3",

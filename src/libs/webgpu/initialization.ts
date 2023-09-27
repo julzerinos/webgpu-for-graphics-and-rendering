@@ -84,14 +84,13 @@ export const setupShaderPipeline = (
         },
         primitive: {
             topology,
-            // GPUPrimitiveTopology { "point-list", "line-list", "line-strip", "triangle-list", "triangle-strip" };
         },
     })
 
     return pipeline
 }
 
-export const genreateBuffer = (
+export const genreateVertexBuffer = (
     device: GPUDevice,
     array: Float32Array,
     format: VectorFormat,
@@ -116,6 +115,20 @@ export const genreateBuffer = (
 
     device.queue.writeBuffer(buffer, 0, array)
     return { bufferLayout, buffer }
+}
+
+export const genreateIndexBuffer = (
+    device: GPUDevice,
+    array: Uint32Array,
+    usage: GPUBufferUsageFlags = GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST
+) => {
+    const buffer = device.createBuffer({
+        size: array.byteLength,
+        usage,
+    })
+
+    device.queue.writeBuffer(buffer, 0, array)
+    return { buffer }
 }
 
 export const createBind = (

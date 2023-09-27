@@ -52,7 +52,7 @@ export const createButton = (id: string, text: string): HTMLButtonElement => {
 export const createSelect = (
     id: string,
     options: string[],
-    defaultValue: string
+    defaultValue: string = options[0] ?? ""
 ): HTMLSelectElement => {
     const select = document.createElement("select")
     select.id = id

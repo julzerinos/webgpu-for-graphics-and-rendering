@@ -1,13 +1,13 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { Square } from "../../../libs/util/shapes"
-import { flatten, vec2 } from "../../../libs/util/vector"
+import { flattenVector, vec2 } from "../../../libs/util/vector"
 
 import { createCanvas, createText, createTitle } from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
-    genreateBuffer,
+    genreateVertexBuffer,
     setupShaderPipeline,
     createBind,
 } from "../../../libs/webgpu"
@@ -17,7 +17,7 @@ import shaderRotateWithTime from "./shaderRotateWithTime.wgsl?raw"
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU("task3")
     const square = Square(vec2(0, 0), 1)
-    const vertexArray = new Float32Array(flatten(square))
+    const vertexArray = new Float32Array(flattenVector(square))
     const frame = (time: number) => {
         const { pass, executePass } = createPass(device, context, {
             r: 0.3921,
@@ -25,7 +25,7 @@ const execute: Executable = async () => {
             b: 0.9294,
             a: 1.0,
         })
-        const { bufferLayout: vertexBufferLayout, buffer: vertexBuffer } = genreateBuffer(
+        const { bufferLayout: vertexBufferLayout, buffer: vertexBuffer } = genreateVertexBuffer(
             device,
             vertexArray,
             "float32x2"

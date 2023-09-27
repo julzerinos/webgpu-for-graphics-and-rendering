@@ -12,7 +12,7 @@ export const route = (routes: IRoute[]): ViewGenerator => {
         if (!route) throw new Error("Could not find route.") // TODO change to default error page
 
         foundRoute = route
-        routesToSearch = foundRoute.children
+        routesToSearch = foundRoute.children ?? []
     }
 
     if (!foundRoute) throw new Error("Could not find route.") // TODO change to default error page

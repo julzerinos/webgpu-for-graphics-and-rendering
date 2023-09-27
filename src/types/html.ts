@@ -12,5 +12,5 @@ export interface ICanvasCoordinates {
 export interface IRoute {
     name: string
     generator: ViewGenerator
-    children: IRoute[]
+    children?: IRoute[]
 }
