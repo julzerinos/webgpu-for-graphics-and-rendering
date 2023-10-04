@@ -18,10 +18,10 @@ import {
 
 import { Colors, readImageData } from "../../../libs/util"
 
-import shaderCode from "./texture.wgsl?raw"
+import shaderCode from "./texturing.wgsl?raw"
 import Grass from "./grass.png"
 
-const CANVAS_ID = "texture"
+const CANVAS_ID = "texturing"
 
 const execute: Executable = async () => {
     const { device, context, canvas, canvasFormat } = await initializeWebGPU(CANVAS_ID)

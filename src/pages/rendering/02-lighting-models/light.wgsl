@@ -199,13 +199,13 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 {
     (*hit).has_hit = false;
 
-
     var sphere_center = min(1, environment.time) * vec3f(cos(environment.time), 0, sin(environment.time)) + vec3f(0, .5, 0);
     var has_hit_sphere = intersect_sphere(*r, hit, sphere_center, .3, vec3f(0., 0., 0.));
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_sphere);
 
     var has_hit_plane = intersect_plane(*r, hit, vec3f(0., 0., 0.), vec3f(0., 1., 0.));
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_plane);
+
     const triangle = array<vec3f, 3 > (vec3f(-.2, .1, .9), vec3f(.2, .1, .9), vec3f(-.2, .1, -.1));
     var has_hit_triangle = intersect_triangle(*r, hit, triangle);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
