@@ -12,8 +12,11 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createSelect,
     createText,
     createTitle,
+    createWithLabel,
+    subscribeToInput,
 } from "../../../libs/web"
 
 import { Colors, readImageData } from "../../../libs/util"
@@ -22,17 +25,23 @@ import shaderCode from "./texture.wgsl?raw"
 import Grass from "./grass.png"
 
 const CANVAS_ID = "texture"
+const TEX_OPT_SEL_ID = "texture-repeat-style"
+const TEXTURE_OPTIONS: GPUAddressMode[] = ["clamp-to-edge", "repeat", "mirror-repeat"]
 
 const execute: Executable = async () => {
     const { device, context, canvas, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
-    const { textureData, height, width } = await readImageData(Grass)
-    const { texture, sampler } = generateTexture(device, textureData, width, height)
+    const draw = async (textureBehavior: string) => {
+        const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
-    const textureBindGroup = createTextureBind(device, pipeline, texture, sampler)
+        const { textureData, height, width } = await readImageData(Grass)
+        const { texture, sampler } = generateTexture(device, textureData, width, height, {
+            addressModeU: textureBehavior as GPUAddressMode,
+            addressModeV: textureBehavior as GPUAddressMode,
+        })
 
-    const draw = (time: number) => {
+        const textureBindGroup = createTextureBind(device, pipeline, texture, sampler)
+
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
@@ -40,15 +49,13 @@ const execute: Executable = async () => {
 
         pass.draw(4)
         executePass()
-
-        requestAnimationFrame(draw)
     }
 
-    requestAnimationFrame(draw)
+    draw(subscribeToInput<string>(TEX_OPT_SEL_ID, draw))
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Applying textures in rendering")
+    const title = createTitle("What is a texture")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
@@ -56,9 +63,16 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
 
     const interactables = createInteractableSection()
 
-    canvasSection.append(canvas, interactables)
+    const textureOptionSelect = createWithLabel(
+        createSelect(TEX_OPT_SEL_ID, TEXTURE_OPTIONS, "repeat"),
+        "Texture edge behavior",
+        false
+    )
 
+    interactables.append(textureOptionSelect)
+    canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)
+
     executeQueue.push(execute)
 }
 

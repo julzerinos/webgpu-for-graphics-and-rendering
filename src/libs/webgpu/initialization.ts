@@ -183,7 +183,8 @@ export const generateTexture = (
     device: GPUDevice,
     textureData: Uint8Array,
     width: number,
-    height: number
+    height: number,
+    samplerOverwrites?: Partial<GPUSamplerDescriptor>
 ): { texture: GPUTexture; sampler: GPUSampler } => {
     const texture = device.createTexture({
         size: [width, height, 1],
@@ -204,6 +205,7 @@ export const generateTexture = (
         magFilter: "linear",
         minFilter: "linear",
         mipmapFilter: "linear",
+        ...samplerOverwrites,
     })
 
     return { texture, sampler }
