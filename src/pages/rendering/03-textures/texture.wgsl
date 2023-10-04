@@ -114,8 +114,8 @@ fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, pl
 
     (*hit).shader = select((*hit).shader, 1, has_hit);
     (*hit).diffuse = select((*hit).diffuse, 1., has_hit);
-    (*hit).prev_refractive = select((*hit).prev_refractive, 1., has_hit);
-    (*hit).next_refractive = select((*hit).next_refractive, 1., has_hit);
+    //(*hit).prev_refractive = select((*hit).prev_refractive, 1., has_hit);
+    //(*hit).next_refractive = select((*hit).next_refractive, 1., has_hit);
     (*hit).specular = select((*hit).specular, .2, has_hit); ;
     (*hit).shininess = select((*hit).shininess, 60., has_hit); ;
 
@@ -145,8 +145,8 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, v : array<vec3f, 
 
     (*hit).shader = select((*hit).shader, 1, has_hit);
     (*hit).diffuse = select((*hit).diffuse, .8, has_hit);
-    (*hit).prev_refractive = select((*hit).prev_refractive, 1., has_hit);
-    (*hit).next_refractive = select((*hit).next_refractive, 1., has_hit);
+    //(*hit).prev_refractive = select((*hit).prev_refractive, 1., has_hit);
+    //(*hit).next_refractive = select((*hit).next_refractive, 1., has_hit);
     (*hit).specular = select((*hit).specular, .2, has_hit); ;
     (*hit).shininess = select((*hit).shininess, 60., has_hit); ;
 
