@@ -169,8 +169,7 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, rad
     var distance_1_in_range = distance_1 >= r.tmin && distance_1 <= r.tmax;
     var distance_2_in_range = distance_2 >= r.tmin && distance_2 <= r.tmax;
 
-    var min_distance = min(distance_1, distance_2);
-    var distance = select(distance_2, select(distance_1, min_distance, distance_2_in_range), distance_1_in_range);
+    var distance = select(distance_2, distance_1, distance_1_in_range);
 
     var intersection = r.origin + distance * r.direction;
     var n = normalize(intersection - center);
@@ -211,6 +210,7 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     var has_hit_triangle = intersect_triangle(*r, hit, triangle);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
 
+    //The little yellow sphere imitating a light source
     var has_hit_lightbulb = intersect_sphere(*r, hit, light_settings.light_position + vec3f(0, .035, 0), .03, vec3f(1., .95, 0.));
     (*hit).shader = select((*hit).shader, 0, has_hit_lightbulb);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_lightbulb);
@@ -277,17 +277,17 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     var ni_nt = (*hit).prev_refractive / (*hit).next_refractive;
 
     var incident = -(*r).direction;
-    var r_n_dot = dot(incident, (*hit).normal) *.5;
+    var r_n_dot = dot(incident, (*hit).normal);
 
     var t_sin = ni_nt * (r_n_dot * (*hit).normal - incident);
     var cos2 = 1 - ni_nt * ni_nt * (1 - r_n_dot * r_n_dot);
-    var direction = t_sin - (*hit).normal * sqrt(cos2);
+    var direction = t_sin - (*hit).normal * sqrt(abs(cos2));
 
     var is_reflected = cos2 < 0;
     var reflected_direction = reflect((*r).direction, (*hit).normal);
 
     (*r).direction = normalize(select(direction, reflected_direction, is_reflected));
-    (*r).origin = (*hit).position + (*r).direction * .001;
+    (*r).origin = (*hit).position + (*r).direction * .01;
     (*r).tmax = 100.;
 
     (*hit).continue_trace = true;

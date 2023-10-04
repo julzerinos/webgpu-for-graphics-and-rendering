@@ -18,7 +18,7 @@ import {
     createPass,
     genreateVertexBuffer,
     setupShaderPipeline,
-    createBind,
+    createUniformBind,
 } from "../../../libs/webgpu"
 
 import shaderDrawCircle from "./shaderDrawCircle.wgsl?raw"
@@ -57,11 +57,11 @@ const execute: Executable = async () => {
         pass.setVertexBuffer(0, vertexBuffer)
 
         const timeArray = new Float32Array([time / 1e3])
-        const timeBindGroup = createBind(device, pipeline, timeArray)
+        const timeBindGroup = createUniformBind(device, pipeline, timeArray)
         pass.setBindGroup(0, timeBindGroup)
 
         const ballArray = new Float32Array([getHeight(), getSpeed(), getSize()])
-        const ballBindGroup = createBind(device, pipeline, ballArray, 1)
+        const ballBindGroup = createUniformBind(device, pipeline, ballArray, 1)
         pass.setBindGroup(1, ballBindGroup)
 
         pass.draw(backgroundSquare.length)

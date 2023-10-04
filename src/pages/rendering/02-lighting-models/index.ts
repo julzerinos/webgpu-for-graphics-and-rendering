@@ -1,7 +1,7 @@
 import { ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { default as Shadows } from "./shadows"
-import { default as Mirrors } from "./mirrors"
+import { default as Mirrors } from "./light"
 
 export { Shadows, Mirrors }
 

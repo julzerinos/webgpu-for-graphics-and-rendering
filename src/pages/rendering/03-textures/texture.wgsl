@@ -1,23 +1,19 @@
-struct Environment {
-    aspect_ratio : f32,
-    time : f32
-};
+@group(0) @binding(0) var texture_sampler : sampler;
+@group(0) @binding(1) var grass_texture : texture_2d<f32>;
 
-struct LightSettings {
-    light_position : vec3f,
-    sphere_shader : f32,
-    triangle_shader : f32,
-    plane_shader : f32
-};
+const light_position : vec3f = vec3f(0, 1, 0);
 
-@group(0) @binding(0) var<uniform> environment : Environment;
-@group(1) @binding(0) var<uniform> light_settings : LightSettings;
+struct Plane {
+    tangent : vec3f,
+    binormal : vec3f,
+    normal : vec3f
+};
 
 struct Light {
     L_i : vec3f,
     w_i : vec3f,
     dist : f32
-}
+};
 
 struct Ray {
     origin : vec3f,
@@ -100,19 +96,23 @@ fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> R
 
 //Intersecting objects //
 
-fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, normal : vec3f) -> bool {
-    var distance = dot(position - r.origin, normal) / dot(r.direction, normal);
+fn intersect_plane(r : Ray, hit : ptr < function, HitInfo>, position : vec3f, plane : Plane) -> bool {
+    var distance = dot(position - r.origin, plane.normal) / dot(r.direction, plane.normal);
     var intersection = r.origin + distance * r.direction;
 
     var has_hit = distance > r.tmin && distance < r.tmax;
 
+    var u = dot((intersection - position), plane.tangent);
+    var v = dot((intersection - position), plane.binormal);
+    var sampled_texture = textureSample(grass_texture, texture_sampler, vec2f(u, v)).rgb;
+
     (*hit).has_hit = (*hit).has_hit || has_hit;
     (*hit).dist = select((*hit).dist, distance, has_hit);
-    (*hit).color = select((*hit).color, vec3f(.1, .7, 0.), has_hit);
+    (*hit).color = select((*hit).color, sampled_texture, has_hit);
     (*hit).position = select((*hit).position, intersection, has_hit);
-    (*hit).normal = select((*hit).normal, normal, has_hit);
+    (*hit).normal = select((*hit).normal, plane.normal, has_hit);
 
-    (*hit).shader = select((*hit).shader, u32(light_settings.plane_shader), has_hit);
+    (*hit).shader = select((*hit).shader, 1, has_hit);
     (*hit).diffuse = select((*hit).diffuse, 1., has_hit);
     (*hit).prev_refractive = select((*hit).prev_refractive, 1., has_hit);
     (*hit).next_refractive = select((*hit).next_refractive, 1., has_hit);
@@ -143,7 +143,7 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, v : array<vec3f, 
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(n), has_hit);
 
-    (*hit).shader = select((*hit).shader, u32(light_settings.triangle_shader), has_hit);
+    (*hit).shader = select((*hit).shader, 1, has_hit);
     (*hit).diffuse = select((*hit).diffuse, .8, has_hit);
     (*hit).prev_refractive = select((*hit).prev_refractive, 1., has_hit);
     (*hit).next_refractive = select((*hit).next_refractive, 1., has_hit);
@@ -186,7 +186,7 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, rad
     (*hit).position = select((*hit).position, intersection, has_hit);
     (*hit).normal = select((*hit).normal, context_n, has_hit);
 
-    (*hit).shader = select((*hit).shader, u32(light_settings.sphere_shader), has_hit);
+    (*hit).shader = select((*hit).shader, 3, has_hit);
     (*hit).diffuse = select((*hit).diffuse, .9, has_hit);
     (*hit).prev_refractive = select((*hit).prev_refractive, (*hit).next_refractive, has_hit);
     (*hit).next_refractive = select((*hit).next_refractive, next_refr_index, has_hit);
@@ -200,10 +200,11 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 {
     (*hit).has_hit = false;
 
-    var has_hit_plane = intersect_plane(*r, hit, vec3f(0., 0., 0.), vec3f(0., 1., 0.));
+    const plane = Plane(vec3f(-1.0, 0.0, 0.0), vec3f(0.0, 0.0, 1.0), vec3f(0.0, 1.0, 0.0));
+    var has_hit_plane = intersect_plane(*r, hit, vec3f(0., 0., 0.), plane);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_plane);
 
-    var sphere_center = min(1, environment.time) * vec3f(cos(environment.time), 0, sin(environment.time)) + vec3f(0, .5, 0);
+    var sphere_center = vec3f(0, .5, 0);
     var has_hit_sphere = intersect_sphere(*r, hit, sphere_center, .3, vec3f(0., 0., 0.));
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_sphere);
 
@@ -211,7 +212,7 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     var has_hit_triangle = intersect_triangle(*r, hit, triangle);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
 
-    var has_hit_lightbulb = intersect_sphere(*r, hit, light_settings.light_position + vec3f(0, .035, 0), .03, vec3f(1., .95, 0.));
+    var has_hit_lightbulb = intersect_sphere(*r, hit, light_position + vec3f(0, .035, 0), .03, vec3f(1., .95, 0.));
     (*hit).shader = select((*hit).shader, 0, has_hit_lightbulb);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_lightbulb);
 
@@ -223,7 +224,7 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 fn sample_point_light(pos : vec3f) -> Light {
     const light_intensity = 3.14;
 
-    var direction = light_settings.light_position - pos;
+    var direction = light_position - pos;
     var dist = length(direction);
     var incident_light = light_intensity / (dist * dist);
 
@@ -251,7 +252,7 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     var light_info = sample_point_light((*hit).position);
     var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
 
-    var is_occluded = check_occulusion((*hit).position, light_settings.light_position);
+    var is_occluded = check_occulusion((*hit).position, light_position);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1 * (*hit).color;
@@ -305,7 +306,7 @@ fn phong(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     var reflection = normalize(reflect(-light_info.w_i, (*hit).normal));
     var specular = (*hit).specular * ((*hit).shininess + 2) * .5 * pow(dot(-(*r).direction, reflection), (*hit).shininess);
 
-    var is_occluded = check_occulusion((*hit).position, light_settings.light_position);
+    var is_occluded = check_occulusion((*hit).position, light_position);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1 * (*hit).color;
@@ -326,7 +327,7 @@ fn glossy(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     var reflection = normalize(reflect(-light_info.w_i, (*hit).normal));
     var specular = (*hit).specular * ((*hit).shininess + 2) * .5 * pow(dot(-(*r).direction, reflection), (*hit).shininess);
 
-    var is_occluded = check_occulusion((*hit).position, light_settings.light_position);
+    var is_occluded = check_occulusion((*hit).position, light_position);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1 * (*hit).color;
@@ -380,7 +381,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
     const backgroundColor = vec4f(0.1, 0.3, 0.6, 1.0);
     const max_depth = 10;
 
-    let uv = vec2f(coords.x * environment.aspect_ratio, coords.y) *.5;
+    let uv = vec2f(coords.x, coords.y) *.5;
     var r = generate_ray_from_camera(uv);
 
     var result = vec3f(0.0);
@@ -401,6 +402,8 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
             break;
         };
     }
+
+    //return
 
     return vec4f(pow(result, vec3f(1.0 / 1.25)), 1.0);
 }

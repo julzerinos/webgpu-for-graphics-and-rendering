@@ -1,6 +1,6 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { initializeWebGPU, createPass, setupShaderPipeline, createBind } from "../../../libs/webgpu"
+import { initializeWebGPU, createPass, setupShaderPipeline, createUniformBind } from "../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -48,7 +48,7 @@ const execute: Executable = async () => {
         pass.setPipeline(pipeline)
 
         const viewboxOptions = new Float32Array([getZoom(), aspectRatio])
-        const viewboxOptionsBind = createBind(device, pipeline, viewboxOptions)
+        const viewboxOptionsBind = createUniformBind(device, pipeline, viewboxOptions)
 
         const lightSettings = new Float32Array([
             getLightPosX(),
@@ -60,7 +60,7 @@ const execute: Executable = async () => {
             0,
             0,
         ])
-        const lightSettingsBind = createBind(device, pipeline, lightSettings, 1)
+        const lightSettingsBind = createUniformBind(device, pipeline, lightSettings, 1)
 
         pass.setBindGroup(0, viewboxOptionsBind)
         pass.setBindGroup(1, lightSettingsBind)

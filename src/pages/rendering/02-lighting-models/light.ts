@@ -1,6 +1,6 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { initializeWebGPU, createPass, setupShaderPipeline, createBind } from "../../../libs/webgpu"
+import { initializeWebGPU, createPass, setupShaderPipeline, createUniformBind } from "../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -16,7 +16,7 @@ import {
 
 import { Colors } from "../../../libs/util"
 
-import shaderCode from "./mirrors.wgsl?raw"
+import shaderCode from "./light.wgsl?raw"
 
 const CANVAS_ID = "mirrors"
 const SHADER_TYPE_MAP: { [key: string]: number } = {
@@ -56,7 +56,7 @@ const execute: Executable = async () => {
         pass.setPipeline(pipeline)
 
         const viewboxOptions = new Float32Array([aspectRatio, (time * getAnimationSpeed()) / 512])
-        const viewboxOptionsBind = createBind(device, pipeline, viewboxOptions)
+        const viewboxOptionsBind = createUniformBind(device, pipeline, viewboxOptions)
 
         const sphereShader = SHADER_TYPE_MAP[getSphereShaderType()]
         const triangleShader = SHADER_TYPE_MAP[getTriangleShaderType()]
@@ -73,7 +73,7 @@ const execute: Executable = async () => {
             0,
             0,
         ])
-        const lightSettingsBind = createBind(device, pipeline, lightSettings, 1)
+        const lightSettingsBind = createUniformBind(device, pipeline, lightSettings, 1)
 
         pass.setBindGroup(0, viewboxOptionsBind)
         pass.setBindGroup(1, lightSettingsBind)

@@ -6,7 +6,7 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     genreateIndexBuffer,
-    createBind,
+    createUniformBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -99,7 +99,7 @@ const execute: Executable = async () => {
         const projection = multMatrices(orthographic, toNDC)
 
         const mvp = multMatrices(multMatrices(projection, view), model)
-        const mvpBind = createBind(device, pipeline, new Float32Array(flattenMatrix(mvp)), 0)
+        const mvpBind = createUniformBind(device, pipeline, new Float32Array(flattenMatrix(mvp)), 0)
 
         const { pass, executePass } = createPass(device, context, Colors.black)
 

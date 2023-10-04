@@ -131,7 +131,7 @@ export const genreateIndexBuffer = (
     return { buffer }
 }
 
-export const createBind = (
+export const createUniformBind = (
     device: GPUDevice,
     pipeline: GPURenderPipeline,
     array: Float32Array,
@@ -153,4 +153,58 @@ export const createBind = (
     device.queue.writeBuffer(uniformBuffer, 0, array)
 
     return bindGroup
+}
+
+export const createTextureBind = (
+    device: GPUDevice,
+    pipeline: GPURenderPipeline,
+    texture: GPUTexture,
+    sampler: GPUSampler,
+    groupIndex: number = 0
+): GPUBindGroup => {
+    const bindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(groupIndex),
+        entries: [
+            {
+                binding: 0,
+                resource: sampler,
+            },
+            {
+                binding: 1,
+                resource: texture.createView(),
+            },
+        ],
+    })
+
+    return bindGroup
+}
+
+export const generateTexture = (
+    device: GPUDevice,
+    textureData: Uint8Array,
+    width: number,
+    height: number
+): { texture: GPUTexture; sampler: GPUSampler } => {
+    const texture = device.createTexture({
+        size: [width, height, 1],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING,
+    })
+
+    device.queue.writeTexture(
+        { texture: texture },
+        textureData,
+        { offset: 0, bytesPerRow: width * 4, rowsPerImage: height },
+        [width, height, 1]
+    )
+
+    const sampler = device.createSampler({
+        addressModeU: "repeat",
+        addressModeV: "repeat",
+        magFilter: "linear",
+        minFilter: "linear",
+        mipmapFilter: "linear",
+    })
+
+    return { texture, sampler }
 }

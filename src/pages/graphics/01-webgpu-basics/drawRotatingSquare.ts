@@ -9,7 +9,7 @@ import {
     createPass,
     genreateVertexBuffer,
     setupShaderPipeline,
-    createBind,
+    createUniformBind,
 } from "../../../libs/webgpu"
 
 import shaderRotateWithTime from "./shaderRotateWithTime.wgsl?raw"
@@ -39,7 +39,7 @@ const execute: Executable = async () => {
         pass.setPipeline(pipeline)
         pass.setVertexBuffer(0, vertexBuffer)
         const timeArray = new Float32Array([time / 1e3])
-        const timeBindGroup = createBind(device, pipeline, timeArray)
+        const timeBindGroup = createUniformBind(device, pipeline, timeArray)
         pass.setBindGroup(0, timeBindGroup)
         pass.draw(square.length)
         executePass()
