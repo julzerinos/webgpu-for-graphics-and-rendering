@@ -2,6 +2,14 @@
 @group(0) @binding(1) var grass_texture : texture_2d<f32>;
 
 const light_position : vec3f = vec3f(0, 1, 0);
+const sphere_refractive_index = 1.5;
+const air_refractive_index = 1.;
+
+struct Globals {
+    texture_scale : f32
+}
+
+@group(1) @binding(0) var<uniform> globals : Globals;
 
 struct Plane {
     tangent : vec3f,
@@ -14,6 +22,11 @@ struct Light {
     w_i : vec3f,
     dist : f32
 };
+
+struct LightResult {
+    multiplicative : vec3f,
+    additive : vec3f
+}
 
 struct Ray {
     origin : vec3f,
@@ -165,8 +178,6 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, v : array<vec3f, 
 }
 
 fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, radius : f32, sphere_color : vec3f) -> bool {
-    const sphere_refractive_index = 1.5;
-    const air_refractive_index = 1.;
 
     var from_center = r.origin - center;
     var b_half = dot(from_center, r.direction);
@@ -260,7 +271,7 @@ fn check_occulusion(position : vec3f, light : vec3f) -> bool
     return intersect_scene(&r, &hit);
 }
 
-fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     var light_info = sample_point_light((*hit).position);
     var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
@@ -272,10 +283,10 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     var L_reflected = .9 * lambertian_light * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
-    return L_observed;
+    return LightResult(L_observed, vec3f(0));
 }
 
-fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     (*r).direction = normalize(reflect((*r).direction, (*hit).normal));
     (*r).origin = (*hit).position + (*r).direction * .001;
@@ -283,10 +294,10 @@ fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 
     (*hit).continue_trace = true;
 
-    return vec3f();
+    return LightResult(vec3f(1), vec3f(0));
 }
 
-fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     var ni_nt = (*hit).prev_refractive / (*hit).next_refractive;
 
@@ -306,10 +317,10 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 
     (*hit).continue_trace = true;
 
-    return vec3f();
+    return LightResult(vec3f(1), vec3f(0));
 }
 
-fn phong(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn phong(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     var light_info = sample_point_light((*hit).position);
     var lighting = light_info.L_i * dot(light_info.w_i, (*hit).normal) / 3.14;
@@ -326,11 +337,11 @@ fn phong(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
     var L_diffuse = .9 * diffuse_lighting * occlusion_modifier;
     var L_specular = specular * lighting * occlusion_modifier;
 
-    return L_ambient + L_diffuse + vec3f(max(L_specular.r, 0));
+    return LightResult(L_ambient + L_diffuse, vec3f(max(L_specular.r, 0)));
 }
 
 
-fn glossy(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn glossy(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     var light_info = sample_point_light((*hit).position);
     var lighting = light_info.L_i * dot(light_info.w_i, (*hit).normal) / 3.14;
@@ -349,10 +360,10 @@ fn glossy(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 
     refractive(r, hit);
 
-    return vec3f(max(L_specular.r, 0));
+    return LightResult(vec3f(1), vec3f(max(L_specular.r, 0)));
 }
 
-fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
+fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     (*hit).continue_trace = false;
 
@@ -383,18 +394,18 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
         }
     }
 
-    return (*hit).color;
+    return LightResult(vec3f(1), vec3f(0));
 }
 
 //Texturing //
 
-fn texture(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, light : vec3f) -> vec3f
+fn texture(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, light : LightResult) -> vec3f
 {
     var u = (*hit).uv.x;
     var v = (*hit).uv.y;
-    var sampled_texture = textureSample(grass_texture, texture_sampler, vec2f(u, v)).rgb;
+    var sampled_texture = textureSample(grass_texture, texture_sampler, vec2f(u, v) * globals.texture_scale).rgb;
 
-    var color = light * select((*hit).color, sampled_texture, (*hit).texture);
+    var color = light.multiplicative * select((*hit).color, sampled_texture, (*hit).texture) + light.additive;
 
     return color;
 }
@@ -411,7 +422,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
     var r = generate_ray_from_camera(uv);
 
     var result = vec3f(0.0);
-    var light = vec3f(0.0);
+    var light_result = LightResult(vec3f(1), vec3f(0));
     var hit = generate_default_hitinfo();
 
     for (hit.depth = 0; hit.depth< max_depth; hit.depth++)
@@ -422,7 +433,9 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
             break;
         }
 
-        light += shader(&r, &hit);
+        var next_light_result = shader(&r, &hit);
+        light_result.additive += next_light_result.additive;
+        light_result.multiplicative *= next_light_result.multiplicative;
 
         if (!hit.continue_trace)
         {
@@ -430,7 +443,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
         };
     }
 
-    result += texture(&r, &hit, light);
+    result += texture(&r, &hit, light_result);
 
     return vec4f(pow(result, vec3f(1.0 / 1.25)), 1.0);
 }
