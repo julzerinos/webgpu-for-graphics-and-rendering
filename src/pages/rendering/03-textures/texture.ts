@@ -22,7 +22,7 @@ import {
 import { Colors, readImageData } from "../../../libs/util"
 
 import shaderCode from "./texture.wgsl?raw"
-import Grass from "./grass.png"
+import Grass from "./grass_minecraft.png"
 
 const CANVAS_ID = "texture"
 const TEX_OPT_SEL_ID = "texture-repeat-style"

@@ -42,3 +42,12 @@ export const subscribeToCanvasClick = (
         callback({ x, y })
     })
 }
+
+export const subscribeMultiple = (elementIds: string[], callback: () => void) => {
+    for (const id of elementIds) {
+        const element = document.getElementById(id) as HTMLElement
+        if (!element) throw new Error(`Could not locate element with id ${id}`)
+
+        element.addEventListener("input", callback)
+    }
+}

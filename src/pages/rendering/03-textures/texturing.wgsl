@@ -1,12 +1,15 @@
 @group(0) @binding(0) var texture_sampler : sampler;
 @group(0) @binding(1) var grass_texture : texture_2d<f32>;
 
+@group(2) @binding(0) var<storage> jitters : array<vec2f>;
+
 const light_position : vec3f = vec3f(0, 1, 0);
 const sphere_refractive_index = 1.5;
 const air_refractive_index = 1.;
 
 struct Globals {
-    texture_scale : f32
+    texture_scale : f32,
+    subdivisions_sqr : f32
 }
 
 @group(1) @binding(0) var<uniform> globals : Globals;
@@ -399,15 +402,13 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResu
 
 //Texturing //
 
-fn texture(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, light : LightResult) -> vec3f
+fn texture(is_textured : bool, uv : vec2f, light : LightResult, color : vec3f) -> vec3f
 {
-    var u = (*hit).uv.x;
-    var v = (*hit).uv.y;
-    var sampled_texture = textureSample(grass_texture, texture_sampler, vec2f(u, v) * globals.texture_scale).rgb;
+    var sampled_texture = textureSample(grass_texture, texture_sampler, uv * globals.texture_scale).rgb;
 
-    var color = light.multiplicative * select((*hit).color, sampled_texture, (*hit).texture) + light.additive;
+    var result = light.multiplicative * select(color, sampled_texture, is_textured) + light.additive;
 
-    return color;
+    return result;
 }
 
 //Fragment shader //
@@ -418,32 +419,53 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
     const backgroundColor = vec4f(0.1, 0.3, 0.6, 1.0);
     const max_depth = 10;
 
-    let uv = vec2f(coords.x, coords.y) *.5;
-    var r = generate_ray_from_camera(uv);
+    var light_result : LightResult;
+    var r : Ray;
+    var hit : HitInfo;
 
-    var result = vec3f(0.0);
-    var light_result = LightResult(vec3f(1), vec3f(0));
-    var hit = generate_default_hitinfo();
+    var colors = array<vec3f, 100 > ();
+    var lights = array<LightResult, 100 > ();
+    var is_textured = array<bool, 100 > ();
+    var texture_uvs = array<vec2f, 100 > ();
 
-    for (hit.depth = 0; hit.depth< max_depth; hit.depth++)
+    for (var i = 0; i < i32(globals.subdivisions_sqr); i++)
     {
-        if (!intersect_scene(&r, &hit))
+        var uv = vec2f(coords.x, coords.y) *.5 + jitters[i];
+        r = generate_ray_from_camera(uv);
+        hit = generate_default_hitinfo();
+        light_result = LightResult(vec3f(1), vec3f(0));
+
+        for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
         {
-            result += backgroundColor.rgb;
-            break;
+            if (!intersect_scene(&r, &hit))
+            {
+                hit.color += backgroundColor.rgb;
+                break;
+            }
+
+            var next_light_result = shader(&r, &hit);
+            light_result.additive += next_light_result.additive;
+            light_result.multiplicative *= next_light_result.multiplicative;
+
+            if (!hit.continue_trace)
+            {
+                break;
+            };
         }
 
-        var next_light_result = shader(&r, &hit);
-        light_result.additive += next_light_result.additive;
-        light_result.multiplicative *= next_light_result.multiplicative;
-
-        if (!hit.continue_trace)
-        {
-            break;
-        };
+        colors[i] = hit.color;
+        lights[i] = light_result;
+        is_textured[i] = hit.texture;
+        texture_uvs[i] = hit.uv;
     }
 
-    result += texture(&r, &hit, light_result);
+    var final_result = vec3f();
+    var j : i32;
+    for (j = 0; j < i32(globals.subdivisions_sqr); j++)
+    {
+        var substrata_result = texture(is_textured[j], texture_uvs[j], lights[j], colors[j]);
+        final_result += substrata_result / globals.subdivisions_sqr;
+    }
 
-    return vec4f(pow(result, vec3f(1.0 / 1.25)), 1.0);
+    return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
 }
