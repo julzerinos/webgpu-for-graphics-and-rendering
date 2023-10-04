@@ -29,7 +29,7 @@ const TEX_OPT_SEL_ID = "texture-repeat-style"
 const TEXTURE_OPTIONS: GPUAddressMode[] = ["clamp-to-edge", "repeat", "mirror-repeat"]
 
 const execute: Executable = async () => {
-    const { device, context, canvas, canvasFormat } = await initializeWebGPU(CANVAS_ID)
+    const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
     const draw = async (textureBehavior: string) => {
         const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
