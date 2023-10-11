@@ -17,7 +17,7 @@ import {
 
 import { Colors, Triangle, flattenVector, vec3 } from "../../../libs/util"
 
-import shaderCode from "./introducingTriangles.wgsl?raw"
+import shaderCode from "./utahTeapot.wgsl?raw"
 
 const CANVAS_ID = "utah-teapot"
 
