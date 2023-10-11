@@ -25,6 +25,8 @@ import GrassMC from "./grass_minecraft.png"
 const CANVAS_ID = "default-scene-as-meshes"
 
 const execute: Executable = async () => {
+    console.log(GrassMC)
+
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
@@ -36,7 +38,7 @@ const execute: Executable = async () => {
         1
     )
 
-    const imageData = await readImageData(GrassMC)
+    const imageData = await readImageData("/grass_minecraft.png")
     const { texture: texture, sampler: sampler } = generateTexture(
         device,
         imageData.textureData,
