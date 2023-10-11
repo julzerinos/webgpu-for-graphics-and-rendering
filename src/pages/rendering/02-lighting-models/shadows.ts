@@ -1,6 +1,12 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { initializeWebGPU, createPass, setupShaderPipeline, createUniformBind } from "../../../libs/webgpu"
+import {
+    initializeWebGPU,
+    createPass,
+    setupShaderPipeline,
+    createUniformBind,
+    writeToBuffer,
+} from "../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -33,26 +39,38 @@ const execute: Executable = async () => {
 
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
+    const viewboxOptions = new Float32Array([aspectRatio])
+    const { bindGroup: viewboxOptionsBind } = createUniformBind(device, pipeline, viewboxOptions)
+
+    const lightSettings = new Float32Array([
+        getLightPosX(),
+        getLightPosY(),
+        getLightPosZ(),
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+    ])
+    const { bindGroup: lightSettingsBind, uniformBuffer: lightSettingsBuffer } = createUniformBind(
+        device,
+        pipeline,
+        lightSettings,
+        1
+    )
+
     const draw = () => {
+        writeToBuffer(
+            device,
+            lightSettingsBuffer,
+            new Float32Array([getLightPosX(), getLightPosY(), getLightPosZ(), 0, 0, 0, 0, 0, 0]),
+            0
+        )
+
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
-
-        const viewboxOptions = new Float32Array([aspectRatio])
-        const viewboxOptionsBind = createUniformBind(device, pipeline, viewboxOptions)
-
-        const lightSettings = new Float32Array([
-            getLightPosX(),
-            getLightPosY(),
-            getLightPosZ(),
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ])
-        const lightSettingsBind = createUniformBind(device, pipeline, lightSettings, 1)
 
         pass.setBindGroup(0, viewboxOptionsBind)
         pass.setBindGroup(1, lightSettingsBind)

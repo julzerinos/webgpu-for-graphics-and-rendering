@@ -19,9 +19,11 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     createUniformBind,
+    writeToBuffer,
 } from "../../../libs/webgpu"
 
 import shaderDrawCircle from "./shaderDrawCircle.wgsl?raw"
+import { Colors } from "../../../libs/util"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU("task4")
@@ -33,40 +35,45 @@ const execute: Executable = async () => {
     const getSize = watchInput<number>("ball-size")
     const getSpeed = watchInput<number>("ball-speed")
 
-    const frame = (time: number) => {
-        const { pass, executePass } = createPass(device, context, {
-            r: 0.459,
-            g: 0.882,
-            b: 0.996,
-            a: 1.0,
-        })
+    const { bufferLayout: vertexBufferLayout, buffer: vertexBuffer } = genreateVertexBuffer(
+        device,
+        vertexArray,
+        "float32x2"
+    )
+    const pipeline = setupShaderPipeline(
+        device,
+        [vertexBufferLayout],
+        canvasFormat,
+        shaderDrawCircle
+    )
 
-        const { bufferLayout: vertexBufferLayout, buffer: vertexBuffer } = genreateVertexBuffer(
-            device,
-            vertexArray,
-            "float32x2"
-        )
-        const pipeline = setupShaderPipeline(
-            device,
-            [vertexBufferLayout],
-            canvasFormat,
-            shaderDrawCircle
-        )
+    const { bindGroup: timeBindGroup, uniformBuffer: timeBuffer } = createUniformBind(
+        device,
+        pipeline,
+        new Float32Array([0])
+    )
+    const { bindGroup: ballBindGroup, uniformBuffer: ballBuffer } = createUniformBind(
+        device,
+        pipeline,
+        new Float32Array(3),
+        1
+    )
+
+    const frame = (time: number) => {
+        writeToBuffer(device, timeBuffer, new Float32Array([time / 1e3]), 0)
+        writeToBuffer(device, ballBuffer, new Float32Array([getHeight(), getSpeed(), getSize()]), 0)
+
+        const { pass, executePass } = createPass(device, context, Colors.blueScreenBlue)
 
         pass.setPipeline(pipeline)
         pass.setVertexBuffer(0, vertexBuffer)
 
-        const timeArray = new Float32Array([time / 1e3])
-        const timeBindGroup = createUniformBind(device, pipeline, timeArray)
         pass.setBindGroup(0, timeBindGroup)
-
-        const ballArray = new Float32Array([getHeight(), getSpeed(), getSize()])
-        const ballBindGroup = createUniformBind(device, pipeline, ballArray, 1)
         pass.setBindGroup(1, ballBindGroup)
 
         pass.draw(backgroundSquare.length)
-        executePass()
 
+        executePass()
         requestAnimationFrame(frame)
     }
 
@@ -85,14 +92,8 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         createRange("ball-height", 0.3, 0.1, 0.9, 0.1),
         "Ball bounce height"
     )
-    const speedInput = createWithLabel(
-        createRange("ball-speed", 4, 1, 16),
-        "Ball bounce speed"
-    )
-    const sizeInput = createWithLabel(
-        createRange("ball-size", 1.05, 1.01, 1.5, 0.01),
-        "Ball size"
-    )
+    const speedInput = createWithLabel(createRange("ball-speed", 4, 1, 16), "Ball bounce speed")
+    const sizeInput = createWithLabel(createRange("ball-size", 1.05, 1.01, 1.5, 0.01), "Ball size")
 
     interactableSection.append(heightInput, speedInput, sizeInput)
     canvasSection.append(canvas, interactableSection)

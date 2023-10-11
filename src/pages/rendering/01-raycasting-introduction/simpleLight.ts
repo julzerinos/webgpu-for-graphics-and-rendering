@@ -1,6 +1,12 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { initializeWebGPU, createPass, setupShaderPipeline, createUniformBind } from "../../../libs/webgpu"
+import {
+    initializeWebGPU,
+    createPass,
+    setupShaderPipeline,
+    createUniformBind,
+    writeToBuffer,
+} from "../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -42,32 +48,53 @@ const execute: Executable = async () => {
 
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
+    const { bindGroup: viewboxOptionsBind, uniformBuffer: viewboxOptionsBuffer } =
+        createUniformBind(device, pipeline, new Float32Array([getZoom(), aspectRatio]))
+
+    const lightSettings = new Float32Array([
+        getLightPosX(),
+        getLightPosY(),
+        getLightPosZ(),
+        getLightIntensity(),
+        shadeAllObjects() ? 1.0 : 0.0,
+        getdiffuseReflectance(),
+        0,
+        0,
+    ])
+    const { bindGroup: lightSettingsBind, uniformBuffer: lightSettingsBuffer } = createUniformBind(
+        device,
+        pipeline,
+        lightSettings,
+        1
+    )
+
     const draw = () => {
+        writeToBuffer(device, viewboxOptionsBuffer, new Float32Array([getZoom(), aspectRatio]), 0)
+        writeToBuffer(
+            device,
+            lightSettingsBuffer,
+            new Float32Array([
+                getLightPosX(),
+                getLightPosY(),
+                getLightPosZ(),
+                getLightIntensity(),
+                shadeAllObjects() ? 1.0 : 0.0,
+                getdiffuseReflectance(),
+                0,
+                0,
+            ]),
+            0
+        )
+
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
-
-        const viewboxOptions = new Float32Array([getZoom(), aspectRatio])
-        const viewboxOptionsBind = createUniformBind(device, pipeline, viewboxOptions)
-
-        const lightSettings = new Float32Array([
-            getLightPosX(),
-            getLightPosY(),
-            getLightPosZ(),
-            getLightIntensity(),
-            shadeAllObjects() ? 1.0 : 0.0,
-            getdiffuseReflectance(),
-            0,
-            0,
-        ])
-        const lightSettingsBind = createUniformBind(device, pipeline, lightSettings, 1)
-
         pass.setBindGroup(0, viewboxOptionsBind)
         pass.setBindGroup(1, lightSettingsBind)
 
         pass.draw(4)
-        executePass()
 
+        executePass()
         requestAnimationFrame(draw)
     }
 
@@ -92,8 +119,8 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         "Light intensity"
     )
     const diffuseReflectance = createWithLabel(
-        createRange(DIFFUSE_REFLECTANCE_ID, 1.5, -1, 10, 0.1),
-        "Refractive index"
+        createRange(DIFFUSE_REFLECTANCE_ID, 1, -1, 10, 0.1),
+        "Diffuse reflectance"
     )
     const lightPositionX = createWithLabel(
         createRange(LIGHT_POSX_ID, 0, -5, 5, 0.1),
@@ -107,7 +134,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         createRange(LIGHT_POSZ_ID, 0, -5, 5, 0.1),
         "Light Z position"
     )
-    const shadeAllCheck = createWithLabel(createBoolInput(SHADE_ALL_ID, true), "Shading on")
+    const shadeAllCheck = createWithLabel(createBoolInput(SHADE_ALL_ID, true), "Shading on", false)
 
     interactables.append(
         zoomRange,

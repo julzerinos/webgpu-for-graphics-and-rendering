@@ -1,6 +1,12 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { initializeWebGPU, createPass, setupShaderPipeline, createUniformBind } from "../../../libs/webgpu"
+import {
+    initializeWebGPU,
+    createPass,
+    setupShaderPipeline,
+    createUniformBind,
+    writeToBuffer,
+} from "../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -50,30 +56,55 @@ const execute: Executable = async () => {
 
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
+    const viewboxOptions = new Float32Array([aspectRatio, 0])
+    const { bindGroup: viewboxOptionsBind, uniformBuffer: viewboxOptionsBuffer } =
+        createUniformBind(device, pipeline, viewboxOptions)
+
+    const lightSettings = new Float32Array([
+        getLightPosX(),
+        getLightPosY(),
+        getLightPosZ(),
+        SHADER_TYPE_MAP[getSphereShaderType()],
+        SHADER_TYPE_MAP[getTriangleShaderType()],
+        SHADER_TYPE_MAP[getPlaneShaderType()],
+        0,
+        0,
+        0,
+    ])
+    const { bindGroup: lightSettingsBind, uniformBuffer: lightSettingsBuffer } = createUniformBind(
+        device,
+        pipeline,
+        lightSettings,
+        1
+    )
+
     const draw = (time: number) => {
+        writeToBuffer(
+            device,
+            viewboxOptionsBuffer,
+            new Float32Array([aspectRatio, (time * getAnimationSpeed()) / 512]),
+            0
+        )
+        writeToBuffer(
+            device,
+            lightSettingsBuffer,
+            new Float32Array([
+                getLightPosX(),
+                getLightPosY(),
+                getLightPosZ(),
+                SHADER_TYPE_MAP[getSphereShaderType()],
+                SHADER_TYPE_MAP[getTriangleShaderType()],
+                SHADER_TYPE_MAP[getPlaneShaderType()],
+                0,
+                0,
+                0,
+            ]),
+            0
+        )
+
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
-
-        const viewboxOptions = new Float32Array([aspectRatio, (time * getAnimationSpeed()) / 512])
-        const viewboxOptionsBind = createUniformBind(device, pipeline, viewboxOptions)
-
-        const sphereShader = SHADER_TYPE_MAP[getSphereShaderType()]
-        const triangleShader = SHADER_TYPE_MAP[getTriangleShaderType()]
-        const planeShader = SHADER_TYPE_MAP[getPlaneShaderType()]
-
-        const lightSettings = new Float32Array([
-            getLightPosX(),
-            getLightPosY(),
-            getLightPosZ(),
-            sphereShader,
-            triangleShader,
-            planeShader,
-            0,
-            0,
-            0,
-        ])
-        const lightSettingsBind = createUniformBind(device, pipeline, lightSettings, 1)
 
         pass.setBindGroup(0, viewboxOptionsBind)
         pass.setBindGroup(1, lightSettingsBind)
