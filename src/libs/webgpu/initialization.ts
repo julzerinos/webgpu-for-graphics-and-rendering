@@ -141,6 +141,7 @@ export const createUniformBind = (
         size: array.byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
+
     const bindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(groupIndex),
         entries: [
@@ -158,25 +159,27 @@ export const createUniformBind = (
 export const createStorageBind = (
     device: GPUDevice,
     pipeline: GPURenderPipeline,
-    array: Float32Array,
-    groupIndex: number = 0
-): { storageBuffer: GPUBuffer; storageGroup: GPUBindGroup } => {
-    const storageBuffer = device.createBuffer({
-        size: array.byteLength,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    arrays: Array<Float32Array | Uint32Array>,
+    groupIndex: number = 0,
+): { storageBuffers: GPUBuffer[]; storageGroup: GPUBindGroup } => {
+    const storageBuffers = arrays.map(a => {
+        const buffer = device.createBuffer({
+            size: a.byteLength,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+        })
+        device.queue.writeBuffer(buffer, 0, a)
+        return buffer
     })
+
     const storageGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(groupIndex),
-        entries: [
-            {
-                binding: 0,
-                resource: { buffer: storageBuffer },
-            },
-        ],
+        entries: storageBuffers.map((b, i) => ({
+            binding: i,
+            resource: { buffer: b },
+        })),
     })
-    device.queue.writeBuffer(storageBuffer, 0, array)
 
-    return { storageBuffer, storageGroup }
+    return { storageBuffers, storageGroup }
 }
 
 export const createTextureBind = (

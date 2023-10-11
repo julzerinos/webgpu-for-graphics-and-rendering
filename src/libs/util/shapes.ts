@@ -1,6 +1,6 @@
-import { Vector2, Vector3 } from "../../types"
+import { Vector2, Vector3, Vector4 } from "../../types"
 import { IShapeInfo } from "../../types/shapes"
-import { add, vec2, vec3, vec4 } from "./vector"
+import { add, flattenVector, vec2, vec3, vec4 } from "./vector"
 
 export const Square = (point: Vector2, size: number): Vector2[] => {
     const offset = size / 2
@@ -65,5 +65,22 @@ export const Cube = (center: Vector3, size: number): IShapeInfo => {
         vertices,
         lineIndices: lines,
         triangleIndices: triangles,
+    }
+}
+
+export const Triangle = (vertices: [Vector3, Vector3, Vector3]): IShapeInfo => {
+    const verticesAs4 = [
+        vec4(...vertices[0], 1),
+        vec4(...vertices[1], 1),
+        vec4(...vertices[2], 1),
+    ] as Vector4[]
+
+    const triangleFace = [vec4(0, 1, 2, 0)]
+    const lines = [] as number[]
+
+    return {
+        vertices: verticesAs4,
+        lineIndices: new Uint32Array(lines),
+        triangleIndices: new Uint32Array(flattenVector(triangleFace)),
     }
 }

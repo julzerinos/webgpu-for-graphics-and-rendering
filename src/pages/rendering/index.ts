@@ -3,11 +3,13 @@ import { ExecutableQueue, IRoute, ViewGenerator } from "../../types"
 import { RaycastingIntroduction } from "./01-raycasting-introduction"
 import { LightingModels } from "./02-lighting-models"
 import { TextureMapping } from "./03-textures"
+import { Meshes } from "./05-meshes"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     RaycastingIntroduction(container, executeQueue)
     LightingModels(container, executeQueue)
     TextureMapping(container, executeQueue)
+    Meshes(container, executeQueue)
 }
 
 export const renderingRoutes: IRoute = {
@@ -27,6 +29,11 @@ export const renderingRoutes: IRoute = {
         {
             name: "03-texture-mapping",
             generator: TextureMapping,
+            children: [],
+        },
+        {
+            name: "05-meshes",
+            generator: Meshes,
             children: [],
         },
     ],
