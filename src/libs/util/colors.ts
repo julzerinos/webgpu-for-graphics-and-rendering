@@ -1,6 +1,6 @@
 import { vec3, vec4 } from "./vector"
 
-export const color = (r = 0, g = 0, b = 0, a = 0): GPUColorDict => ({ r, g, b, a })
+export const color = (r = 0, g = 0, b = 0, a = 1): GPUColorDict => ({ r, g, b, a })
 
 export const colorToVec3 = (color: GPUColorDict) => vec3(color.r, color.g, color.b)
 export const colorToVec4 = (color: GPUColorDict) => vec4(color.r, color.g, color.b, color.a)
@@ -22,4 +22,11 @@ export const hexToColor = (hex: string): GPUColorDict => {
     const b = (bigint & 255) / 255
 
     return { r, g, b, a: 1 }
+}
+
+export const randomColors = (colorCount: number, bright: boolean) => {
+    const colorValueGenerator = bright ? () => Math.random() * 0.5 + 0.5 : () => Math.random()
+    return Array.from({ length: colorCount }, _ =>
+        vec4(colorValueGenerator(), colorValueGenerator(), colorValueGenerator())
+    )
 }

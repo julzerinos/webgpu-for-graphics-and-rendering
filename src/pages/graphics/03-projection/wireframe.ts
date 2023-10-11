@@ -8,6 +8,7 @@ import {
     genreateIndexBuffer,
     createUniformBind,
     writeToBuffer,
+    toNDC,
 } from "../../../libs/webgpu"
 
 import {
@@ -39,13 +40,13 @@ import {
 import shaderCode from "./wireframe.wgsl?raw"
 import { IShapeInfo } from "../../../types/shapes"
 
-const CANVAS_ID = "projections"
+const CANVAS_ID = "wireframe"
 const WIREFRAME_ROTATION = "wireframe-rotation-slider"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
-    const cube: IShapeInfo = Cube(vec3(0.5, 0.5, 0.5), 1)
+    const cube: IShapeInfo = Cube(vec3(0), 1)
 
     const lines = cube.lineIndices
     const vertices = new Float32Array(flattenVector(cube.vertices))
@@ -72,38 +73,22 @@ const execute: Executable = async () => {
         0
     )
 
+    const translateMatrix = createTranslateMatrix(vec3(0.5, 0.5, 0.5))
+
+    const eye = vec3(0, 0, 10)
+    const at = vec3(0)
+    const up = vec3(0, 1, 0)
+    const view = lookAtMatrix(eye, at, up)
+
+    const orthographic = orthographicProjection(-1.5, 1.5, -1.5, 1.5, 0, 100)
+    const projection = multMatrices(toNDC, orthographic)
+    const projectionView = multMatrices(projection, view)
+
     const draw = (rotation: number) => {
         const rotationMatrix = createRotationMatrix(rotation, vec3(1, 1, 1))
-        const translateMatrix = createTranslateMatrix(vec3(0, 0, 0))
         const model = multMatrices(rotationMatrix, translateMatrix)
 
-        const eye = vec3(0, 0, 10)
-        const at = vec3(0)
-        const up = vec3(0, 1, 0)
-        const view = lookAtMatrix(eye, at, up)
-
-        const orthographic = orthographicProjection(-1.5, 1.5, -1.5, 1.5, 0, 100)
-        const toNDC = mat4(
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.5,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            1.0
-        )
-        const projection = multMatrices(toNDC, orthographic)
-
-        const mvp = multMatrices(multMatrices(projection, view), model)
+        const mvp = multMatrices(projectionView, model)
         writeToBuffer(device, mvpBuffer, new Float32Array(flattenMatrix(mvp)), 0)
 
         const { pass, executePass } = createPass(device, context, Colors.black)
