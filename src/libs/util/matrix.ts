@@ -1,5 +1,5 @@
 import { cross, dot, normalize, scale, subtract, toRadians, vec4, vectorsEqual } from "."
-import { Matrix, Matrix4x4, MatrixFormat, Vector3, Vector4, VectorFormat } from "../../types"
+import { Matrix, Matrix4x4, Vector3 } from "../../types"
 
 export const mat4 = (
     a1: number = 0,
@@ -149,6 +149,14 @@ export const createTranslateMatrix = ({ [0]: x, [1]: y, [2]: z }: Vector3): Matr
     result[1][3] = y
     result[2][3] = z
 
+    return result
+}
+
+export const createScaleMatrix = (sx: number = 1, sy: number = 1, sz: number = 1) => {
+    var result = identity4x4()
+    result[0][0] = sx
+    result[1][1] = sy
+    result[2][2] = sz
     return result
 }
 

@@ -7,7 +7,6 @@ import {
     setupShaderPipeline,
     genreateIndexBuffer,
     createUniformBind,
-    writeToBuffer,
     toNDC,
 } from "../../../libs/webgpu"
 
@@ -15,42 +14,34 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
-    createRange,
     createText,
     createTitle,
-    createWithLabel,
-    subscribeToInput,
 } from "../../../libs/web"
 
 import {
     Colors,
     Cube,
-    flattenMatrix,
     flattenVector,
     lookAtMatrix,
     multMatrices,
-    orthographicProjection,
-    createRotationMatrix,
     vec3,
     createTranslateMatrix,
-    identity4x4,
+    perspectiveProjection,
+    flattenMatrices,
+    createScaleMatrix,
 } from "../../../libs/util"
 
-import shaderCode from "./wireframe.wgsl?raw"
+import shaderCode from "./airplane.wgsl?raw"
 import { IShapeInfo } from "../../../types/shapes"
 
-const CANVAS_ID = "wireframe"
-const WIREFRAME_ROTATION = "wireframe-rotation-slider"
+const CANVAS_ID = "airplane"
 
 const execute: Executable = async () => {
-    const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
+    const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
     const cube: IShapeInfo = Cube(vec3(0), 1)
-
-    const lines = cube.lineIndices
     const vertices = new Float32Array(flattenVector(cube.vertices))
-
-    const { buffer: indexBuffer } = genreateIndexBuffer(device, lines)
+    const { buffer: indexBuffer } = genreateIndexBuffer(device, cube.lineIndices)
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,
         vertices,
@@ -65,45 +56,70 @@ const execute: Executable = async () => {
         "line-list"
     )
 
-    const { bindGroup: mvpBind, uniformBuffer: mvpBuffer } = createUniformBind(
-        device,
-        pipeline,
-        new Float32Array(flattenMatrix(identity4x4())),
-        0
-    )
-
-    const translateMatrix = createTranslateMatrix(vec3(0.5, 0.5, 0.5))
-
-    const eye = vec3(0, 0, 10)
+    const eye = vec3(5, 5, 5)
     const at = vec3(0)
     const up = vec3(0, 1, 0)
     const view = lookAtMatrix(eye, at, up)
-
-    const orthographic = orthographicProjection(-1.5, 1.5, -1.5, 1.5, 0, 100)
-    const projection = multMatrices(toNDC, orthographic)
+    const perspective = perspectiveProjection(45, canvas.width / canvas.height, 0.1, 100)
+    const projection = multMatrices(toNDC, perspective)
     const projectionView = multMatrices(projection, view)
 
-    const draw = (rotation: number) => {
-        const rotationMatrix = createRotationMatrix(rotation, vec3(1, 1, 1))
-        const model = multMatrices(rotationMatrix, translateMatrix)
+    const fusealgeModel = createScaleMatrix(0.4, 0.4, 2)
+    const cockpitModel = multMatrices(
+        createScaleMatrix(0.35, 0.25, 0.35),
+        createTranslateMatrix(vec3(0, -0.2, 3.3))
+    )
+    const wingLeft = multMatrices(
+        createScaleMatrix(1.7, 0.2, 1.1),
+        createTranslateMatrix(vec3(0.6))
+    )
+    const wingRight = multMatrices(
+        createScaleMatrix(1.7, 0.2, 1.1),
+        createTranslateMatrix(vec3(-0.6))
+    )
+    const verticalStabilizerModel = multMatrices(
+        createScaleMatrix(0.2, 0.5, 0.3),
+        createTranslateMatrix(vec3(0, 0.5, -3.3))
+    )
 
-        const mvp = multMatrices(projectionView, model)
-        writeToBuffer(device, mvpBuffer, new Float32Array(flattenMatrix(mvp)), 0)
+    const allModels = [
+        fusealgeModel,
+        cockpitModel,
+        wingLeft,
+        wingRight,
+        verticalStabilizerModel,
+    ].map(m => multMatrices(projectionView, m))
 
+    const { bindGroup: mvpsBind } = createUniformBind(
+        device,
+        pipeline,
+        new Float32Array(flattenMatrices(allModels)),
+        0
+    )
+
+    // https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/airplane-parts-function/
+
+    // const { bindGroup: instanceColorsBind } = createUniformBind(
+    //     device,
+    //     pipeline,
+    //     new Float32Array(),
+    //     1
+    // )
+
+    const draw = () => {
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
         pass.setVertexBuffer(0, vertexBuffer)
         pass.setIndexBuffer(indexBuffer, "uint32")
-        pass.setBindGroup(0, mvpBind)
+        pass.setBindGroup(0, mvpsBind)
 
-        pass.drawIndexed(lines.length)
+        pass.drawIndexed(cube.lineIndices.length, allModels.length)
 
         executePass()
     }
 
-    const startAngle = subscribeToInput<number>(WIREFRAME_ROTATION, draw)
-    draw(startAngle)
+    draw()
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
@@ -114,12 +130,6 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const canvas = createCanvas(CANVAS_ID)
     const interactableSection = createInteractableSection()
 
-    const rotationSlide = createWithLabel(
-        createRange(WIREFRAME_ROTATION, 45, 0, 360),
-        "Rotation about (1, 1, 1)"
-    )
-
-    interactableSection.append(rotationSlide)
     canvasSection.append(canvas, interactableSection)
     div.append(title, description, canvasSection)
 

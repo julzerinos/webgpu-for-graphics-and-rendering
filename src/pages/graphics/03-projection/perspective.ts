@@ -7,7 +7,6 @@ import {
     setupShaderPipeline,
     genreateIndexBuffer,
     createUniformBind,
-    writeToBuffer,
     toNDC,
 } from "../../../libs/webgpu"
 
@@ -22,16 +21,13 @@ import {
 import {
     Colors,
     Cube,
-    flattenMatrix,
     flattenVector,
     lookAtMatrix,
     multMatrices,
     createRotationMatrix,
     vec3,
     createTranslateMatrix,
-    identity4x4,
     perspectiveProjection,
-    randomColors,
     vec4,
     flattenMatrices,
 } from "../../../libs/util"

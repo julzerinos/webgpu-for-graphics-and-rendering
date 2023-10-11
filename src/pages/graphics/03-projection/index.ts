@@ -2,8 +2,9 @@ import { ExecutableQueue, ViewGenerator } from "../../../types"
 
 import wireframe from "./wireframe"
 import perspective from "./perspective"
+import airplane from "./airplane"
 
-export { wireframe, perspective }
+export { wireframe, perspective, airplane }
 
 export const Projection: ViewGenerator = (
     container: HTMLElement,
@@ -11,4 +12,5 @@ export const Projection: ViewGenerator = (
 ) => {
     wireframe(container, executeQueue)
     perspective(container, executeQueue)
+    airplane(container, executeQueue)
 }
