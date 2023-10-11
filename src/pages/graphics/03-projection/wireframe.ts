@@ -7,6 +7,7 @@ import {
     setupShaderPipeline,
     genreateIndexBuffer,
     createUniformBind,
+    writeToBuffer,
 } from "../../../libs/webgpu"
 
 import {
@@ -18,13 +19,11 @@ import {
     createTitle,
     createWithLabel,
     subscribeToInput,
-    watchInput,
 } from "../../../libs/web"
 
 import {
     Colors,
     Cube,
-    Vector3s,
     flattenMatrix,
     flattenVector,
     lookAtMatrix,
@@ -37,7 +36,7 @@ import {
     identity4x4,
 } from "../../../libs/util"
 
-import shaderCode from "./projection.wgsl?raw"
+import shaderCode from "./wireframe.wgsl?raw"
 import { IShapeInfo } from "../../../types/shapes"
 
 const CANVAS_ID = "projections"
@@ -46,7 +45,7 @@ const WIREFRAME_ROTATION = "wireframe-rotation-slider"
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
-    const cube: IShapeInfo = Cube(vec3(0), 1)
+    const cube: IShapeInfo = Cube(vec3(0.5, 0.5, 0.5), 1)
 
     const lines = cube.lineIndices
     const vertices = new Float32Array(flattenVector(cube.vertices))
@@ -55,7 +54,7 @@ const execute: Executable = async () => {
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,
         vertices,
-        "float32x3"
+        "float32x4"
     )
 
     const pipeline = setupShaderPipeline(
@@ -66,14 +65,24 @@ const execute: Executable = async () => {
         "line-list"
     )
 
+    const { bindGroup: mvpBind, uniformBuffer: mvpBuffer } = createUniformBind(
+        device,
+        pipeline,
+        new Float32Array(flattenMatrix(identity4x4())),
+        0
+    )
+
     const draw = (rotation: number) => {
-        const rotationMatrix = createRotationMatrix(rotation, vec3(0, 1, 0))
+        const rotationMatrix = createRotationMatrix(rotation, vec3(1, 1, 1))
         const translateMatrix = createTranslateMatrix(vec3(0, 0, 0))
+        const model = multMatrices(rotationMatrix, translateMatrix)
 
-        const eye = vec3(0, 0, -2)
-        const at = vec3()
-        const up = Vector3s.up
+        const eye = vec3(0, 0, 10)
+        const at = vec3(0)
+        const up = vec3(0, 1, 0)
+        const view = lookAtMatrix(eye, at, up)
 
+        const orthographic = orthographicProjection(-1.5, 1.5, -1.5, 1.5, 0, 100)
         const toNDC = mat4(
             1.0,
             0.0,
@@ -92,22 +101,16 @@ const execute: Executable = async () => {
             0.0,
             1.0
         )
-        const orthographic = orthographicProjection(-1, 1, -1, 1, 0, 1)
-
-        const model = rotationMatrix // multMatrices(rotationMatrix, translateMatrix)
-        const view = lookAtMatrix(eye, at, up)
-        const projection = multMatrices(orthographic, toNDC)
+        const projection = multMatrices(toNDC, orthographic)
 
         const mvp = multMatrices(multMatrices(projection, view), model)
-        const mvpBind = createUniformBind(device, pipeline, new Float32Array(flattenMatrix(mvp)), 0)
+        writeToBuffer(device, mvpBuffer, new Float32Array(flattenMatrix(mvp)), 0)
 
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
-
         pass.setVertexBuffer(0, vertexBuffer)
         pass.setIndexBuffer(indexBuffer, "uint32")
-
         pass.setBindGroup(0, mvpBind)
 
         pass.drawIndexed(lines.length)

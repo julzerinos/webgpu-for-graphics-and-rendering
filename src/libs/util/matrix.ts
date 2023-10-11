@@ -27,7 +27,7 @@ export const mat4 = (
 
 export const identity4x4 = () => mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 
-export const flattenMatrix = (matrix: Matrix): number[] => ([] as Array<number>).concat(...matrix)
+export const flattenMatrix = (matrix: Matrix): number[] => ([] as Array<number>).concat(...transpose(matrix))
 export const flattenMatrices = (matrices: Matrix[]): number[] =>
     ([] as Array<number>).concat(...matrices.map(m => flattenMatrix(m)))
 

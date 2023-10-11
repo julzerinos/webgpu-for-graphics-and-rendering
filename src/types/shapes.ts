@@ -1,7 +1,7 @@
-import { Vector3 } from "."
+import { Vector4 } from "."
 
 export interface IShapeInfo {
-    vertices: Vector3[]
+    vertices: Vector4[]
     lineIndices: Uint32Array
     triangleIndices: Uint32Array
 }

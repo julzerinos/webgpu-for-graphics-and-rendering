@@ -1,6 +1,6 @@
 import { Vector2, Vector3 } from "../../types"
 import { IShapeInfo } from "../../types/shapes"
-import { add, vec2, vec3 } from "./vector"
+import { add, vec2, vec3, vec4 } from "./vector"
 
 export const Square = (point: Vector2, size: number): Vector2[] => {
     const offset = size / 2
@@ -32,14 +32,14 @@ export const Cube = (center: Vector3, size: number): IShapeInfo => {
     const halfSize = size / 2
 
     const vertices = [
-        add(center, vec3(-halfSize, -halfSize, halfSize)),
-        add(center, vec3(-halfSize, halfSize, halfSize)),
-        add(center, vec3(halfSize, halfSize, halfSize)),
-        add(center, vec3(halfSize, -halfSize, halfSize)),
-        add(center, vec3(-halfSize, -halfSize, -halfSize)),
-        add(center, vec3(-halfSize, halfSize, -halfSize)),
-        add(center, vec3(halfSize, halfSize, -halfSize)),
-        add(center, vec3(halfSize, -halfSize, -halfSize)),
+        vec4(...add(center, vec3(-halfSize, -halfSize, halfSize)), 1),
+        vec4(...add(center, vec3(-halfSize, halfSize, halfSize)), 1),
+        vec4(...add(center, vec3(halfSize, halfSize, halfSize)), 1),
+        vec4(...add(center, vec3(halfSize, -halfSize, halfSize)), 1),
+        vec4(...add(center, vec3(-halfSize, -halfSize, -halfSize)), 1),
+        vec4(...add(center, vec3(-halfSize, halfSize, -halfSize)), 1),
+        vec4(...add(center, vec3(halfSize, halfSize, -halfSize)), 1),
+        vec4(...add(center, vec3(halfSize, -halfSize, -halfSize)), 1),
     ]
 
     // prettier-ignore
