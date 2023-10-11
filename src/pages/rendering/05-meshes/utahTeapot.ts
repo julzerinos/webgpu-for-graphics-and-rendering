@@ -51,7 +51,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID)
+    const canvas = createCanvas(CANVAS_ID, 840, 450)
 
     const interactables = createInteractableSection()
     canvasSection.append(canvas, interactables)
