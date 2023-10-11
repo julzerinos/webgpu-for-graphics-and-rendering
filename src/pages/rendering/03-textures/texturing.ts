@@ -81,10 +81,10 @@ const execute: Executable = async () => {
         1
     )
 
-    const { storageGroup: jittersBind, storageBuffer: jittersBuffer } = createStorageBind(
+    const { storageGroup: jittersBind, storageBuffers: [jittersBuffer] } = createStorageBind(
         device,
         pipeline,
-        new Float32Array(200),
+        [new Float32Array(200)],
         2
     )
 

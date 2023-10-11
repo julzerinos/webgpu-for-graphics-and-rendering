@@ -4,8 +4,6 @@ import {
     initializeWebGPU,
     createPass,
     setupShaderPipeline,
-    generateTexture,
-    createTextureBind,
     createStorageBind,
 } from "../../../libs/webgpu"
 
@@ -17,7 +15,7 @@ import {
     createTitle,
 } from "../../../libs/web"
 
-import { Colors, Triangle, flattenVector, readImageData, vec3 } from "../../../libs/util"
+import { Colors, Triangle, flattenVector, vec3 } from "../../../libs/util"
 
 import shaderCode from "./introducingTriangles.wgsl?raw"
 
