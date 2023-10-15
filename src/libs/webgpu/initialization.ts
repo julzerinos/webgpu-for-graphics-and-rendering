@@ -134,7 +134,7 @@ export const genreateIndexBuffer = (
 export const createUniformBind = (
     device: GPUDevice,
     pipeline: GPURenderPipeline,
-    array: Float32Array,
+    array: Float32Array | Int32Array | Uint32Array,
     groupIndex: number = 0
 ): { bindGroup: GPUBindGroup; uniformBuffer: GPUBuffer } => {
     const uniformBuffer = device.createBuffer({
@@ -160,7 +160,7 @@ export const createStorageBind = (
     device: GPUDevice,
     pipeline: GPURenderPipeline,
     arrays: Array<Float32Array | Uint32Array>,
-    groupIndex: number = 0,
+    groupIndex: number = 0
 ): { storageBuffers: GPUBuffer[]; storageGroup: GPUBindGroup } => {
     const storageBuffers = arrays.map(a => {
         const buffer = device.createBuffer({

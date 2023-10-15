@@ -5,7 +5,7 @@ import {
     createPass,
     setupShaderPipeline,
     createUniformBind,
-    writeToBuffer,
+    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import {
@@ -79,13 +79,13 @@ const execute: Executable = async () => {
     )
 
     const draw = (time: number) => {
-        writeToBuffer(
+        writeToBufferF32(
             device,
             viewboxOptionsBuffer,
             new Float32Array([aspectRatio, (time * getAnimationSpeed()) / 512]),
             0
         )
-        writeToBuffer(
+        writeToBufferF32(
             device,
             lightSettingsBuffer,
             new Float32Array([

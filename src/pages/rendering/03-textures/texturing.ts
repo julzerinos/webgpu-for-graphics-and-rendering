@@ -7,7 +7,7 @@ import {
     generateTexture,
     createTextureBind,
     createUniformBind,
-    writeToBuffer,
+    writeToBufferF32,
     createStorageBind,
 } from "../../../libs/webgpu"
 
@@ -89,7 +89,7 @@ const execute: Executable = async () => {
     )
 
     const draw = () => {
-        writeToBuffer(
+        writeToBufferF32(
             device,
             globalsBuffer,
             new Float32Array([getScale(), getSubdivisions() * getSubdivisions()]),
@@ -114,7 +114,7 @@ const execute: Executable = async () => {
 
     const setSubdivisions = (subdivisions: number) => {
         const jitters = computeJitters(canvas.height, subdivisions)
-        writeToBuffer(device, jittersBuffer, new Float32Array(flattenVector(jitters)), 0, 0)
+        writeToBufferF32(device, jittersBuffer, new Float32Array(flattenVector(jitters)), 0, 0)
     }
 
     const subdivisions = subscribeToInput<number>(JITTER_SUBD_SLIDER_ID, setSubdivisions)

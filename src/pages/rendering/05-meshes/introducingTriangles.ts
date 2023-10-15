@@ -20,13 +20,10 @@ import {
 import { Colors, Triangle, flattenVector, readImageData, vec3 } from "../../../libs/util"
 
 import shaderCode from "./introducingTriangles.wgsl?raw"
-import GrassMC from "./grass_minecraft.png"
 
 const CANVAS_ID = "default-scene-as-meshes"
 
 const execute: Executable = async () => {
-    console.log(GrassMC)
-
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
@@ -63,7 +60,7 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Applying textures in rendering")
+    const title = createTitle("Replacing the triangle with a triangle")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()

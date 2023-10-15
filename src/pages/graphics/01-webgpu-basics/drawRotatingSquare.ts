@@ -10,7 +10,7 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     createUniformBind,
-    writeToBuffer,
+    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import shaderRotateWithTime from "./shaderRotateWithTime.wgsl?raw"
@@ -38,7 +38,7 @@ const execute: Executable = async () => {
     )
 
     const frame = (time: number) => {
-        writeToBuffer(device, timeBuffer, new Float32Array([time / 1e3]), 0)
+        writeToBufferF32(device, timeBuffer, new Float32Array([time / 1e3]), 0)
 
         const { pass, executePass } = createPass(device, context, {
             r: 0.3921,

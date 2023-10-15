@@ -7,7 +7,7 @@ import {
     setupShaderPipeline,
     genreateIndexBuffer,
     createUniformBind,
-    writeToBuffer,
+    writeToBufferF32,
     toNDC,
 } from "../../../libs/webgpu"
 
@@ -88,7 +88,7 @@ const execute: Executable = async () => {
         const model = multMatrices(rotationMatrix, translateMatrix)
 
         const mvp = multMatrices(projectionView, model)
-        writeToBuffer(device, mvpBuffer, new Float32Array(flattenMatrix(mvp)), 0)
+        writeToBufferF32(device, mvpBuffer, new Float32Array(flattenMatrix(mvp)), 0)
 
         const { pass, executePass } = createPass(device, context, Colors.black)
 

@@ -112,6 +112,11 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.18.20.tgz#786c5f41f043b07afb1af37683d7c33668858f6d"
   integrity sha512-kTdfRcSiDfQca/y9QIkng02avJ+NCaQvrMejlsB3RRv5sE9rRoeBPISaZpKxHELzRxZyLvNts1P27W3wV+8geQ==
 
+"@types/obj-file-parser@^0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@types/obj-file-parser/-/obj-file-parser-0.5.0.tgz#0e96cdc6828dbc18039be8e9666f3da6b6b6ef4b"
+  integrity sha512-NvpzqBxGxSn832ikf0oXNJPK1Ee+3DCyKLyQakPUVZUtg7Ax+OdQOkkEJeYSNvEjqFxbwWwd8irMcUeRZEs8kA==
+
 "@webgpu/types@^0.1.34":
   version "0.1.34"
   resolved "https://registry.yarnpkg.com/@webgpu/types/-/types-0.1.34.tgz#4537c9cae874a63ef79d7afdc2c36a792581d4ad"
@@ -338,6 +343,11 @@ nanoid@^3.3.6:
   version "3.3.6"
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.3.6.tgz#443380c856d6e9f9824267d960b4236ad583ea4c"
   integrity sha512-BGcqMMJuToF7i1rt+2PWSNVnWIkGCU78jBG3RxO/bZlnZPK2Cmi2QaffxGO/2RvWi9sL+FAiRiXMgsyxQ1DIDA==
+
+obj-file-parser@^0.6.2:
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/obj-file-parser/-/obj-file-parser-0.6.2.tgz#a04607540e4b0c92234bfe9b8da364efb7ea201f"
+  integrity sha512-eATpidA23O619wNjAcrve3WkNQ0vSTLiPSR8DLjPXrguD1DsN0/S49EMAI1T3wzhUD0aLGIiAZXLnWjORGOlng==
 
 object-assign@^4.0.1:
   version "4.1.1"

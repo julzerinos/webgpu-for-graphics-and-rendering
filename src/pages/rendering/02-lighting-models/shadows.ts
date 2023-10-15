@@ -5,7 +5,7 @@ import {
     createPass,
     setupShaderPipeline,
     createUniformBind,
-    writeToBuffer,
+    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import {
@@ -61,7 +61,7 @@ const execute: Executable = async () => {
     )
 
     const draw = () => {
-        writeToBuffer(
+        writeToBufferF32(
             device,
             lightSettingsBuffer,
             new Float32Array([getLightPosX(), getLightPosY(), getLightPosZ(), 0, 0, 0, 0, 0, 0]),
