@@ -6,7 +6,6 @@ import {
     setupShaderPipeline,
     createStorageBind,
     createUniformBind,
-    writeToBufferF32,
     writeToBufferU32,
 } from "../../../libs/webgpu"
 
@@ -21,7 +20,7 @@ import {
     subscribeToInput,
 } from "../../../libs/web"
 
-import { color, flattenVector, objToShape } from "../../../libs/util"
+import { color, flattenVector, objToShapes } from "../../../libs/util"
 
 import shaderCode from "./utahTeapot.wgsl?raw"
 import utahTeapotObjFile from "./utahTeapot.obj?raw"
@@ -34,7 +33,7 @@ const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const utahTeapotShape = objToShape(utahTeapotObjFile)[0]
+    const utahTeapotShape = objToShapes(utahTeapotObjFile)[0] // #todo: replace with public file link
 
     const { storageGroup: utahTrapotStorage } = createStorageBind(
         device,
