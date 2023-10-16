@@ -43,6 +43,8 @@ export const parseOBJ = async (
         reverse,
     }
 
+    let carryOver = ""
+
     while (true) {
         const { value: chunk, done: readerDone } = await reader.read()
 
@@ -51,9 +53,16 @@ export const parseOBJ = async (
         const asString = new TextDecoder("utf-8").decode(chunk, { stream: true })
         const lines = asString.split("\n")
 
-        for (const l of lines) {
-            await parseOBJLine(l, parseMeta)
+        const isThereAnythingToCarryOver = carryOver !== ""
+        if (isThereAnythingToCarryOver) {
+            lines[0] = carryOver + lines[0]
+            carryOver = ""
         }
+
+        const isLastLineIncomplete = lines[lines.length - 1] !== ""
+        if (isLastLineIncomplete) carryOver = lines.pop() as string
+
+        for (const l of lines) await parseOBJLine(l, parseMeta)
     }
 
     return objDoc

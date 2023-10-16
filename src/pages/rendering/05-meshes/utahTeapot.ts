@@ -20,10 +20,9 @@ import {
     subscribeToInput,
 } from "../../../libs/web"
 
-import { color, flattenVector } from "../../../libs/util"
+import { color, flattenVector, objToShape, parseOBJ } from "../../../libs/util"
 
 import shaderCode from "./utahTeapot.wgsl?raw"
-import utahTeapotObjFile from "./utahTeapot.obj?raw"
 
 const CANVAS_ID = "utah-teapot"
 const SHADING_SELECT_TYPES = ["Flat", "Vertex normals"]
@@ -33,14 +32,15 @@ const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const utahTeapotShape = objToShapes(utahTeapotObjFile)[0] // #todo: replace with public file link
+    const utahTeapotObj = await parseOBJ("models/teapot.obj")
+    const utahTeapotShape = objToShape(utahTeapotObj, {})
 
     const { storageGroup: utahTrapotStorage } = createStorageBind(
         device,
         pipeline,
         [
             new Float32Array(flattenVector(utahTeapotShape.vertices)),
-            utahTeapotShape.triangleIndices,
+            new Uint32Array(flattenVector(utahTeapotShape.triangleIndices)),
             new Float32Array(flattenVector(utahTeapotShape.normals)),
         ],
         0

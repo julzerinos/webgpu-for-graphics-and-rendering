@@ -31,7 +31,10 @@ const execute: Executable = async () => {
     const { storageGroup: triangleStorage } = createStorageBind(
         device,
         pipeline,
-        [new Float32Array(flattenVector(triangle.vertices)), triangle.triangleIndices],
+        [
+            new Float32Array(flattenVector(triangle.vertices)),
+            new Uint32Array(flattenVector(triangle.triangleIndices)),
+        ],
         1
     )
 
