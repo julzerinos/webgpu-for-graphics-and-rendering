@@ -20,7 +20,7 @@ import {
     subscribeToInput,
 } from "../../../libs/web"
 
-import { color, flattenVector, objToShapes } from "../../../libs/util"
+import { color, flattenVector } from "../../../libs/util"
 
 import shaderCode from "./utahTeapot.wgsl?raw"
 import utahTeapotObjFile from "./utahTeapot.obj?raw"

@@ -22,8 +22,8 @@ export interface OBJDoc {
 
 export const parseOBJ = async (
     filePath: string,
-    scale: number,
-    reverse: boolean
+    scale: number = 1,
+    reverse: boolean = false
 ): Promise<OBJDoc> => {
     const f = await fetch(filePath)
     const reader = f.body?.getReader()
@@ -437,16 +437,24 @@ const parseRGB = (sp: StringParser) => {
     return vec4(r, g, b, 1)
 }
 
-const createMaterial = (name: string, color: Vector4): Material => ({ name, color })
+const createMaterial = (name: string, color: Vector4): Material => ({
+    name,
+    color,
+    illum: 0,
+    shininess: 0,
+    ior: 1,
+    specular: vec4(),
+    emission: vec4(),
+})
 
-interface Material {
+export interface Material {
     name: string
     color: Vector4
-    illum?: number
-    shininess?: number
-    ior?: number
-    specular?: Vector4
-    emission?: Vector4
+    illum: number
+    shininess: number
+    ior: number
+    specular: Vector4
+    emission: Vector4
 }
 
 const createOBJObject = (name: string): OBJObject => ({ name, faces: [], numIndices: 0 })
