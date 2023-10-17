@@ -1,3 +1,4 @@
+import { LandingPage } from "../../pages"
 import { IRoute, ViewGenerator } from "../../types"
 
 export const route = (routes: IRoute[]): ViewGenerator => {
@@ -16,7 +17,7 @@ export const route = (routes: IRoute[]): ViewGenerator => {
         routesToSearch = foundRoute.children ?? []
     }
 
-    if (!foundRoute) throw new Error("Could not find route.") // TODO change to default error page
+    if (!foundRoute) return LandingPage
 
     return foundRoute.generator
 }

@@ -1,3 +1,5 @@
+import { IRoute } from "../../../types"
+
 export const createText = (text: string): HTMLParagraphElement => {
     const p = document.createElement("p")
     p.innerHTML = text
@@ -46,4 +48,22 @@ export const createCanvas = (
     canvas.id = canvasId
 
     return canvas
+}
+
+export const routesIndex = (routes: IRoute[]): HTMLElement => {
+    const div = document.createElement("div")
+    div.className = "routes-container"
+
+    for (const r of routes) {
+        const a = document.createElement("a")
+        a.text = r.name
+
+        a.onclick = () => {
+            location.search = "t=rendering"
+        }
+
+        div.append(a)
+    }
+
+    return div
 }
