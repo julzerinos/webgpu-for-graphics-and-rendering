@@ -50,8 +50,8 @@ const execute: Executable = async () => {
 
     const loadImages = async (textureMode: GPUAddressMode) => {
         const imageLoaders = [
-            readImageData("/textures/grass.jpg"),
-            readImageData("/textures/grass_minecraft.png"),
+            readImageData("textures/grass.jpg"),
+            readImageData("textures/grass_minecraft.png"),
         ]
         const imageData = await Promise.all(imageLoaders)
 

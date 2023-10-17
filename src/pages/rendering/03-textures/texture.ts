@@ -33,7 +33,7 @@ const execute: Executable = async () => {
     const draw = async (textureBehavior: string) => {
         const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-        const { textureData, height, width } = await readImageData("/textures/grass_minecraft.png")
+        const { textureData, height, width } = await readImageData("textures/grass_minecraft.png")
         const { texture, sampler } = generateTexture(device, textureData, width, height, {
             addressModeU: textureBehavior as GPUAddressMode,
             addressModeV: textureBehavior as GPUAddressMode,
