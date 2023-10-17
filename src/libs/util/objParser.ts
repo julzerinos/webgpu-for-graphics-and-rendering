@@ -537,11 +537,11 @@ const skipDelimiters = (sp: StringParser) => {
     sp.index = i
 }
 
-const skipToNextWord = (sp: StringParser) => {
-    skipDelimiters(sp)
-    var n = getWordLength(sp.str, sp.index)
-    sp.index += n + 1
-}
+// const skipToNextWord = (sp: StringParser) => {
+//     skipDelimiters(sp)
+//     var n = getWordLength(sp.str, sp.index)
+//     sp.index += n + 1
+// }
 
 // // Get word
 const getWord = (sp: StringParser): string => {

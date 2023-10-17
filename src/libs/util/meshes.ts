@@ -10,7 +10,7 @@ export const objToShape = (obj: OBJDoc, {}: {}): IShapeInfo => {
     const materialIndices = [] as number[]
 
     const materialMap = obj.mtls.reduce(
-        (map, mtl, i) => ({
+        (map, mtl) => ({
             ...map,
             ...mtl.materials.reduce((map, material, j) => ({ ...map, [material.name]: j }), {}),
         }),

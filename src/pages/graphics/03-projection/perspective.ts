@@ -43,8 +43,9 @@ const execute: Executable = async () => {
     const cube: IShapeInfo = Cube(vec3(0), 1)
 
     const vertices = new Float32Array(flattenVector(cube.vertices))
+    const lines = cube.lineIndices as Uint32Array
 
-    const { buffer: indexBuffer } = genreateIndexBuffer(device, cube.lineIndices)
+    const { buffer: indexBuffer } = genreateIndexBuffer(device, lines)
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,
         vertices,
@@ -95,7 +96,7 @@ const execute: Executable = async () => {
     )
     const model3Point = multMatrices(
         createTranslateMatrix(vec3(2)),
-        createRotationMatrix(45, vec3(1, 1, 0)),
+        createRotationMatrix(45, vec3(1, 1, 0))
     )
 
     const projectionModel1Point = multMatrices(projectionView, model1Point)
@@ -119,7 +120,7 @@ const execute: Executable = async () => {
         pass.setIndexBuffer(indexBuffer, "uint32")
         pass.setBindGroup(0, mvpsBind)
 
-        pass.drawIndexed(cube.lineIndices.length, 3)
+        pass.drawIndexed(lines.length, 3)
 
         executePass()
     }

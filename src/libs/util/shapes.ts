@@ -1,6 +1,6 @@
 import { Vector2, Vector3, Vector4 } from "../../types"
 import { IShapeInfo } from "../../types/shapes"
-import { add, flattenVector, vec2, vec3, vec4 } from "./vector"
+import { add, vec2, vec3, vec4 } from "./vector"
 
 export const Square = (point: Vector2, size: number): Vector2[] => {
     const offset = size / 2
@@ -52,19 +52,21 @@ export const Cube = (center: Vector3, size: number): IShapeInfo => {
         0, 1, 1, 5, 5, 4, 4, 0,  // left
     ])
     // prettier-ignore
-    const triangles = new Uint32Array([
-        1, 0, 3, 3, 2, 1,  // front
-        2, 3, 7, 7, 6, 2,  // right
-        3, 0, 4, 4, 7, 3,  // down
-        6, 5, 1, 1, 2, 6,  // up
-        4, 5, 6, 6, 7, 4,  // back
-        5, 4, 0, 0, 1, 5,  // left
-    ])
+    const triangles = [
+        vec4(1, 0, 3), vec4(3, 2, 1),  // front
+        vec4(2, 3, 7), vec4(7, 6, 2),  // right
+        vec4(3, 0, 4), vec4(4, 7, 3),  // down
+        vec4(6, 5, 1), vec4(1, 2, 6),  // up
+        vec4(4, 5, 6), vec4(6, 7, 4),  // back
+        vec4(5, 4, 0), vec4(0, 1, 5),  // left
+    ]
 
     return {
         vertices,
         lineIndices: lines,
         triangleIndices: triangles,
+        normals: [],
+        triangleCount: 12,
     }
 }
 
@@ -76,11 +78,13 @@ export const Triangle = (vertices: [Vector3, Vector3, Vector3]): IShapeInfo => {
     ] as Vector4[]
 
     const triangleFace = [vec4(0, 1, 2, 0)]
-    const lines = [] as number[]
+    const lines = [0, 1, 1, 2, 2, 0]
 
     return {
         vertices: verticesAs4,
         lineIndices: new Uint32Array(lines),
-        triangleIndices: new Uint32Array(flattenVector(triangleFace)),
+        triangleIndices: triangleFace,
+        triangleCount: 1,
+        normals: [],
     }
 }

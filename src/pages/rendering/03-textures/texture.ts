@@ -22,7 +22,6 @@ import {
 import { Colors, readImageData } from "../../../libs/util"
 
 import shaderCode from "./texture.wgsl?raw"
-import Grass from "./grass_minecraft.png"
 
 const CANVAS_ID = "texture"
 const TEX_OPT_SEL_ID = "texture-repeat-style"
@@ -34,7 +33,7 @@ const execute: Executable = async () => {
     const draw = async (textureBehavior: string) => {
         const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-        const { textureData, height, width } = await readImageData(Grass)
+        const { textureData, height, width } = await readImageData("/textures/grass_minecraft.png")
         const { texture, sampler } = generateTexture(device, textureData, width, height, {
             addressModeU: textureBehavior as GPUAddressMode,
             addressModeV: textureBehavior as GPUAddressMode,

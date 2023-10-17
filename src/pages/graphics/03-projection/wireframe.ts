@@ -47,7 +47,7 @@ const execute: Executable = async () => {
 
     const cube: IShapeInfo = Cube(vec3(0), 1)
 
-    const lines = cube.lineIndices
+    const lines = cube.lineIndices as Uint32Array
     const vertices = new Float32Array(flattenVector(cube.vertices))
 
     const { buffer: indexBuffer } = genreateIndexBuffer(device, lines)

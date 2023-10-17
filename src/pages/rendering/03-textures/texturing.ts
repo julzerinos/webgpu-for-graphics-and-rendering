@@ -28,8 +28,6 @@ import {
 import { Colors, computeJitters, flattenVector, readImageData } from "../../../libs/util"
 
 import shaderCode from "./texturing.wgsl?raw"
-import Grass from "./grass.jpg"
-import GrassMC from "./grass_minecraft.png"
 
 const CANVAS_ID = "texturing"
 const TEXTURE_SCALE_RANGE_ID = "grass-texture-scale"
@@ -51,7 +49,10 @@ const execute: Executable = async () => {
     let textureBindGroup: GPUBindGroup, textureMCBindGroup: GPUBindGroup
 
     const loadImages = async (textureMode: GPUAddressMode) => {
-        const imageLoaders = [readImageData(Grass), readImageData(GrassMC)]
+        const imageLoaders = [
+            readImageData("/textures/grass.jpg"),
+            readImageData("/textures/grass_minecraft.png"),
+        ]
         const imageData = await Promise.all(imageLoaders)
 
         const { texture, sampler } = generateTexture(
@@ -81,12 +82,10 @@ const execute: Executable = async () => {
         1
     )
 
-    const { storageGroup: jittersBind, storageBuffers: [jittersBuffer] } = createStorageBind(
-        device,
-        pipeline,
-        [new Float32Array(200)],
-        2
-    )
+    const {
+        storageGroup: jittersBind,
+        storageBuffers: [jittersBuffer],
+    } = createStorageBind(device, pipeline, [new Float32Array(200)], 2)
 
     const draw = () => {
         writeToBufferF32(

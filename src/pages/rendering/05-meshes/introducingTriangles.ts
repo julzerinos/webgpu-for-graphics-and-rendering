@@ -38,7 +38,7 @@ const execute: Executable = async () => {
         1
     )
 
-    const imageData = await readImageData("/grass_minecraft.png")
+    const imageData = await readImageData("/textures/grass_minecraft.png")
     const { texture: texture, sampler: sampler } = generateTexture(
         device,
         imageData.textureData,
