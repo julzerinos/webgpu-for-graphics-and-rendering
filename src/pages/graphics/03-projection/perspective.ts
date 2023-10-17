@@ -128,7 +128,7 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Projecting a cube")
+    const title = createTitle("Different perspectives")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
