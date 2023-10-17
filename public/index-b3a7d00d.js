@@ -1,4 +1,6 @@
-(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const r of document.querySelectorAll('link[rel="modulepreload"]'))i(r);new MutationObserver(r=>{for(const o of r)if(o.type==="childList")for(const s of o.addedNodes)s.tagName==="LINK"&&s.rel==="modulepreload"&&i(s)}).observe(document,{childList:!0,subtree:!0});function e(r){const o={};return r.integrity&&(o.integrity=r.integrity),r.referrerPolicy&&(o.referrerPolicy=r.referrerPolicy),r.crossOrigin==="use-credentials"?o.credentials="include":r.crossOrigin==="anonymous"?o.credentials="omit":o.credentials="same-origin",o}function i(r){if(r.ep)return;r.ep=!0;const o=e(r);fetch(r.href,o)}})();const T=n=>{const t=document.createElement("p");return t.innerHTML=n,t.className="paragraph",t},V=n=>{const t=document.createElement("h1");return t.innerHTML=n,t.className="title",t},p=(n,t,e=!0)=>{const i=document.createElement("div");i.className="label-group";const r=document.createElement("label");if(r.textContent=t,e&&"value"in n){const o=()=>r.textContent=`${t} [${n.value}]`;n.addEventListener("input",o),o()}return i.append(r,n),i},G=(n,t=512,e=512)=>{const i=document.createElement("canvas");return i.width=t,i.height=e,i.id=n,i},S=(n,t,e,i,r=1)=>{const o=document.createElement("input");return o.id=n,o.type="range",o.className="slider-input",o.min=String(e),o.max=String(i),o.step=String(r),o.value=String(t),o},Gn=(n,t)=>{const e=document.createElement("input");return e.id=n,e.type="color",e.value=t,e},Vt=(n,t)=>{const e=document.createElement("input");return e.id=n,e.type="checkbox",e.checked=t,e.value=String(t),e.addEventListener("input",()=>e.value=String(e.checked)),e},Gt=(n,t)=>{const e=document.createElement("button");return e.id=n,e.textContent=t,e},on=(n,t,e=t[0]??"")=>{const i=document.createElement("select");return i.id=n,i.append(...t.map(r=>{const o=document.createElement("option");return o.text=r,o.value=r,o.selected=r===e,o})),i},U=()=>{const n=document.createElement("div");return n.className="interactables",n},j=()=>{const n=document.createElement("div");return n.className="canvas-section",n},x=(n,t="value")=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate input with id ${n}`);return()=>e[t]},un=(n,t)=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate input with id ${n}`);return e.addEventListener("input",()=>t(e.value)),e.value},Ft=(n,t)=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate button with id ${n}`);e.addEventListener("click",t)},kt=(n,t)=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate canvas with id ${n}`);e.addEventListener("click",i=>{const r=e.getBoundingClientRect(),o=i.clientX-r.left,s=i.clientY-r.top;t({x:o,y:s})})},Dt=(n,t)=>{for(const e of n){const i=document.getElementById(e);if(!i)throw new Error(`Could not locate element with id ${e}`);i.addEventListener("input",t)}},zt=n=>{const t=new URLSearchParams(document.location.search),e=[t.get("t"),t.get("p")];let i,r=n;for(const o of e){const s=r.find(a=>a.name===o);if(!s)break;i=s,r=i.children??[]}if(!i)throw new Error("Could not find route.");return i.generator},Ht=()=>{const n=document.getElementById("app");if(!n)throw new Error("Could not initialize app.");return n},R=(n=0,t=0)=>[n,t],_=(n=0,t=0,e=0)=>[n,t,e],m=(n=0,t=0,e=0,i=1)=>[n,t,e,i],I=n=>[].concat(...n),Y=(n,t)=>{const e=[];for(let i=0;i<Math.min(n.length,t.length);i++)e.push(n[i]+t[i]);return e},kn=(n,t)=>{const e=[];for(let i=0;i<Math.min(n.length,t.length);i++)e.push(n[i]-t[i]);return e},Dn=(n,t)=>{const e=[];for(let i=0;i<n.length;i++)e.push(t*n[i]);return e},vn=(n,t)=>{let e=0;for(let i=0;i<Math.min(n.length,t.length);i++)e+=n[i]*t[i];return e},Fn=(n,t)=>[n[1]*t[2]-n[2]*t[1],n[2]*t[0]-n[0]*t[2],n[0]*t[1]-n[1]*t[0]],pn=n=>Dn(n,1/zn(n)),zn=n=>Math.sqrt(vn(n,n)),E={float32x2:new Float32Array(R()).byteLength,float32x3:new Float32Array(_()).byteLength,float32x4:new Float32Array(m()).byteLength},qt=(n,t)=>{if(n.length!=t.length)return!1;for(let e=0;e<Math.min(n.length,t.length);e++)if(n[e]!=t[e])return!1;return!0},F=async n=>{navigator.gpu||window.alert("WebGPU is not enabled for this browser.");const e=await navigator.gpu.requestAdapter();if(!e)throw new Error("Could not initialize GPU adapter.");const i=await e.requestDevice(),r=document.getElementById(n);if(!r)throw new Error(`Could not find canvas with id ${n}`);const o=r.getContext("gpupresent")||r.getContext("webgpu");if(!o)throw new Error("Could not generate context for canvas.");const s=navigator.gpu.getPreferredCanvasFormat();return o.configure({device:i,format:s}),{adapter:e,device:i,canvas:r,canvasFormat:s,context:o}},k=(n,t,e={r:0,g:0,b:0,a:1})=>{const i=n.createCommandEncoder(),r=i.beginRenderPass({colorAttachments:[{view:t.getCurrentTexture().createView(),loadOp:"clear",clearValue:e,storeOp:"store"}]});return{pass:r,executePass:()=>{r.end(),n.queue.submit([i.finish()])}}},D=(n,t,e,i,r="triangle-list")=>{const o=n.createShaderModule({code:i});return n.createRenderPipeline({layout:"auto",vertex:{module:o,entryPoint:"main_vs",buffers:t},fragment:{module:o,entryPoint:"main_fs",targets:[{format:e}]},primitive:{topology:r}})},M=(n,t,e,i=0,r=GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST)=>{const o=n.createBuffer({size:t.byteLength,usage:r}),s={arrayStride:E[e],attributes:[{format:e,offset:0,shaderLocation:i}]};return n.queue.writeBuffer(o,0,t),{bufferLayout:s,buffer:o}},An=(n,t,e=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_DST)=>{const i=n.createBuffer({size:t.byteLength,usage:e});return n.queue.writeBuffer(i,0,t),{buffer:i}},q=(n,t,e,i=0)=>{const r=n.createBuffer({size:e.byteLength,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}),o=n.createBindGroup({layout:t.getBindGroupLayout(i),entries:[{binding:0,resource:{buffer:r}}]});return n.queue.writeBuffer(r,0,e),{bindGroup:o,uniformBuffer:r}},Hn=(n,t,e,i=0)=>{const r=e.map(s=>{const a=n.createBuffer({size:s.byteLength,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});return n.queue.writeBuffer(a,0,s),a}),o=n.createBindGroup({layout:t.getBindGroupLayout(i),entries:r.map((s,a)=>({binding:a,resource:{buffer:s}}))});return{storageBuffers:r,storageGroup:o}},xn=(n,t,e,i,r=0)=>n.createBindGroup({layout:t.getBindGroupLayout(r),entries:[{binding:0,resource:i},{binding:1,resource:e.createView()}]}),bn=(n,t,e,i,r)=>{const o=n.createTexture({size:[e,i,1],format:"rgba8unorm",usage:GPUTextureUsage.COPY_DST|GPUTextureUsage.TEXTURE_BINDING});n.queue.writeTexture({texture:o},t,{offset:0,bytesPerRow:e*4,rowsPerImage:i},[e,i,1]);const s=n.createSampler({addressModeU:"repeat",addressModeV:"repeat",magFilter:"linear",minFilter:"linear",mipmapFilter:"linear",...r});return{texture:o,sampler:s}},N=(n,t,e,i,r)=>{if(r){const o=new Float32Array(i),s=new Float32Array(t.size-(i+e.byteLength));e=new Float32Array([...o,...e,...s])}n.queue.writeBuffer(t,i,e)},Ln=(n=0,t=0,e=0,i=1)=>({r:n,g:t,b:e,a:i}),In=n=>_(n.r,n.g,n.b),X={black:Ln(0,0,0,1),white:Ln(1,1,1,1),blueScreenBlue:Ln(.1,.3,.6,1)},dn=n=>{if(n[0]==="#"&&(n=n.substring(1)),n.length!==6)throw new Error("Can't handle color hexes of size other than 6.");const t=parseInt(n,16),e=(t>>16&255)/255,i=(t>>8&255)/255,r=(t&255)/255;return{r:e,g:i,b:r,a:1}},Sn=n=>n*Math.PI/180,tn=(n,t,e,i,r)=>(n-t)/(e-t)*(r-i)+i,sn=(n,t)=>{const e=t/2;return[R(n[0]-e,n[1]-e),R(n[0]+e,n[1]-e),R(n[0]-e,n[1]+e),R(n[0]-e,n[1]+e),R(n[0]+e,n[1]-e),R(n[0]+e,n[1]+e)]},$t=(n,t,e=12)=>{const i=[],r=2*Math.PI/e;for(let o=0;o<e;o++)i.push(n,Y(n,R(t*Math.cos(o*r),t*Math.sin(o*r))),Y(n,R(t*Math.cos((o+1)*r),t*Math.sin((o+1)*r))));return i},Cn=(n,t)=>{const e=t/2,i=[m(...Y(n,_(-e,-e,e)),1),m(...Y(n,_(-e,e,e)),1),m(...Y(n,_(e,e,e)),1),m(...Y(n,_(e,-e,e)),1),m(...Y(n,_(-e,-e,-e)),1),m(...Y(n,_(-e,e,-e)),1),m(...Y(n,_(e,e,-e)),1),m(...Y(n,_(e,-e,-e)),1)],r=new Uint32Array([0,1,1,2,2,3,3,0,2,3,3,7,7,6,6,2,0,3,3,7,7,4,4,0,1,2,2,6,6,5,5,1,4,5,5,6,6,7,7,4,0,1,1,5,5,4,4,0]),o=new Uint32Array([1,0,3,3,2,1,2,3,7,7,6,2,3,0,4,4,7,3,6,5,1,1,2,6,4,5,6,6,7,4,5,4,0,0,1,5]);return{vertices:i,lineIndices:r,triangleIndices:o}},Mt=n=>{const t=[m(...n[0],1),m(...n[1],1),m(...n[2],1)],e=[m(0,1,2,0)],i=[];return{vertices:t,lineIndices:new Uint32Array(i),triangleIndices:new Uint32Array(I(e))}},yn=async n=>{const t=document.createElement("img");t.src=n,await t.decode();const e=document.createElement("canvas");e.width=t.width,e.height=t.height;const i=e.getContext("2d");if(!i)throw new Error("Could not get canvas context");i.drawImage(t,0,0,e.width,e.height);const r=i.getImageData(0,0,e.width,e.height),o=new Uint8Array(t.width*t.height*4);for(let s=0;s<t.height;++s)for(let a=0;a<t.width;++a)for(let c=0;c<4;++c)o[(s*t.width+a)*4+c]=r.data[((t.height-s-1)*t.width+a)*4+c];return{textureData:o,height:t.height,width:t.width}},Nt=(n,t)=>{const e=1/n,i=e/t;if(t<2)return[R()];const r=[];for(var o=0;o<t;++o)for(var s=0;s<t;++s)r.push(R((Math.random()+s)*i-e*.5,(Math.random()+o)*i-e*.5));return r},wn=(n=0,t=0,e=0,i=0,r=0,o=0,s=0,a=0,c=0,h=0,u=0,l=0,f=0,g=0,y=0,b=0)=>[[n,t,e,i],[r,o,s,a],[c,h,u,l],[f,g,y,b]],an=()=>wn(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1),Rn=n=>[].concat(...jt(n)),qn=n=>[].concat(...n.map(t=>Rn(t))),En=(n,t,e)=>{if(qt(n,t))return an();let i=pn(kn(t,n));const r=pn(Fn(i,e)),o=pn(Fn(r,i));return i=Dn(i,-1),wn(...m(...r,-vn(r,n)),...m(...o,-vn(o,n)),...m(...i,-vn(i,n)),...m())},Ut=(n,t,e,i,r,o)=>{if(n===t)throw"ortho(): left and right are equal";if(e===i)throw"ortho(): bottom and top are equal";if(r===o)throw"ortho(): near and far are equal";const s=t-n,a=i-e,c=o-r,h=an();return h[0][0]=2/s,h[1][1]=2/a,h[2][2]=-2/c,h[0][3]=-(n+t)/s,h[1][3]=-(i+e)/a,h[2][3]=-(r+o)/c,h},$n=(n,t,e,i)=>{const r=1/Math.tan(Sn(n)/2),o=i-e,s=an();return s[0][0]=r/t,s[1][1]=r,s[2][2]=-(e+i)/o,s[2][3]=-2*e*i/o,s[3][2]=-1,s[3][3]=0,s},gn=(n,t)=>{const e=pn(t),i=e[0],r=e[1],o=e[2],s=Math.cos(Sn(n)),a=Math.sin(Sn(n)),c=1-s;return wn(...m(i*i*c+s,i*r*c-o*a,i*o*c+r*a,0),...m(i*r*c+o*a,r*r*c+s,r*o*c-i*a,0),...m(i*o*c-r*a,r*o*c+i*a,o*o*c+s,0),...m())},en=({[0]:n,[1]:t,[2]:e})=>{const i=an();return i[0][3]=n,i[1][3]=t,i[2][3]=e,i},fn=(n=1,t=1,e=1)=>{var i=an();return i[0][0]=n,i[1][1]=t,i[2][2]=e,i},P=(n,t)=>{const e=[];for(let i=0;i<n.length;i++){e.push([]);for(let r=0;r<t.length;r++){let o=0;for(let s=0;s<n.length;s++)o+=n[i][s]*t[s][r];e[i].push(o)}}return e},jt=n=>{for(var t=[],e=0;e<n.length;++e){t.push([]);for(var i=0;i<n[e].length;++i)t[e].push(n[i][e])}return t},Tn=wn(1,0,0,0,0,1,0,0,0,0,-.5,.5,0,0,0,1),Xt=`@vertex
+(function(){const t=document.createElement("link").relList;if(t&&t.supports&&t.supports("modulepreload"))return;for(const r of document.querySelectorAll('link[rel="modulepreload"]'))i(r);new MutationObserver(r=>{for(const o of r)if(o.type==="childList")for(const s of o.addedNodes)s.tagName==="LINK"&&s.rel==="modulepreload"&&i(s)}).observe(document,{childList:!0,subtree:!0});function e(r){const o={};return r.integrity&&(o.integrity=r.integrity),r.referrerPolicy&&(o.referrerPolicy=r.referrerPolicy),r.crossOrigin==="use-credentials"?o.credentials="include":r.crossOrigin==="anonymous"?o.credentials="omit":o.credentials="same-origin",o}function i(r){if(r.ep)return;r.ep=!0;const o=e(r);fetch(r.href,o)}})();const T=n=>{const t=document.createElement("p");return t.innerHTML=n,t.className="paragraph",t},E=n=>{const t=document.createElement("h1");return t.innerHTML=n,t.className="title",t},m=(n,t,e=!0)=>{const i=document.createElement("div");i.className="label-group";const r=document.createElement("label");if(r.textContent=t,e&&"value"in n){const o=()=>r.textContent=`${t} [${n.value}]`;n.addEventListener("input",o),o()}return i.append(r,n),i},k=(n,t=512,e=512)=>{const i=document.createElement("canvas");return i.width=t,i.height=e,i.id=n,i},S=(n,t,e,i,r=1)=>{const o=document.createElement("input");return o.id=n,o.type="range",o.className="slider-input",o.min=String(e),o.max=String(i),o.step=String(r),o.value=String(t),o},it=(n,t)=>{const e=document.createElement("input");return e.id=n,e.type="color",e.value=t,e},ye=(n,t)=>{const e=document.createElement("input");return e.id=n,e.type="checkbox",e.checked=t,e.value=String(t),e.addEventListener("input",()=>e.value=String(e.checked)),e},we=(n,t)=>{const e=document.createElement("button");return e.id=n,e.textContent=t,e},sn=(n,t,e=t[0]??"")=>{const i=document.createElement("select");return i.id=n,i.append(...t.map(r=>{const o=document.createElement("option");return o.text=r,o.value=r,o.selected=r===e,o})),i},M=()=>{const n=document.createElement("div");return n.className="interactables",n},U=()=>{const n=document.createElement("div");return n.className="canvas-section",n},w=(n,t="value")=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate input with id ${n}`);return()=>e[t]},gn=(n,t)=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate input with id ${n}`);return e.addEventListener("input",()=>t(e.value)),e.value},Le=(n,t)=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate button with id ${n}`);e.addEventListener("click",t)},Ie=(n,t)=>{const e=document.getElementById(n);if(!e)throw new Error(`Could not locate canvas with id ${n}`);e.addEventListener("click",i=>{const r=e.getBoundingClientRect(),o=i.clientX-r.left,s=i.clientY-r.top;t({x:o,y:s})})},Re=(n,t)=>{for(const e of n){const i=document.getElementById(e);if(!i)throw new Error(`Could not locate element with id ${e}`);i.addEventListener("input",t)}},Se=n=>{const t=new URLSearchParams(document.location.search),e=[t.get("t"),t.get("p")];let i,r=n;for(const o of e){const s=r.find(a=>a.name===o);if(!s)break;i=s,r=i.children??[]}if(!i)throw new Error("Could not find route.");return i.generator},Be=()=>{const n=document.getElementById("app");if(!n)throw new Error("Could not initialize app.");return n},O=(n=0,t=0)=>[n,t],v=(n=0,t=0,e=0)=>[n,t,e],u=(n=0,t=0,e=0,i=1)=>[n,t,e,i],I=n=>[].concat(...n),tn=(n,t)=>{const e=[];for(let i=0;i<Math.min(n.length,t.length);i++)e.push(n[i]+t[i]);return e},at=(n,t)=>{const e=[];for(let i=0;i<Math.min(n.length,t.length);i++)e.push(n[i]-t[i]);return e},ct=(n,t)=>{const e=[];for(let i=0;i<n.length;i++)e.push(t*n[i]);return e},Pn=(n,t)=>{let e=0;for(let i=0;i<Math.min(n.length,t.length);i++)e+=n[i]*t[i];return e},rt=(n,t)=>[n[1]*t[2]-n[2]*t[1],n[2]*t[0]-n[0]*t[2],n[0]*t[1]-n[1]*t[0]],Cn=n=>ct(n,1/lt(n)),lt=n=>Math.sqrt(Pn(n,n)),z={float32x2:new Float32Array(O()).byteLength,float32x3:new Float32Array(v()).byteLength,float32x4:new Float32Array(u()).byteLength},Ae=(n,t)=>{if(n.length!=t.length)return!1;for(let e=0;e<Math.min(n.length,t.length);e++)if(n[e]!=t[e])return!1;return!0},F=async n=>{navigator.gpu||window.alert("WebGPU is not enabled for this browser.");const e=await navigator.gpu.requestAdapter();if(!e)throw new Error("Could not initialize GPU adapter.");const i=await e.requestDevice(),r=document.getElementById(n);if(!r)throw new Error(`Could not find canvas with id ${n}`);const o=r.getContext("gpupresent")||r.getContext("webgpu");if(!o)throw new Error("Could not generate context for canvas.");const s=navigator.gpu.getPreferredCanvasFormat();return o.configure({device:i,format:s}),{adapter:e,device:i,canvas:r,canvasFormat:s,context:o}},V=(n,t,e={r:0,g:0,b:0,a:1})=>{const i=n.createCommandEncoder(),r=i.beginRenderPass({colorAttachments:[{view:t.getCurrentTexture().createView(),loadOp:"clear",clearValue:e,storeOp:"store"}]});return{pass:r,executePass:()=>{r.end(),n.queue.submit([i.finish()])}}},G=(n,t,e,i,r="triangle-list")=>{const o=n.createShaderModule({code:i});return n.createRenderPipeline({layout:"auto",vertex:{module:o,entryPoint:"main_vs",buffers:t},fragment:{module:o,entryPoint:"main_fs",targets:[{format:e}]},primitive:{topology:r}})},Q=(n,t,e,i=0,r=GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST)=>{const o=n.createBuffer({size:t.byteLength,usage:r}),s={arrayStride:z[e],attributes:[{format:e,offset:0,shaderLocation:i}]};return n.queue.writeBuffer(o,0,t),{bufferLayout:s,buffer:o}},Yn=(n,t,e=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_DST)=>{const i=n.createBuffer({size:t.byteLength,usage:e});return n.queue.writeBuffer(i,0,t),{buffer:i}},D=(n,t,e,i=0)=>{const r=n.createBuffer({size:e.byteLength,usage:GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST}),o=n.createBindGroup({layout:t.getBindGroupLayout(i),entries:[{binding:0,resource:{buffer:r}}]});return n.queue.writeBuffer(r,0,e),{bindGroup:o,uniformBuffer:r}},yn=(n,t,e,i=0)=>{const r=e.map(s=>{const a=n.createBuffer({size:s.byteLength,usage:GPUBufferUsage.STORAGE|GPUBufferUsage.COPY_DST});return n.queue.writeBuffer(a,0,s),a}),o=n.createBindGroup({layout:t.getBindGroupLayout(i),entries:r.map((s,a)=>({binding:a,resource:{buffer:s}}))});return{storageBuffers:r,storageGroup:o}},Fn=(n,t,e,i,r=0)=>n.createBindGroup({layout:t.getBindGroupLayout(r),entries:[{binding:0,resource:i},{binding:1,resource:e.createView()}]}),Vn=(n,t,e,i,r)=>{const o=n.createTexture({size:[e,i,1],format:"rgba8unorm",usage:GPUTextureUsage.COPY_DST|GPUTextureUsage.TEXTURE_BINDING});n.queue.writeTexture({texture:o},t,{offset:0,bytesPerRow:e*4,rowsPerImage:i},[e,i,1]);const s=n.createSampler({addressModeU:"repeat",addressModeV:"repeat",magFilter:"linear",minFilter:"linear",mipmapFilter:"linear",...r});return{texture:o,sampler:s}},$=(n,t,e,i,r)=>{if(r){const o=new Float32Array(i),s=new Float32Array(t.size-(i+e.byteLength));e=new Float32Array([...o,...e,...s])}n.queue.writeBuffer(t,i,e)},ht=(n,t,e,i,r)=>{if(r){const o=new Uint32Array(i),s=new Uint32Array(t.size-(i+e.byteLength));e=new Uint32Array([...o,...e,...s])}n.queue.writeBuffer(t,i,e)},Tn=(n=0,t=0,e=0,i=1)=>({r:n,g:t,b:e,a:i}),Nn=n=>v(n.r,n.g,n.b),X={black:Tn(0,0,0,1),white:Tn(1,1,1,1),blueScreenBlue:Tn(.1,.3,.6,1)},An=n=>{if(n[0]==="#"&&(n=n.substring(1)),n.length!==6)throw new Error("Can't handle color hexes of size other than 6.");const t=parseInt(n,16),e=(t>>16&255)/255,i=(t>>8&255)/255,r=(t&255)/255;return{r:e,g:i,b:r,a:1}},an=n=>n*Math.PI/180,un=(n,t,e,i,r)=>(n-t)/(e-t)*(r-i)+i,xn=(n,t)=>{const e=t/2;return[O(n[0]-e,n[1]-e),O(n[0]+e,n[1]-e),O(n[0]-e,n[1]+e),O(n[0]-e,n[1]+e),O(n[0]+e,n[1]-e),O(n[0]+e,n[1]+e)]},Oe=(n,t,e=12)=>{const i=[],r=2*Math.PI/e;for(let o=0;o<e;o++)i.push(n,tn(n,O(t*Math.cos(o*r),t*Math.sin(o*r))),tn(n,O(t*Math.cos((o+1)*r),t*Math.sin((o+1)*r))));return i},Xn=(n,t)=>{const e=t/2,i=[u(...tn(n,v(-e,-e,e)),1),u(...tn(n,v(-e,e,e)),1),u(...tn(n,v(e,e,e)),1),u(...tn(n,v(e,-e,e)),1),u(...tn(n,v(-e,-e,-e)),1),u(...tn(n,v(-e,e,-e)),1),u(...tn(n,v(e,e,-e)),1),u(...tn(n,v(e,-e,-e)),1)],r=new Uint32Array([0,1,1,2,2,3,3,0,2,3,3,7,7,6,6,2,0,3,3,7,7,4,4,0,1,2,2,6,6,5,5,1,4,5,5,6,6,7,7,4,0,1,1,5,5,4,4,0]),o=[u(1,0,3),u(3,2,1),u(2,3,7),u(7,6,2),u(3,0,4),u(4,7,3),u(6,5,1),u(1,2,6),u(4,5,6),u(6,7,4),u(5,4,0),u(0,1,5)];return{vertices:i,lineIndices:r,triangleIndices:o,normals:[],triangleCount:12}},Pe=n=>{const t=[u(...n[0],1),u(...n[1],1),u(...n[2],1)],e=[u(0,1,2,0)],i=[0,1,1,2,2,0];return{vertices:t,lineIndices:new Uint32Array(i),triangleIndices:e,triangleCount:1,normals:[]}},Gn=async n=>{const t=document.createElement("img");t.src=n,await t.decode();const e=document.createElement("canvas");e.width=t.width,e.height=t.height;const i=e.getContext("2d");if(!i)throw new Error("Could not get canvas context");i.drawImage(t,0,0,e.width,e.height);const r=i.getImageData(0,0,e.width,e.height),o=new Uint8Array(t.width*t.height*4);for(let s=0;s<t.height;++s)for(let a=0;a<t.width;++a)for(let c=0;c<4;++c)o[(s*t.width+a)*4+c]=r.data[((t.height-s-1)*t.width+a)*4+c];return{textureData:o,height:t.height,width:t.width}},Ce=(n,t)=>{const e=1/n,i=e/t;if(t<2)return[O()];const r=[];for(var o=0;o<t;++o)for(var s=0;s<t;++s)r.push(O((Math.random()+s)*i-e*.5,(Math.random()+o)*i-e*.5));return r},ft=(n,{})=>{let t=0;const e=[],i=[],r=n.mtls.reduce((s,a)=>({...s,...a.materials.reduce((c,l,h)=>({...c,[l.name]:h}),{})}),{});for(let s=0;s<n.objects.length;s++){const a=n.objects[s];t+=a.faces.length;for(let c=0;c<a.faces.length;c++){const l=a.faces[c];e.push(u(...l.vIndices,1)),i.push(r[l.materialName])}}return{vertices:n.vertices,normals:n.normals,triangleCount:t,triangleIndices:e,materialIndices:i}},Te=n=>({filename:n,mtls:[],objects:[],vertices:[],normals:[]}),ut=async(n,t=1,e=!1)=>{var l;const r=(l=(await fetch(n)).body)==null?void 0:l.getReader();if(!r)throw new Error("Could not get reader for obj file.");const o=Te(n),s=vt("_default");o.objects.push(s);const a={objDoc:o,currentObject:s,scale:t,currentMaterialName:"",filename:n,reverse:e};let c="";for(;;){const{value:h,done:f}=await r.read();if(f)break;const d=new TextDecoder("utf-8").decode(h,{stream:!0}).split(`
+`);c!==""&&(d[0]=c+d[0],c=""),d[d.length-1]!==""&&(c=d.pop());for(const L of d)await Ee(L,a)}return o},Ee=async(n,t)=>{const e=dt(n),i=cn(e);if(i.length!==0)switch(i){case"#":return;case"mtllib":var r=ke(e,t.filename),o=$e();t.objDoc.mtls.push(o);const s=await fetch(r);if(!s.body)throw new Error("No MTL body to read.");await Ne(s.body.getReader(),o);return;case"o":case"g":const a=t.currentObject.numIndices===0?t.objDoc.objects.length-1:t.objDoc.objects.length,c=Fe(e);t.objDoc.objects[a]=c,t.currentObject=c;return;case"v":const l=Ve(e,t.scale);t.objDoc.vertices.push(l);return;case"vn":const h=Ge(e);t.objDoc.normals.push(h);return;case"usemtl":t.currentMaterialName=ze(e);return;case"f":const f=He(e,t.currentMaterialName);De(f,t.objDoc,t.reverse),Ue(t.currentObject,f);return}},ke=(n,t)=>{var e=t.lastIndexOf("/"),i="";return e>0&&(i=t.substring(0,e+1)),i+cn(n)},Fe=n=>{var t=cn(n);return vt(t)},Ve=(n,t)=>{var e=K(n)*t,i=K(n)*t,r=K(n)*t;return u(e,i,r,1)},Ge=n=>{var t=K(n),e=K(n),i=K(n);return u(t,e,i,0)},ze=n=>cn(n),He=(n,t)=>{const e=je(t);for(;;){const i=cn(n);if(i.length===0)break;const r=i.split("/");if(r.length>=1){const o=parseInt(r[0])-1;isNaN(o)||e.vIndices.push(o)}if(r.length>=3){const o=parseInt(r[2])-1;e.nIndices.push(o)}else e.nIndices.push(-1)}return e},De=(n,t,e)=>{var i=[t.vertices[n.vIndices[0]][0],t.vertices[n.vIndices[0]][1],t.vertices[n.vIndices[0]][2]],r=[t.vertices[n.vIndices[1]][0],t.vertices[n.vIndices[1]][1],t.vertices[n.vIndices[1]][2]],o=[t.vertices[n.vIndices[2]][0],t.vertices[n.vIndices[2]][1],t.vertices[n.vIndices[2]][2]],s=ot(i,r,o);if(s==null){if(n.vIndices.length>=4){var a=[t.vertices[n.vIndices[3]][0],t.vertices[n.vIndices[3]][1],t.vertices[n.vIndices[3]][2]];s=ot(r,o,a)}s==null&&(s=[0,1,0])}if(e&&(s[0]=-s[0],s[1]=-s[1],s[2]=-s[2]),n.normal=u(s[0],s[1],s[2],0),n.vIndices.length>3){for(var c=n.vIndices.length-2,l=new Array(c*3),h=new Array(c*3),f=0;f<c;f++)l[f*3+0]=n.vIndices[0],l[f*3+1]=n.vIndices[f+1],l[f*3+2]=n.vIndices[f+2],h[f*3+0]=n.nIndices[0],h[f*3+1]=n.nIndices[f+1],h[f*3+2]=n.nIndices[f+2];n.vIndices=l,n.nIndices=h}return n.numIndices=n.vIndices.length,n},Ne=async(n,t)=>{const e={material:_t("",u()),mtl:t};for(;;){const{value:i,done:r}=await n.read();if(r)break;const s=new TextDecoder("utf-8").decode(i,{stream:!0}).split(`
+`);for(const a of s)qe(a,e)}t.complete=!0},qe=(n,t)=>{const e=dt(n),i=cn(e);if(i.length!==0)switch(i){case"#":return;case"newmtl":const r=Me(e);t.material=_t(r,u(.8,.8,.8,1)),t.mtl.materials.push(t.material);return;case"Kd":t.material&&(t.material.color=qn(e));return;case"Ka":t.material&&(t.material.emission=qn(e));return;case"Ks":t.material&&(t.material.specular=qn(e));return;case"Ni":t.material&&(t.material.ior=K(e));return;case"Ns":t.material&&(t.material.shininess=K(e));return;case"illum":t.material&&(t.material.illum=Xe(e));return}},$e=()=>({complete:!1,materials:[]}),Me=n=>cn(n),qn=n=>{var t=K(n),e=K(n),i=K(n);return u(t,e,i,1)},_t=(n,t)=>({name:n,color:t,illum:0,shininess:0,ior:1,specular:u(),emission:u()}),vt=n=>({name:n,faces:[],numIndices:0}),Ue=(n,t)=>{n.faces.push(t),n.numIndices+=t.numIndices},je=(n="")=>({materialName:n,vIndices:[],nIndices:[],normal:u(1),numIndices:0}),dt=n=>({str:n,index:0}),Ye=n=>{let t;const e=n.str.length;for(t=n.index;t<e;t++){const i=n.str.charAt(t);if(!(i=="	"||i==" "||i=="("||i==")"||i=='"'))break}n.index=t},cn=n=>{Ye(n);const t=Ze(n.str,n.index);if(t===0)return"";const e=n.str.substring(n.index,n.index+t);return n.index+=t+1,e},Xe=n=>parseInt(cn(n)),K=n=>parseFloat(cn(n)),Ze=(n,t)=>{let e;for(e=t;e<n.length;e++){var i=n.charAt(e);if(i=="	"||i==" "||i=="("||i==")"||i=='"')break}return e-t},ot=(n,t,e)=>{for(var i=new Float32Array(3),r=new Float32Array(3),o=0;o<3;o++)i[o]=n[o]-t[o],r[o]=e[o]-t[o];var s=Array(3);s[0]=i[1]*r[2]-i[2]*r[1],s[1]=i[2]*r[0]-i[0]*r[2],s[2]=i[0]*r[1]-i[1]*r[0];var a=s[0],c=s[1],l=s[2],h=Math.sqrt(a*a+c*c+l*l);if(h){if(h==1)return s}else return s[0]=0,s[1]=0,s[2]=0,s;return h=1/h,s[0]=a*h,s[1]=c*h,s[2]=l*h,s},pn=(n=0,t=0,e=0,i=0,r=0,o=0,s=0,a=0,c=0,l=0,h=0,f=0,_=0,d=0,b=0,p=0)=>[[n,t,e,i],[r,o,s,a],[c,l,h,f],[_,d,b,p]],q=()=>pn(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1),In=n=>[].concat(...Ke(n)),$n=n=>[].concat(...n.map(t=>In(t))),Zn=(n,t,e)=>{if(Ae(n,t))return q();let i=Cn(at(t,n));const r=Cn(rt(i,e)),o=Cn(rt(r,i));return i=ct(i,-1),pn(...u(...r,-Pn(r,n)),...u(...o,-Pn(o,n)),...u(...i,-Pn(i,n)),...u())},We=(n,t,e,i,r,o)=>{if(n===t)throw"ortho(): left and right are equal";if(e===i)throw"ortho(): bottom and top are equal";if(r===o)throw"ortho(): near and far are equal";const s=t-n,a=i-e,c=o-r,l=q();return l[0][0]=2/s,l[1][1]=2/a,l[2][2]=-2/c,l[0][3]=-(n+t)/s,l[1][3]=-(i+e)/a,l[2][3]=-(r+o)/c,l},gt=(n,t,e,i)=>{const r=1/Math.tan(an(n)/2),o=i-e,s=q();return s[0][0]=r/t,s[1][1]=r,s[2][2]=-(e+i)/o,s[2][3]=-2*e*i/o,s[3][2]=-1,s[3][3]=0,s},En=(n,t)=>{const e=Cn(t),i=e[0],r=e[1],o=e[2],s=Math.cos(an(n)),a=Math.sin(an(n)),c=1-s;return pn(...u(i*i*c+s,i*r*c-o*a,i*o*c+r*a,0),...u(i*r*c+o*a,r*r*c+s,r*o*c-i*a,0),...u(i*o*c-r*a,r*o*c+i*a,o*o*c+s,0),...u())},On=n=>{var t=Math.cos(an(n)),e=Math.sin(an(n)),i=pn(1,0,0,0,0,t,-e,0,0,e,t,0,0,0,0,1);return i},st=n=>{var t=Math.cos(an(n)),e=Math.sin(an(n)),i=pn(t,0,e,0,0,1,0,0,-e,0,t,0,0,0,0,1);return i},Je=n=>{var t=Math.cos(an(n)),e=Math.sin(an(n)),i=pn(t,-e,0,0,e,t,0,0,0,0,1,0,0,0,0,1);return i},H=({[0]:n,[1]:t,[2]:e})=>{const i=q();return i[0][3]=n,i[1][3]=t,i[2][3]=e,i},Y=(n=1,t=1,e=1)=>{var i=q();return i[0][0]=n,i[1][1]=t,i[2][2]=e,i},g=(n,t)=>{const e=[];for(let i=0;i<n.length;i++){e.push([]);for(let r=0;r<t.length;r++){let o=0;for(let s=0;s<n.length;s++)o+=n[i][s]*t[s][r];e[i].push(o)}}return e},Ke=n=>{for(var t=[],e=0;e<n.length;++e){t.push([]);for(var i=0;i<n[e].length;++i)t[e].push(n[i][e])}return t},Wn=pn(1,0,0,0,0,1,0,0,0,0,-.5,.5,0,0,0,1),Qe=`@vertex
 fn main_vs(@location(0) pos : vec2f) -> @builtin(position) vec4f
 {
     return vec4f(pos, 0, 1);
@@ -8,7 +10,7 @@ fn main_fs() -> @location(0) vec4f
 {
     return vec4f(0.0, 0.0, 0.0, 1.0);
 }
-`,Yt=async()=>{const{device:n,canvas:t,context:e,canvasFormat:i}=await F("task1"),{pass:r,executePass:o}=k(n,e,{r:.3921,g:.5843,b:.9294,a:1}),s=[].concat(I(sn([0,0],10*(2/t.height))),I(sn([1,0],10*(2/t.height))),I(sn([1,1],10*(2/t.height)))),a=new Float32Array(s),{buffer:c,bufferLayout:h}=M(n,a,"float32x2"),u=D(n,[h],i,Xt);r.setPipeline(u),r.setVertexBuffer(0,c),r.draw(s.length/2),o()},Zt=(n,t)=>{const e=V("The three pixeleers"),i=T("This is a test description."),r=G("task1");n.append(e,i,r),t.push(Yt)},Wt=`struct VSOut {
+`,ni=async()=>{const{device:n,canvas:t,context:e,canvasFormat:i}=await F("task1"),{pass:r,executePass:o}=V(n,e,{r:.3921,g:.5843,b:.9294,a:1}),s=[].concat(I(xn([0,0],10*(2/t.height))),I(xn([1,0],10*(2/t.height))),I(xn([1,1],10*(2/t.height)))),a=new Float32Array(s),{buffer:c,bufferLayout:l}=Q(n,a,"float32x2"),h=G(n,[l],i,Qe);r.setPipeline(h),r.setVertexBuffer(0,c),r.draw(s.length/2),o()},ti=(n,t)=>{const e=E("The three pixeleers"),i=T("This is a test description."),r=k("task1");n.append(e,i,r),t.push(ni)},ei=`struct VSOut {
     @builtin(position) position : vec4f,
     @location(0) color : vec3f,
 };
@@ -28,7 +30,7 @@ fn main_fs(@location(0) inColor : vec3f) -> @location(0) vec4f
 {
     return vec4f(inColor, 1.0);
 }
-`,Jt=async()=>{const{device:n,context:t,canvasFormat:e}=await F("task2"),{pass:i,executePass:r}=k(n,t,{r:.3921,g:.5843,b:.9294,a:1}),o=[R(0,0),R(1,0),R(1,1)],s=[_(1,0,0),_(0,1,0),_(0,0,1)],a=new Float32Array(I(o)),c=new Float32Array(I(s)),{buffer:h,bufferLayout:u}=M(n,a,"float32x2"),{buffer:l,bufferLayout:f}=M(n,c,"float32x3",1),g=D(n,[u,f],e,Wt);i.setPipeline(g),i.setVertexBuffer(0,h),i.setVertexBuffer(1,l),i.draw(o.length),r()},Kt=(n,t)=>{const e=V("Triangles all the way down."),i=T("This is a test description."),r=G("task2");n.append(e,i,r),t.push(Jt)},Qt=`struct Time {
+`,ii=async()=>{const{device:n,context:t,canvasFormat:e}=await F("task2"),{pass:i,executePass:r}=V(n,t,{r:.3921,g:.5843,b:.9294,a:1}),o=[O(0,0),O(1,0),O(1,1)],s=[v(1,0,0),v(0,1,0),v(0,0,1)],a=new Float32Array(I(o)),c=new Float32Array(I(s)),{buffer:l,bufferLayout:h}=Q(n,a,"float32x2"),{buffer:f,bufferLayout:_}=Q(n,c,"float32x3",1),d=G(n,[h,_],e,ei);i.setPipeline(d),i.setVertexBuffer(0,l),i.setVertexBuffer(1,f),i.draw(o.length),r()},ri=(n,t)=>{const e=E("Triangles all the way down."),i=T("This is a test description."),r=k("task2");n.append(e,i,r),t.push(ii)},oi=`struct Time {
     time : f32
 };
 
@@ -52,7 +54,7 @@ fn main_fs() -> @location(0) vec4f
 {
     return vec4f(0.0, 0.0, 0.0, 1.0);
 }
-`,ne=async()=>{const{device:n,context:t,canvasFormat:e}=await F("task3"),i=sn(R(0,0),1),r=new Float32Array(I(i)),{bufferLayout:o,buffer:s}=M(n,r,"float32x2"),a=D(n,[o],e,Qt),{bindGroup:c,uniformBuffer:h}=q(n,a,new Float32Array(1)),u=l=>{N(n,h,new Float32Array([l/1e3]),0);const{pass:f,executePass:g}=k(n,t,{r:.3921,g:.5843,b:.9294,a:1});f.setPipeline(a),f.setVertexBuffer(0,s),f.setBindGroup(0,c),f.draw(i.length),g(),requestAnimationFrame(u)};requestAnimationFrame(u)},te=(n,t)=>{const e=V("Spin me right round"),i=T("This is a test description."),r=G("task3");n.append(e,i,r),t.push(ne)},ee=`struct Time {
+`,si=async()=>{const{device:n,context:t,canvasFormat:e}=await F("task3"),i=xn(O(0,0),1),r=new Float32Array(I(i)),{bufferLayout:o,buffer:s}=Q(n,r,"float32x2"),a=G(n,[o],e,oi),{bindGroup:c,uniformBuffer:l}=D(n,a,new Float32Array(1)),h=f=>{$(n,l,new Float32Array([f/1e3]),0);const{pass:_,executePass:d}=V(n,t,{r:.3921,g:.5843,b:.9294,a:1});_.setPipeline(a),_.setVertexBuffer(0,s),_.setBindGroup(0,c),_.draw(i.length),d(),requestAnimationFrame(h)};requestAnimationFrame(h)},ai=(n,t)=>{const e=E("Spin me right round"),i=T("This is a test description."),r=k("task3");n.append(e,i,r),t.push(si)},ci=`struct Time {
     time : f32
 };
 
@@ -90,7 +92,7 @@ fn main_fs(@location(0) fragPosition : vec4 < f32>) -> @location(0) vec4f
 
     return vec4(isCircle, 0., 0., 1.);
 }
-`,ie=async()=>{const{device:n,context:t,canvasFormat:e}=await F("task4"),i=sn(R(0,0),2),r=new Float32Array(I(i)),o=x("ball-height"),s=x("ball-size"),a=x("ball-speed"),{bufferLayout:c,buffer:h}=M(n,r,"float32x2"),u=D(n,[c],e,ee),{bindGroup:l,uniformBuffer:f}=q(n,u,new Float32Array([0])),{bindGroup:g,uniformBuffer:y}=q(n,u,new Float32Array(3),1),b=O=>{N(n,f,new Float32Array([O/1e3]),0),N(n,y,new Float32Array([o(),a(),s()]),0);const{pass:A,executePass:d}=k(n,t,X.blueScreenBlue);A.setPipeline(u),A.setVertexBuffer(0,h),A.setBindGroup(0,l),A.setBindGroup(1,g),A.draw(i.length),d(),requestAnimationFrame(b)};requestAnimationFrame(b)},re=(n,t)=>{const e=V("Nokia memories"),i=T("This is a test description."),r=j(),o=G("task4"),s=U(),a=p(S("ball-height",.3,.1,.9,.1),"Ball bounce height"),c=p(S("ball-speed",4,1,16),"Ball bounce speed"),h=p(S("ball-size",1.05,1.01,1.5,.01),"Ball size");s.append(a,c,h),r.append(o,s),n.append(e,i,r),t.push(ie)},Mn=(n,t)=>{Zt(n,t),Kt(n,t),te(n,t),re(n,t)},oe=`struct VSOut {
+`,li=async()=>{const{device:n,context:t,canvasFormat:e}=await F("task4"),i=xn(O(0,0),2),r=new Float32Array(I(i)),o=w("ball-height"),s=w("ball-size"),a=w("ball-speed"),{bufferLayout:c,buffer:l}=Q(n,r,"float32x2"),h=G(n,[c],e,ci),{bindGroup:f,uniformBuffer:_}=D(n,h,new Float32Array([0])),{bindGroup:d,uniformBuffer:b}=D(n,h,new Float32Array(3),1),p=L=>{$(n,_,new Float32Array([L/1e3]),0),$(n,b,new Float32Array([o(),a(),s()]),0);const{pass:P,executePass:y}=V(n,t,X.blueScreenBlue);P.setPipeline(h),P.setVertexBuffer(0,l),P.setBindGroup(0,f),P.setBindGroup(1,d),P.draw(i.length),y(),requestAnimationFrame(p)};requestAnimationFrame(p)},hi=(n,t)=>{const e=E("Nokia memories"),i=T("This is a test description."),r=U(),o=k("task4"),s=M(),a=m(S("ball-height",.3,.1,.9,.1),"Ball bounce height"),c=m(S("ball-speed",4,1,16),"Ball bounce speed"),l=m(S("ball-size",1.05,1.01,1.5,.01),"Ball size");s.append(a,c,l),r.append(o,s),n.append(e,i,r),t.push(li)},pt=(n,t)=>{ti(n,t),ri(n,t),ai(n,t),hi(n,t)},fi=`struct VSOut {
     @builtin(position) position : vec4f,
     @location(0) color : vec3f,
 };
@@ -110,7 +112,7 @@ fn main_fs(@location(0) inColor : vec3f) -> @location(0) vec4f
 {
     return vec4f(inColor, 1.0);
 }
-`,Bn="drawing",Nn="drawing-mode",se=["POINT","TRIANGLE","CIRCLE"],Un="points-color",jn="drawing-background-color",Xn="granularity-slider",Yn="size-slider",Zn="clear",ae=async()=>{const{device:n,canvas:t,context:e,canvasFormat:i}=await F(Bn);let r=un(jn,B=>{r=B,H()});const o=x(Un),s=x(Nn),a=x(Xn),c=x(Yn),h=1e3,u=new Float32Array(6*h*E.float32x2),{buffer:l,bufferLayout:f}=M(n,u,"float32x2"),g=new Float32Array(6*h*E.float32x3),{buffer:y,bufferLayout:b}=M(n,g,"float32x3",1),O=D(n,[f,b],i,oe,"triangle-list");kt(Bn,B=>{switch(s()){case"TRIANGLE":K(B);break;case"CIRCLE":z(B);break;default:case"POINT":$(),w(B);break}H()});let d=0,v=0;const w=({x:B,y:Q})=>{const cn=tn(B,0,t.width,-1,1),rn=-1*tn(Q,0,t.height,-1,1),nn=sn(R(cn,rn),c()/t.height),hn=new Float32Array(I(nn));n.queue.writeBuffer(l,d,hn),d+=6*E.float32x2;const ln=Array(6).fill(In(dn(o()))),Vn=new Float32Array(I(ln));n.queue.writeBuffer(y,v,Vn),v+=6*E.float32x3};let L=[],C=[];const $=()=>{L=[],C=[]},K=B=>{if(L.push(B),C.push(o()),C.length<3){w(B);return}const Q=new Float32Array([].concat(...L.map(({x:rn,y:nn})=>{const hn=tn(rn,0,t.width,-1,1),ln=-1*tn(nn,0,t.height,-1,1);return R(hn,ln)}),I(Array(9).fill(R()))));n.queue.writeBuffer(l,d-2*6*E.float32x2,Q),d+=E.float32x2*(3-2*6);const cn=new Float32Array([].concat(...I(C.map(rn=>In(dn(rn)))),I(Array(9).fill(_()))));n.queue.writeBuffer(y,v-2*6*E.float32x3,cn),v+=E.float32x3*(3-2*6),$()},z=B=>{if(L.push(B),C.push(o()),L.length<2){w(B);return}const Q=R(tn(L[0].x,0,t.width,-1,1),-1*tn(L[0].y,0,t.height,-1,1)),cn=R(tn(L[1].x,0,t.width,-1,1),-1*tn(L[1].y,0,t.height,-1,1)),rn=zn(kn(cn,Q)),nn=$t(Q,rn,a()),hn=new Float32Array(I(nn));n.queue.writeBuffer(l,d-6*E.float32x2,hn),d+=E.float32x2*(nn.length-6);const ln=new Float32Array(I([...new Array(nn.length)].map((Vn,Et)=>{const Tt=Et%3===0?0:1;return In(dn(C[Tt]))})));n.queue.writeBuffer(y,v-6*E.float32x3,ln),v+=E.float32x3*(nn.length-6),$()},H=()=>{const{pass:B,executePass:Q}=k(n,e,dn(r));B.setPipeline(O),B.setVertexBuffer(0,l),B.setVertexBuffer(1,y),B.draw(6*h),Q()};Ft(Zn,()=>{n.queue.writeBuffer(l,0,new Float32Array(6*h*E.float32x2)),n.queue.writeBuffer(y,0,new Float32Array(6*h*E.float32x3)),H()}),H()},Wn=(n,t)=>{const e=V("A simple GPU-based drawing program"),i=T("No description yet"),r=j(),o=G(Bn),s=U(),a=on(Nn,se),c=p(Gn(Un,"#000000"),"Draw color"),h=p(Gn(jn,"#ffffff"),"Background color"),u=p(S(Yn,10,2,100),"Point size"),l=p(S(Xn,12,4,32),"Circle granularity"),f=Gt(Zn,"Clear canvas");s.append(a,c,u,l,h,f),r.append(o,s),n.append(e,i,r),t.push(ae)},ce=`struct Uniforms {
+`,Mn="drawing",mt="drawing-mode",ui=["POINT","TRIANGLE","CIRCLE"],bt="points-color",xt="drawing-background-color",yt="granularity-slider",wt="size-slider",Lt="clear",_i=async()=>{const{device:n,canvas:t,context:e,canvasFormat:i}=await F(Mn);let r=gn(xt,R=>{r=R,N()});const o=w(bt),s=w(mt),a=w(yt),c=w(wt),l=1e3,h=new Float32Array(6*l*z.float32x2),{buffer:f,bufferLayout:_}=Q(n,h,"float32x2"),d=new Float32Array(6*l*z.float32x3),{buffer:b,bufferLayout:p}=Q(n,d,"float32x3",1),L=G(n,[_,p],i,fi,"triangle-list");Ie(Mn,R=>{switch(s()){case"TRIANGLE":en(R);break;case"CIRCLE":_n(R);break;default:case"POINT":Z(),B(R);break}N()});let y=0,x=0;const B=({x:R,y:j})=>{const rn=un(R,0,t.width,-1,1),nn=-1*un(j,0,t.height,-1,1),W=xn(O(rn,nn),c()/t.height),hn=new Float32Array(I(W));n.queue.writeBuffer(f,y,hn),y+=6*z.float32x2;const fn=Array(6).fill(Nn(An(o()))),Ln=new Float32Array(I(fn));n.queue.writeBuffer(b,x,Ln),x+=6*z.float32x3};let A=[],C=[];const Z=()=>{A=[],C=[]},en=R=>{if(A.push(R),C.push(o()),C.length<3){B(R);return}const j=new Float32Array([].concat(...A.map(({x:nn,y:W})=>{const hn=un(nn,0,t.width,-1,1),fn=-1*un(W,0,t.height,-1,1);return O(hn,fn)}),I(Array(9).fill(O()))));n.queue.writeBuffer(f,y-2*6*z.float32x2,j),y+=z.float32x2*(3-2*6);const rn=new Float32Array([].concat(...I(C.map(nn=>Nn(An(nn)))),I(Array(9).fill(v()))));n.queue.writeBuffer(b,x-2*6*z.float32x3,rn),x+=z.float32x3*(3-2*6),Z()},_n=R=>{if(A.push(R),C.push(o()),A.length<2){B(R);return}const j=O(un(A[0].x,0,t.width,-1,1),-1*un(A[0].y,0,t.height,-1,1)),rn=O(un(A[1].x,0,t.width,-1,1),-1*un(A[1].y,0,t.height,-1,1)),nn=lt(at(rn,j)),W=Oe(j,nn,a()),hn=new Float32Array(I(W));n.queue.writeBuffer(f,y-6*z.float32x2,hn),y+=z.float32x2*(W.length-6);const fn=new Float32Array(I([...new Array(W.length)].map((Ln,zn)=>{const Hn=zn%3===0?0:1;return Nn(An(C[Hn]))})));n.queue.writeBuffer(b,x-6*z.float32x3,fn),x+=z.float32x3*(W.length-6),Z()},N=()=>{const{pass:R,executePass:j}=V(n,e,An(r));R.setPipeline(L),R.setVertexBuffer(0,f),R.setVertexBuffer(1,b),R.draw(6*l),j()};Le(Lt,()=>{n.queue.writeBuffer(f,0,new Float32Array(6*l*z.float32x2)),n.queue.writeBuffer(b,0,new Float32Array(6*l*z.float32x3)),N()}),N()},It=(n,t)=>{const e=E("A simple GPU-based drawing program"),i=T("No description yet"),r=U(),o=k(Mn),s=M(),a=sn(mt,ui),c=m(it(bt,"#000000"),"Draw color"),l=m(it(xt,"#ffffff"),"Background color"),h=m(S(wt,10,2,100),"Point size"),f=m(S(yt,12,4,32),"Circle granularity"),_=we(Lt,"Clear canvas");s.append(a,c,h,f,l,_),r.append(o,s),n.append(e,i,r),t.push(_i)},vi=`struct Uniforms {
     mvp : mat4x4f,
 };
 
@@ -135,7 +137,7 @@ fn main_fs(@location(0) inColor : vec3f) -> @location(0) vec4f
 {
     return vec4f(1., 0., 0., 1.0);
 }
-`,Jn="wireframe",Kn="wireframe-rotation-slider",he=async()=>{const{device:n,context:t,canvasFormat:e}=await F(Jn),i=Cn(_(0),1),r=i.lineIndices,o=new Float32Array(I(i.vertices)),{buffer:s}=An(n,r),{buffer:a,bufferLayout:c}=M(n,o,"float32x4"),h=D(n,[c],e,ce,"line-list"),{bindGroup:u,uniformBuffer:l}=q(n,h,new Float32Array(Rn(an())),0),f=en(_(.5,.5,.5)),g=_(0,0,10),y=_(0),b=_(0,1,0),O=En(g,y,b),A=Ut(-1.5,1.5,-1.5,1.5,0,100),d=P(Tn,A),v=P(d,O),w=C=>{const $=gn(C,_(1,1,1)),K=P($,f),z=P(v,K);N(n,l,new Float32Array(Rn(z)),0);const{pass:H,executePass:Z}=k(n,t,X.black);H.setPipeline(h),H.setVertexBuffer(0,a),H.setIndexBuffer(s,"uint32"),H.setBindGroup(0,u),H.drawIndexed(r.length),Z()},L=un(Kn,w);w(L)},le=(n,t)=>{const e=V("Projecting a cube"),i=T("No description yet"),r=j(),o=G(Jn),s=U(),a=p(S(Kn,45,0,360),"Rotation about (1, 1, 1)");s.append(a),r.append(o,s),n.append(e,i,r),t.push(he)},fe=`struct Uniforms {
+`,Rt="wireframe",St="wireframe-rotation-slider",di=async()=>{const{device:n,context:t,canvasFormat:e}=await F(Rt),i=Xn(v(0),1),r=i.lineIndices,o=new Float32Array(I(i.vertices)),{buffer:s}=Yn(n,r),{buffer:a,bufferLayout:c}=Q(n,o,"float32x4"),l=G(n,[c],e,vi,"line-list"),{bindGroup:h,uniformBuffer:f}=D(n,l,new Float32Array(In(q())),0),_=H(v(.5,.5,.5)),d=v(0,0,10),b=v(0),p=v(0,1,0),L=Zn(d,b,p),P=We(-1.5,1.5,-1.5,1.5,0,100),y=g(Wn,P),x=g(y,L),B=C=>{const Z=En(C,v(1,1,1)),en=g(Z,_),_n=g(x,en);$(n,f,new Float32Array(In(_n)),0);const{pass:N,executePass:wn}=V(n,t,X.black);N.setPipeline(l),N.setVertexBuffer(0,a),N.setIndexBuffer(s,"uint32"),N.setBindGroup(0,h),N.drawIndexed(r.length),wn()},A=gn(St,B);B(A)},gi=(n,t)=>{const e=E("Projecting a cube"),i=T("No description yet"),r=U(),o=k(Rt),s=M(),a=m(S(St,45,0,360),"Rotation about (1, 1, 1)");s.append(a),r.append(o,s),n.append(e,i,r),t.push(di)},pi=`struct Uniforms {
     mvps : array<mat4x4f, 3>,
 };
 
@@ -161,32 +163,43 @@ fn main_fs(@location(0) inColor : vec4f) -> @location(0) vec4f
 {
     return inColor;
 }
-`,Qn="perspective",ue=async()=>{const{device:n,context:t,canvasFormat:e,canvas:i}=await F(Qn),r=Cn(_(0),1),o=new Float32Array(I(r.vertices)),{buffer:s}=An(n,r.lineIndices),{buffer:a,bufferLayout:c}=M(n,o,"float32x4"),{buffer:h,bufferLayout:u}=M(n,new Float32Array(I([m(.5,.5,.5,1),m(0,0,1,1),m(0,1,0,1),m(0,1,1,1),m(1,0,1,1),m(1,0,0,1),m(1,1,0,1),m(1,1,1,1)])),"float32x4",1),l=D(n,[c,u],e,fe,"line-list"),f=_(0,0,5),g=_(0),y=_(0,1,0),b=En(f,g,y),O=$n(45,i.width/i.height,.1,100),A=P(Tn,O),d=P(A,b),v=P(gn(0,_(1,1,1)),en(_(-2))),w=P(gn(45,_(0,1,0)),en(_(0))),L=P(en(_(2)),gn(45,_(1,1,0))),C=P(d,v),$=P(d,w),K=P(d,L),{bindGroup:z}=q(n,l,new Float32Array(qn([C,$,K])),0);(()=>{const{pass:Z,executePass:B}=k(n,t,X.black);Z.setPipeline(l),Z.setVertexBuffer(0,a),Z.setVertexBuffer(1,h),Z.setIndexBuffer(s,"uint32"),Z.setBindGroup(0,z),Z.drawIndexed(r.lineIndices.length,3),B()})()},_e=(n,t)=>{const e=V("Projecting a cube"),i=T("No description yet"),r=j(),o=G(Qn,1028-128),s=U();r.append(o,s),n.append(e,i,r),t.push(ue)},de=`struct Uniforms {
-    mvps : array<mat4x4f, 5>,
+`,Bt="perspective",mi=async()=>{const{device:n,context:t,canvasFormat:e,canvas:i}=await F(Bt),r=Xn(v(0),1),o=new Float32Array(I(r.vertices)),s=r.lineIndices,{buffer:a}=Yn(n,s),{buffer:c,bufferLayout:l}=Q(n,o,"float32x4"),{buffer:h,bufferLayout:f}=Q(n,new Float32Array(I([u(.5,.5,.5,1),u(0,0,1,1),u(0,1,0,1),u(0,1,1,1),u(1,0,1,1),u(1,0,0,1),u(1,1,0,1),u(1,1,1,1)])),"float32x4",1),_=G(n,[l,f],e,pi,"line-list"),d=v(0,0,5),b=v(0),p=v(0,1,0),L=Zn(d,b,p),P=gt(45,i.width/i.height,.1,100),y=g(Wn,P),x=g(y,L),B=g(En(0,v(1,1,1)),H(v(-2))),A=g(En(45,v(0,1,0)),H(v(0))),C=g(H(v(2)),En(45,v(1,1,0))),Z=g(x,B),en=g(x,A),_n=g(x,C),{bindGroup:N}=D(n,_,new Float32Array($n([Z,en,_n])),0);(()=>{const{pass:R,executePass:j}=V(n,t,X.black);R.setPipeline(_),R.setVertexBuffer(0,c),R.setVertexBuffer(1,h),R.setIndexBuffer(a,"uint32"),R.setBindGroup(0,N),R.drawIndexed(s.length,3),j()})()},bi=(n,t)=>{const e=E("Different perspectives"),i=T("No description yet"),r=U(),o=k(Bt,1028-128),s=M();r.append(o,s),n.append(e,i,r),t.push(mi)},xi=`struct Uniforms {
+    time : f32,
+    view : mat4x4f,
+    projection : mat4x4f,
 };
 
 @group(0) @binding(0) var<uniform> uniforms : Uniforms;
 
+@group(1) @binding(0) var<storage> models : array<mat4x4f>;
+@group(1) @binding(1) var<storage> model_colors : array<vec4f>;
+
 struct VSOut {
     @builtin(position) position : vec4f,
     @location(0) color : vec4f,
+    @location(1) z : f32
 };
 
 @vertex
 fn main_vs(@location(0) inPos : vec4f, @builtin(instance_index) instance : u32
 ) -> VSOut
 {
+    var view_space = uniforms.view * models[instance] * inPos + vec4f(0, .3 * sin(uniforms.time / 5e2), 0, 0);
+
     var vsOut : VSOut;
-    vsOut.position = uniforms.mvps[instance] * inPos;
+    vsOut.position = uniforms.projection * view_space;
+    vsOut.color = model_colors[instance];
+    vsOut.z = view_space.z;
     return vsOut;
 }
 
 @fragment
-fn main_fs(@location(0) inColor : vec4f) -> @location(0) vec4f
+fn main_fs(@location(0) inColor : vec4f, @location(1) z : f32) -> @location(0) vec4f
 {
-    return vec4f(1.0, .0, .0, 1.0);
+    var z_mod = clamp((z + 10), .6, 1);
+    return vec4f(inColor.rgb * z_mod, inColor.a);
 }
-`,nt="airplane",ve=async()=>{const{device:n,context:t,canvasFormat:e,canvas:i}=await F(nt),r=Cn(_(0),1),o=new Float32Array(I(r.vertices)),{buffer:s}=An(n,r.lineIndices),{buffer:a,bufferLayout:c}=M(n,o,"float32x4"),h=D(n,[c],e,de,"line-list"),u=_(5,5,5),l=_(0),f=_(0,1,0),g=En(u,l,f),y=$n(45,i.width/i.height,.1,100),b=P(Tn,y),O=P(b,g),A=fn(.4,.4,2),d=P(fn(.35,.25,.35),en(_(0,-.2,3.3))),v=P(fn(1.7,.2,1.1),en(_(.6))),w=P(fn(1.7,.2,1.1),en(_(-.6))),L=P(fn(.2,.5,.3),en(_(0,.5,-3.3))),C=[A,d,v,w,L].map(z=>P(O,z)),{bindGroup:$}=q(n,h,new Float32Array(qn(C)),0);(()=>{const{pass:z,executePass:H}=k(n,t,X.black);z.setPipeline(h),z.setVertexBuffer(0,a),z.setIndexBuffer(s,"uint32"),z.setBindGroup(0,$),z.drawIndexed(r.lineIndices.length,C.length),H()})()},pe=(n,t)=>{const e=V("Projecting a cube"),i=T("No description yet"),r=j(),o=G(nt),s=U();r.append(o,s),n.append(e,i,r),t.push(ve)},tt=(n,t)=>{le(n,t),_e(n,t),pe(n,t)},ge=(n,t)=>{Mn(n,t),Wn(n,t),tt(n,t)},me={name:"graphics",generator:ge,children:[{name:"01-webgpu-basics",generator:Mn},{name:"02-drawing-with-shaders",generator:Wn},{name:"03-projection",generator:tt}]},xe=`struct Ray {
+`,At="airplane",Ot="yaw-slider-airplane",Pt="pitch-slider-airplane",Ct="roll-slider-airplane",yi=async()=>{const{device:n,context:t,canvasFormat:e,canvas:i}=await F(At),r=w(Ot),o=w(Pt),s=w(Ct),a=Xn(v(0),1),c=a.lineIndices,l=new Float32Array(I(a.vertices)),{buffer:h}=Yn(n,c),{buffer:f,bufferLayout:_}=Q(n,l,"float32x4"),d=G(n,[_],e,xi,"line-list"),b=v(5,5,5),p=v(0),L=v(0,1,0),P=Zn(b,p,L),y=gt(35,i.width/i.height,.1,100),x=g(Wn,y),{bindGroup:B,uniformBuffer:A}=D(n,d,new Float32Array([0,0,0,0,...In(P),...In(x)]),0),C=[],Z=Y(.4,.4,2),en=g(Y(.35,.25,.35),H(v(0,-.2,3.3))),_n=g(Y(1.7,.2,1.1),H(v(.6))),N=g(Y(1.7,.2,1.1),H(v(-.6))),wn=g(Y(.2,.5,.3),H(v(0,.5,-3.3))),R=g(Y(.5,.1,.2),H(v(-.9,.4,-4.3))),j=g(Y(.5,.1,.2),H(v(.9,.4,-4.3))),rn=[Z,en,_n,N,wn,R,j];C.push(...new Array(rn.length).fill(u(.7,.7,.7)));const nn=(J=q())=>g(g(Y(.1,.3,.2),J),H(v(0,.5,-6)));C.push(u(0,1,0));const W=(J=q())=>g(g(Y(.25,.05,.2),J),H(v(2,.4,-5.3))),hn=(J=q())=>g(g(Y(.25,.05,.2),J),H(v(-2,.4,-5.3)));C.push(u(1,0,0),u(1,0,0));const fn=(J=q())=>g(g(H(v(-1,.1,-.5)),J),Y(1,.1,.3)),Ln=(J=q())=>g(g(H(v(1,.1,-.5)),J),Y(1,.1,.3));C.push(u(.4,.4,1),u(.4,.4,1));const zn=[...rn,nn(),W(),hn(),fn(),Ln()],{storageGroup:Hn,storageBuffers:ue}=yn(n,d,[new Float32Array($n(zn)),new Float32Array(I(C))],1);let Jn=0,Kn=0,Qn=0,Sn=0,Bn=0,vn=0;const mn=.1,nt=J=>{$(n,A,new Float32Array([J]),0);const _e=1*r();Sn=Sn*(1-mn)+_e*mn,Jn+=Sn;const ve=1*o();Bn=Bn*(1-mn)+ve*mn,Kn+=Bn;const de=1*s();vn=vn*(1-mn)+de*mn,Qn+=vn;const ge=st(-Sn*20),tt=On(-Bn*20),pe=vn>0?On(vn*60):q(),me=vn<0?On(-vn*60):q(),dn=g(g(On(Kn),st(Jn)),Je(Qn)),et=[...rn.map(Dn=>g(dn,Dn)),g(dn,nn(ge)),g(dn,W(tt)),g(dn,hn(tt)),g(dn,fn(pe)),g(dn,Ln(me))],be=et.map(Dn=>g(dn,Dn));$(n,ue[0],new Float32Array($n(be)),0);const{pass:bn,executePass:xe}=V(n,t,X.black);bn.setPipeline(d),bn.setVertexBuffer(0,f),bn.setIndexBuffer(h,"uint32"),bn.setBindGroup(0,B),bn.setBindGroup(1,Hn),bn.drawIndexed(c.length,et.length),xe(),requestAnimationFrame(nt)};requestAnimationFrame(nt)},wi=(n,t)=>{const e=E("About Gimbal's lock"),i=T("No description yet"),r=U(),o=k(At),s=M(),a=m(S(Ot,0,-1,1,.1),"Green rudder control (yaw)"),c=m(S(Pt,0,-1,1,.1),"Red elevators control (pitch)"),l=m(S(Ct,0,-.5,.5,.1),"Blue ailerons control (roll)");s.append(a,c,l),r.append(o,s),n.append(e,i,r),t.push(yi)},Tt=(n,t)=>{gi(n,t),bi(n,t),wi(n,t)},Li=(n,t)=>{pt(n,t),It(n,t),Tt(n,t)},Ii={name:"graphics",generator:Li,children:[{name:"01-webgpu-basics",generator:pt},{name:"02-drawing-with-shaders",generator:It},{name:"03-projection",generator:Tt}]},Ri=`struct Ray {
     origin : vec3f,
     direction : vec3f,
     tmin : f32,
@@ -239,7 +252,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
     var r = generate_ray(uv);
     return vec4f(r.direction *.5 + .5, 1.0);
 }
-`,et="raycast-anatomy",be=async()=>{const{device:n,context:t,canvasFormat:e}=await F(et),i=D(n,[],e,xe,"triangle-strip"),{pass:r,executePass:o}=k(n,t,X.black);r.setPipeline(i),r.draw(4),o()},ye=(n,t)=>{const e=V("The anatomy of a ray cast"),i=T("No description yet"),r=G(et);n.append(e,i,r),t.push(be)},we=`struct ViewboxOptions {
+`,Et="raycast-anatomy",Si=async()=>{const{device:n,context:t,canvasFormat:e}=await F(Et),i=G(n,[],e,Ri,"triangle-strip"),{pass:r,executePass:o}=V(n,t,X.black);r.setPipeline(i),r.draw(4),o()},Bi=(n,t)=>{const e=E("The anatomy of a ray cast"),i=T("No description yet"),r=k(Et);n.append(e,i,r),t.push(Si)},Ai=`struct ViewboxOptions {
     camera_constant : f32,
     aspect_ratio : f32
 };
@@ -456,7 +469,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     return vec4f(pow(result, vec3f(1.0 / 1.25)), 1.0);
 }
-`,it="light",rt="zoom",ot="light-intensity-slider",st="light-position-x-input",at="light-position-y-input",ct="light-position-z-input",ht="shade-all-visible-objects",lt="refractive-index-slider",Le=async()=>{const{device:n,context:t,canvas:e,canvasFormat:i}=await F(it),r=x(rt),o=x(ot),s=x(lt),a=x(st),c=x(at),h=x(ct),u=x(ht,"checked"),l=e.width/e.height,f=D(n,[],i,we,"triangle-strip"),{bindGroup:g,uniformBuffer:y}=q(n,f,new Float32Array([r(),l])),b=new Float32Array([a(),c(),h(),o(),u()?1:0,s(),0,0]),{bindGroup:O,uniformBuffer:A}=q(n,f,b,1),d=()=>{N(n,y,new Float32Array([r(),l]),0),N(n,A,new Float32Array([a(),c(),h(),o(),u()?1:0,s(),0,0]),0);const{pass:v,executePass:w}=k(n,t,X.black);v.setPipeline(f),v.setBindGroup(0,g),v.setBindGroup(1,O),v.draw(4),w(),requestAnimationFrame(d)};requestAnimationFrame(d)},Ie=(n,t)=>{const e=V("A simple lighting system"),i=T("No description yet"),r=j(),o=G(it,512+128,512-64),s=U(),a=p(S(rt,1,.1,10,.1),"Zoom (camera constant)"),c=p(S(ot,3.14,0,10,.01),"Light intensity"),h=p(S(lt,1,-1,10,.1),"Diffuse reflectance"),u=p(S(st,0,-5,5,.1),"Light X position"),l=p(S(at,1,0,5,.1),"Light Y position"),f=p(S(ct,0,-5,5,.1),"Light Z position"),g=p(Vt(ht,!0),"Shading on",!1);s.append(a,c,h,u,l,f,g),r.append(o,s),n.append(e,i,r),t.push(Le)},ft=(n,t)=>{ye(n,t),Ie(n,t)},Se=`struct ViewboxOptions {
+`,kt="light",Ft="zoom",Vt="light-intensity-slider",Gt="light-position-x-input",zt="light-position-y-input",Ht="light-position-z-input",Dt="shade-all-visible-objects",Nt="refractive-index-slider",Oi=async()=>{const{device:n,context:t,canvas:e,canvasFormat:i}=await F(kt),r=w(Ft),o=w(Vt),s=w(Nt),a=w(Gt),c=w(zt),l=w(Ht),h=w(Dt,"checked"),f=e.width/e.height,_=G(n,[],i,Ai,"triangle-strip"),{bindGroup:d,uniformBuffer:b}=D(n,_,new Float32Array([r(),f])),p=new Float32Array([a(),c(),l(),o(),h()?1:0,s(),0,0]),{bindGroup:L,uniformBuffer:P}=D(n,_,p,1),y=()=>{$(n,b,new Float32Array([r(),f]),0),$(n,P,new Float32Array([a(),c(),l(),o(),h()?1:0,s(),0,0]),0);const{pass:x,executePass:B}=V(n,t,X.black);x.setPipeline(_),x.setBindGroup(0,d),x.setBindGroup(1,L),x.draw(4),B(),requestAnimationFrame(y)};requestAnimationFrame(y)},Pi=(n,t)=>{const e=E("A simple lighting system"),i=T("No description yet"),r=U(),o=k(kt,512+128,512-64),s=M(),a=m(S(Ft,1,.1,10,.1),"Zoom (camera constant)"),c=m(S(Vt,3.14,0,10,.01),"Light intensity"),l=m(S(Nt,1,-1,10,.1),"Diffuse reflectance"),h=m(S(Gt,0,-5,5,.1),"Light X position"),f=m(S(zt,1,0,5,.1),"Light Y position"),_=m(S(Ht,0,-5,5,.1),"Light Z position"),d=m(ye(Dt,!0),"Shading on",!1);s.append(a,c,l,h,f,_,d),r.append(o,s),n.append(e,i,r),t.push(Oi)},qt=(n,t)=>{Bi(n,t),Pi(n,t)},Ci=`struct ViewboxOptions {
     aspect_ratio : f32
 };
 
@@ -720,7 +733,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     return vec4f(pow(result, vec3f(1.0 / 1.25)), 1.0);
 }
-`,_n="lighting",ut=_n+"-light-position-x-input",_t=_n+"-light-position-y-input",dt=_n+"-light-position-z-input",Re=async()=>{const{device:n,context:t,canvas:e,canvasFormat:i}=await F(_n),r=x(ut),o=x(_t),s=x(dt),a=e.width/e.height,c=D(n,[],i,Se,"triangle-strip"),h=new Float32Array([a]),{bindGroup:u}=q(n,c,h),l=new Float32Array([r(),o(),s(),0,0,0,0,0,0]),{bindGroup:f,uniformBuffer:g}=q(n,c,l,1),y=()=>{N(n,g,new Float32Array([r(),o(),s(),0,0,0,0,0,0]),0);const{pass:b,executePass:O}=k(n,t,X.black);b.setPipeline(c),b.setBindGroup(0,u),b.setBindGroup(1,f),b.draw(4),O(),requestAnimationFrame(y)};requestAnimationFrame(y)},Be=(n,t)=>{const e=V("A simple lighting system"),i=T("No description yet"),r=j(),o=G(_n,512+128,512-64),s=U(),a=p(S(ut,0,-5,5,.1),"Light X position"),c=p(S(_t,1,0,5,.1),"Light Y position"),h=p(S(dt,0,-5,5,.1),"Light Z position");s.append(a,c,h),r.append(o,s),n.append(e,i,r),t.push(Re)},Pe=`struct Environment {
+`,Rn="lighting",$t=Rn+"-light-position-x-input",Mt=Rn+"-light-position-y-input",Ut=Rn+"-light-position-z-input",Ti=async()=>{const{device:n,context:t,canvas:e,canvasFormat:i}=await F(Rn),r=w($t),o=w(Mt),s=w(Ut),a=e.width/e.height,c=G(n,[],i,Ci,"triangle-strip"),l=new Float32Array([a]),{bindGroup:h}=D(n,c,l),f=new Float32Array([r(),o(),s(),0,0,0,0,0,0]),{bindGroup:_,uniformBuffer:d}=D(n,c,f,1),b=()=>{$(n,d,new Float32Array([r(),o(),s(),0,0,0,0,0,0]),0);const{pass:p,executePass:L}=V(n,t,X.black);p.setPipeline(c),p.setBindGroup(0,h),p.setBindGroup(1,_),p.draw(4),L(),requestAnimationFrame(b)};requestAnimationFrame(b)},Ei=(n,t)=>{const e=E("A simple lighting system"),i=T("No description yet"),r=U(),o=k(Rn,512+128,512-64),s=M(),a=m(S($t,0,-5,5,.1),"Light X position"),c=m(S(Mt,1,0,5,.1),"Light Y position"),l=m(S(Ut,0,-5,5,.1),"Light Z position");s.append(a,c,l),r.append(o,s),n.append(e,i,r),t.push(Ti)},ki=`struct Environment {
     aspect_ratio : f32,
     time : f32
 };
@@ -1126,7 +1139,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     return vec4f(pow(result, vec3f(1.0 / 1.25)), 1.0);
 }
-`,J="mirrors",W={"Base color":0,Lambertian:1,Mirror:2,Refractive:3,Phong:4,Glossy:5},vt=J+"-sphere-shader",pt=J+"-triangle-shader",gt=J+"-plane-shader",mt=J+"-light-position-x-input",xt=J+"-light-position-y-input",bt=J+"-light-position-z-input",yt=J+"-animation-slider",Oe=async()=>{const{device:n,context:t,canvas:e,canvasFormat:i}=await F(J),r=x(mt),o=x(xt),s=x(bt),a=x(vt),c=x(pt),h=x(gt),u=x(yt),l=e.width/e.height,f=D(n,[],i,Pe,"triangle-strip"),g=new Float32Array([l,0]),{bindGroup:y,uniformBuffer:b}=q(n,f,g),O=new Float32Array([r(),o(),s(),W[a()],W[c()],W[h()],0,0,0]),{bindGroup:A,uniformBuffer:d}=q(n,f,O,1),v=w=>{N(n,b,new Float32Array([l,w*u()/512]),0),N(n,d,new Float32Array([r(),o(),s(),W[a()],W[c()],W[h()],0,0,0]),0);const{pass:L,executePass:C}=k(n,t,X.black);L.setPipeline(f),L.setBindGroup(0,y),L.setBindGroup(1,A),L.draw(4),C(),requestAnimationFrame(v)};requestAnimationFrame(v)},Ae=(n,t)=>{const e=V("Mirrors"),i=T("No description yet"),r=j(),o=G(J,512+128,512-64),s=U(),a=p(on(vt,Object.keys(W),"Refractive"),"Sphere shader type",!1),c=p(on(pt,Object.keys(W),"Lambertian"),"Triangle shader type",!1),h=p(on(gt,Object.keys(W),"Lambertian"),"Plane shader type",!1),u=p(S(mt,0,-5,5,.1),"Light X position"),l=p(S(xt,1,0,5,.1),"Light Y position"),f=p(S(bt,0,-5,5,.1),"Light Z position"),g=p(S(yt,0,0,1,.1),"Orbit animation speed");s.append(a,c,h,u,l,f,g),r.append(o,s),n.append(e,i,r),t.push(Oe)},wt=(n,t)=>{Be(n,t),Ae(n,t)},Ce=`@group(0) @binding(0) var texture_sampler : sampler;
+`,ln="mirrors",on={"Base color":0,Lambertian:1,Mirror:2,Refractive:3,Phong:4,Glossy:5},jt=ln+"-sphere-shader",Yt=ln+"-triangle-shader",Xt=ln+"-plane-shader",Zt=ln+"-light-position-x-input",Wt=ln+"-light-position-y-input",Jt=ln+"-light-position-z-input",Kt=ln+"-animation-slider",Fi=async()=>{const{device:n,context:t,canvas:e,canvasFormat:i}=await F(ln),r=w(Zt),o=w(Wt),s=w(Jt),a=w(jt),c=w(Yt),l=w(Xt),h=w(Kt),f=e.width/e.height,_=G(n,[],i,ki,"triangle-strip"),d=new Float32Array([f,0]),{bindGroup:b,uniformBuffer:p}=D(n,_,d),L=new Float32Array([r(),o(),s(),on[a()],on[c()],on[l()],0,0,0]),{bindGroup:P,uniformBuffer:y}=D(n,_,L,1),x=B=>{$(n,p,new Float32Array([f,B*h()/512]),0),$(n,y,new Float32Array([r(),o(),s(),on[a()],on[c()],on[l()],0,0,0]),0);const{pass:A,executePass:C}=V(n,t,X.black);A.setPipeline(_),A.setBindGroup(0,b),A.setBindGroup(1,P),A.draw(4),C(),requestAnimationFrame(x)};requestAnimationFrame(x)},Vi=(n,t)=>{const e=E("Mirrors"),i=T("No description yet"),r=U(),o=k(ln,512+128,512-64),s=M(),a=m(sn(jt,Object.keys(on),"Refractive"),"Sphere shader type",!1),c=m(sn(Yt,Object.keys(on),"Lambertian"),"Triangle shader type",!1),l=m(sn(Xt,Object.keys(on),"Lambertian"),"Plane shader type",!1),h=m(S(Zt,0,-5,5,.1),"Light X position"),f=m(S(Wt,1,0,5,.1),"Light Y position"),_=m(S(Jt,0,-5,5,.1),"Light Z position"),d=m(S(Kt,0,0,1,.1),"Orbit animation speed");s.append(a,c,l,h,f,_,d),r.append(o,s),n.append(e,i,r),t.push(Fi)},Qt=(n,t)=>{Ei(n,t),Vi(n,t)},Gi=`@group(0) @binding(0) var texture_sampler : sampler;
 @group(0) @binding(1) var grass_texture : texture_2d<f32>;
 
 struct VSOut {
@@ -1153,7 +1166,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     return textureSample(grass_texture, texture_sampler, uv);
 }
-`,Lt="/assets/grass_minecraft-9d219e0b.png",It="texture",St="texture-repeat-style",Ee=["clamp-to-edge","repeat","mirror-repeat"],Te=async()=>{const{device:n,context:t,canvasFormat:e}=await F(It),i=async r=>{const o=D(n,[],e,Ce,"triangle-strip"),{textureData:s,height:a,width:c}=await yn(Lt),{texture:h,sampler:u}=bn(n,s,c,a,{addressModeU:r,addressModeV:r}),l=xn(n,o,h,u),{pass:f,executePass:g}=k(n,t,X.black);f.setPipeline(o),f.setBindGroup(0,l),f.draw(4),g()};i(un(St,i))},Ve=(n,t)=>{const e=V("What is a texture"),i=T("No description yet"),r=j(),o=G(It),s=U(),a=p(on(St,Ee,"repeat"),"Texture edge behavior",!1);s.append(a),r.append(o,s),n.append(e,i,r),t.push(Te)},Ge=`@group(0) @binding(0) var texture_sampler : sampler;
+`,ne="texture",te="texture-repeat-style",zi=["clamp-to-edge","repeat","mirror-repeat"],Hi=async()=>{const{device:n,context:t,canvasFormat:e}=await F(ne),i=async r=>{const o=G(n,[],e,Gi,"triangle-strip"),{textureData:s,height:a,width:c}=await Gn("/textures/grass_minecraft.png"),{texture:l,sampler:h}=Vn(n,s,c,a,{addressModeU:r,addressModeV:r}),f=Fn(n,o,l,h),{pass:_,executePass:d}=V(n,t,X.black);_.setPipeline(o),_.setBindGroup(0,f),_.draw(4),d()};i(gn(te,i))},Di=(n,t)=>{const e=E("What is a texture"),i=T("No description yet"),r=U(),o=k(ne),s=M(),a=m(sn(te,zi,"repeat"),"Texture edge behavior",!1);s.append(a),r.append(o,s),n.append(e,i,r),t.push(Hi)},Ni=`@group(0) @binding(0) var texture_sampler : sampler;
 @group(0) @binding(1) var grass_texture : texture_2d<f32>;
 
 @group(2) @binding(0) var<storage> jitters : array<vec2f>;
@@ -1624,7 +1637,7 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
 }
-`,Fe="/assets/grass-2ebe1569.jpg",Rt="texturing",Pn="grass-texture-scale",mn="subdivision-jitter-slider",On="grass-texture-select",Bt="texture-repeat-style-on-plane",ke=["clamp-to-edge","repeat","mirror-repeat"],De=async()=>{const{device:n,canvas:t,context:e,canvasFormat:i}=await F(Rt),r=x(Pn),o=x(mn),s=x(On),a=D(n,[],i,Ge,"triangle-strip");let c,h;const u=async d=>{const v=[yn(Fe),yn(Lt)],w=await Promise.all(v),{texture:L,sampler:C}=bn(n,w[0].textureData,w[0].width,w[0].height,{addressModeU:d,addressModeV:d}),{texture:$,sampler:K}=bn(n,w[1].textureData,w[1].width,w[1].height,{addressModeU:d,addressModeV:d});c=xn(n,a,L,C),h=xn(n,a,$,K)};await u("repeat");const{bindGroup:l,uniformBuffer:f}=q(n,a,new Float32Array([r(),o()*o()]),1),{storageGroup:g,storageBuffers:[y]}=Hn(n,a,[new Float32Array(200)],2),b=()=>{N(n,f,new Float32Array([r(),o()*o()]),0);const d={"grass.jpg":c,"grass_minecraft.png":h}[s()],{pass:v,executePass:w}=k(n,e,X.black);v.setPipeline(a),v.setBindGroup(0,d),v.setBindGroup(1,l),v.setBindGroup(2,g),v.draw(4),w()},O=d=>{const v=Nt(t.height,d);N(n,y,new Float32Array(I(v)),0,0)},A=un(mn,O);O(A),Dt([Pn,On,mn],b),un(Bt,async d=>{await u(d),b()}),b()},ze=(n,t)=>{const e=V("Applying textures in rendering"),i=T("No description yet"),r=j(),o=G(Rt),s=U(),a=p(S(Pn,.2,.1,2,.1),"Texture scale"),c=p(S(mn,1,1,10,1),"Subdivisions for stratisfied jitter"),h=p(on(On,["grass.jpg","grass_minecraft.png"],"grass_minecraft.png"),"Grass texture",!1),u=p(on(Bt,ke,"repeat"),"Texture edge behavior",!1);s.append(h,a,u,c),r.append(o,s),n.append(e,i,r),t.push(De)},Pt=(n,t)=>{Ve(n,t),ze(n,t)},He=`@group(0) @binding(0) var texture_sampler : sampler;
+`,ee="texturing",Un="grass-texture-scale",kn="subdivision-jitter-slider",jn="grass-texture-select",ie="texture-repeat-style-on-plane",qi=["clamp-to-edge","repeat","mirror-repeat"],$i=async()=>{const{device:n,canvas:t,context:e,canvasFormat:i}=await F(ee),r=w(Un),o=w(kn),s=w(jn),a=G(n,[],i,Ni,"triangle-strip");let c,l;const h=async y=>{const x=[Gn("/textures/grass.jpg"),Gn("/textures/grass_minecraft.png")],B=await Promise.all(x),{texture:A,sampler:C}=Vn(n,B[0].textureData,B[0].width,B[0].height,{addressModeU:y,addressModeV:y}),{texture:Z,sampler:en}=Vn(n,B[1].textureData,B[1].width,B[1].height,{addressModeU:y,addressModeV:y});c=Fn(n,a,A,C),l=Fn(n,a,Z,en)};await h("repeat");const{bindGroup:f,uniformBuffer:_}=D(n,a,new Float32Array([r(),o()*o()]),1),{storageGroup:d,storageBuffers:[b]}=yn(n,a,[new Float32Array(200)],2),p=()=>{$(n,_,new Float32Array([r(),o()*o()]),0);const y={"grass.jpg":c,"grass_minecraft.png":l}[s()],{pass:x,executePass:B}=V(n,e,X.black);x.setPipeline(a),x.setBindGroup(0,y),x.setBindGroup(1,f),x.setBindGroup(2,d),x.draw(4),B()},L=y=>{const x=Ce(t.height,y);$(n,b,new Float32Array(I(x)),0,0)},P=gn(kn,L);L(P),Re([Un,jn,kn],p),gn(ie,async y=>{await h(y),p()}),p()},Mi=(n,t)=>{const e=E("Applying textures in rendering"),i=T("No description yet"),r=U(),o=k(ee),s=M(),a=m(S(Un,.2,.1,2,.1),"Texture scale"),c=m(S(kn,1,1,10,1),"Subdivisions for stratisfied jitter"),l=m(sn(jn,["grass.jpg","grass_minecraft.png"],"grass_minecraft.png"),"Grass texture",!1),h=m(sn(ie,qi,"repeat"),"Texture edge behavior",!1);s.append(l,a,h,c),r.append(o,s),n.append(e,i,r),t.push($i)},re=(n,t)=>{Di(n,t),Mi(n,t)},Ui=`@group(0) @binding(0) var texture_sampler : sampler;
 @group(0) @binding(1) var grass_texture : texture_2d<f32>;
 
 @group(1) @binding(0) var<storage> triangle_positions : array<vec3f>;
@@ -2073,4 +2086,509 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
 }
-`,qe="/assets/grass_minecraft-9d219e0b.png",Ot="default-scene-as-meshes",$e=async()=>{console.log(qe);const{device:n,context:t,canvasFormat:e}=await F(Ot),i=D(n,[],e,He,"triangle-strip"),r=Mt([_(-.2,.1,.9),_(.2,.1,.9),_(-.2,.1,-.1)]),{storageGroup:o}=Hn(n,i,[new Float32Array(I(r.vertices)),r.triangleIndices],1),s=await yn("/grass_minecraft.png"),{texture:a,sampler:c}=bn(n,s.textureData,s.width,s.height,{addressModeU:"repeat",addressModeV:"repeat"}),h=xn(n,i,a,c);(()=>{const{pass:l,executePass:f}=k(n,t,X.black);l.setPipeline(i),l.setBindGroup(0,h),l.setBindGroup(1,o),l.draw(4),f()})()},Me=(n,t)=>{const e=V("Applying textures in rendering"),i=T("No description yet"),r=j(),o=G(Ot),s=U();r.append(o,s),n.append(e,i,r),t.push($e)},At=(n,t)=>{Me(n,t)},Ne=(n,t)=>{ft(n,t),wt(n,t),Pt(n,t),At(n,t)},Ue={name:"rendering",generator:Ne,children:[{name:"01-raycasting-introduction",generator:ft,children:[]},{name:"02-lighting-models",generator:wt,children:[]},{name:"03-texture-mapping",generator:Pt,children:[]},{name:"05-meshes",generator:At,children:[]}]},je=[me,Ue],Xe=Ht(),Ct=[],Ye=zt(je);Ye(Xe,Ct);for(const n of Ct)n();
+`,oe="default-scene-as-meshes",ji=async()=>{const{device:n,context:t,canvasFormat:e}=await F(oe),i=G(n,[],e,Ui,"triangle-strip"),r=Pe([v(-.2,.1,.9),v(.2,.1,.9),v(-.2,.1,-.1)]),{storageGroup:o}=yn(n,i,[new Float32Array(I(r.vertices)),new Uint32Array(I(r.triangleIndices))],1),s=await Gn("/textures/grass_minecraft.png"),{texture:a,sampler:c}=Vn(n,s.textureData,s.width,s.height,{addressModeU:"repeat",addressModeV:"repeat"}),l=Fn(n,i,a,c);(()=>{const{pass:f,executePass:_}=V(n,t,X.black);f.setPipeline(i),f.setBindGroup(0,l),f.setBindGroup(1,o),f.draw(4),_()})()},Yi=(n,t)=>{const e=E("Replacing the triangle with a triangle"),i=T("No description yet"),r=U(),o=k(oe),s=M();r.append(o,s),n.append(e,i,r),t.push(ji)},Xi=`@group(0) @binding(0) var<storage> ut_vertices : array<vec3f>;
+@group(0) @binding(1) var<storage> ut_triangles : array<vec3u>;
+@group(0) @binding(2) var<storage> ut_normals : array<vec3f>;
+
+struct UtahTeapotMeta {
+    triangle_count : u32,
+    shading_type : u32
+};
+
+@group(1) @binding(0) var<uniform> ut_meta : UtahTeapotMeta;
+
+const light_direction : vec3f = vec3f(-1.);
+const light_intensity = 1.5;
+
+struct Light {
+    L_i : vec3f,
+    w_i : vec3f,
+    dist : f32
+};
+
+struct LightResult {
+    multiplicative : vec3f,
+    additive : vec3f
+};
+
+struct Ray {
+    origin : vec3f,
+    direction : vec3f,
+    tmin : f32,
+    tmax : f32
+};
+
+struct HitInfo {
+    depth : i32,
+    has_hit : bool,
+    continue_trace : bool,
+
+    dist : f32,
+    position : vec3f,
+    normal : vec3f,
+    color : vec3f,
+
+    diffuse : f32,
+};
+
+struct VSOut {
+    @builtin(position) position : vec4f,
+    @location(0) coords : vec2f,
+};
+
+@vertex
+fn main_vs(@builtin(vertex_index) VertexIndex : u32) -> VSOut
+{
+    const pos = array<vec2f, 4 > (vec2f(-1.0, 1.0), vec2f(-1.0, -1.0), vec2f(1.0, 1.0), vec2f(1.0, -1.0));
+
+    var vsOut : VSOut;
+    vsOut.position = vec4f(pos[VertexIndex], 0.0, 1.0);
+    vsOut.coords = pos[VertexIndex];
+
+    return vsOut;
+}
+
+//Constructing rays //
+
+fn generate_default_hitinfo() -> HitInfo
+{
+    return HitInfo(0, false, false, 0., vec3f(0.), vec3f(0.), vec3f(0.), 1.);
+}
+
+fn generate_ray_from_camera(uv : vec2f) -> Ray
+{
+    const up = vec3f(0., 1., 0.);
+    const target_point = vec3f(.15, 1.5, 0.);
+    const origin_point = vec3f(.15, 1.5, 10.);
+    const camera_constant = 2.5;
+
+    var v = normalize(target_point - origin_point);
+    var b1 = normalize(cross(v, up));
+    var b2 = cross(b1, v);
+
+    var q = b1 * uv.x + b2 * uv.y + v * camera_constant;
+
+    return construct_ray_100units(origin_point, normalize(q));
+}
+
+fn construct_ray_100units(origin : vec3f, direction : vec3f) -> Ray
+{
+    return construct_ray(origin, direction, .001, 100);
+}
+
+fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> Ray
+{
+    var ray : Ray;
+    ray.origin = origin;
+    ray.direction = direction;
+    ray.tmax = tmax;
+    ray.tmin = tmin;
+    return ray;
+}
+
+
+//Intersecting objects //
+
+fn barycentric_normal(v_ns : array<vec3f, 3 >, beta : f32, gamma : f32) -> vec3f {
+    var alpha = 1 - beta - gamma;
+    var interpolated_normal = alpha * v_ns[0] + beta * v_ns[1] + gamma * v_ns[2];
+    return normalize(interpolated_normal);
+}
+
+fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bool {
+    var vertex_lookup = ut_triangles[face];
+    var v = array<vec3f, 3 > (ut_vertices[vertex_lookup.x], ut_vertices[vertex_lookup.y], ut_vertices[vertex_lookup.z]);
+    var v_ns = array<vec3f, 3> (ut_normals[vertex_lookup.x], ut_normals[vertex_lookup.y], ut_normals[vertex_lookup.z]);
+
+    var e0 = v[1] - v[0];
+    var e1 = v[2] - v[0];
+    var n = cross(e0, e1);
+
+    var denom = dot(r.direction, n);
+    var from_origin = v[0] - r.origin;
+
+    var intersection = dot(from_origin, n) / denom;
+
+    var beta = dot(cross(from_origin, r.direction), e1) / denom;
+    var gamma = -dot(cross(from_origin, r.direction), e0) / denom;
+
+    var normal = select(barycentric_normal(v_ns, beta, gamma), n, ut_meta.shading_type == 0);
+
+    var has_hit = intersection > r.tmin && intersection < r.tmax && beta >= 0 && gamma >= 0 && beta + gamma <= 1;
+
+    (*hit).has_hit = (*hit).has_hit || has_hit;
+    (*hit).dist = select((*hit).dist, intersection, has_hit);
+    (*hit).color = select((*hit).color, vec3f(.9), has_hit);
+    (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
+    (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
+
+    return has_hit;
+}
+
+fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
+{
+    (*hit).has_hit = false;
+
+    for (var i : u32 = 0; i < ut_meta.triangle_count; i++)
+    {
+        var has_hit_triangle = intersect_triangle(*r, hit, i);
+        (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
+    }
+
+    return (*hit).has_hit;
+}
+
+//Lighting //
+
+fn sample_directional_light(light_direction : vec3f) -> Light {
+    var light = Light(vec3f(light_intensity), -light_direction, 0.);
+    return light;
+}
+
+fn check_occulusion_directional(position : vec3f, direction : vec3f) -> bool
+{
+    const surface_offset = 0.001;
+    const max_distance = 100.;
+
+    var r = construct_ray(position + direction * surface_offset, direction, surface_offset, max_distance);
+    var hit = generate_default_hitinfo();
+
+    return intersect_scene(&r, &hit);
+}
+
+fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+{
+    var light_info = sample_directional_light(light_direction);
+    var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
+
+    //var is_occluded = check_occulusion_directional((*hit).position, light_direction);
+    //var occlusion_modifier = select(1., 0., is_occluded);
+
+    var L_ambient = .1;
+    var L_reflected = .9 * lambertian_light;//* occlusion_modifier;
+    var L_observed = L_ambient + L_reflected;
+
+    return LightResult(L_observed, vec3f(0));
+}
+
+fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+{
+    return lambertian(r, hit);
+}
+
+//Fragment shader //
+
+@fragment
+fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
+{
+    const backgroundColor = vec4f(0.1, 0.3, 0.6, 1.0);
+    const max_depth = 10;
+
+    var light_result : LightResult;
+    var r : Ray;
+    var hit : HitInfo;
+
+    var uv = vec2f(coords.x * 840 / 450, coords.y) *.5;
+    r = generate_ray_from_camera(uv);
+    hit = generate_default_hitinfo();
+    light_result = LightResult(vec3f(1), vec3f(0));
+
+    for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
+    {
+        if (!intersect_scene(&r, &hit))
+        {
+            hit.color += backgroundColor.rgb;
+            break;
+        }
+
+        var next_light_result = shader(&r, &hit);
+        light_result.additive += next_light_result.additive;
+        light_result.multiplicative *= next_light_result.multiplicative;
+
+        if (!hit.continue_trace)
+        {
+            break;
+        };
+    }
+
+    var final_result = light_result.multiplicative * hit.color + light_result.additive;
+
+    return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
+}
+`,se="utah-teapot",Zi=["Flat","Vertex normals"],ae="shading-select-ut",Wi=async()=>{const{device:n,context:t,canvasFormat:e}=await F(se),i=G(n,[],e,Xi,"triangle-strip"),r=await ut("models/teapot.obj"),o=ft(r,{}),{storageGroup:s}=yn(n,i,[new Float32Array(I(o.vertices)),new Uint32Array(I(o.triangleIndices)),new Float32Array(I(o.normals))],0),{bindGroup:a,uniformBuffer:c}=D(n,i,new Uint32Array([o.triangleCount,0]),1),l=f=>{const _={Flat:0,"Vertex normals":1};ht(n,c,new Uint32Array([_[f]]),4);const{pass:d,executePass:b}=V(n,t,Tn(.8,.4,.4,1));d.setPipeline(i),d.setBindGroup(0,s),d.setBindGroup(1,a),d.draw(4),b()},h=gn(ae,l);l(h)},Ji=(n,t)=>{const e=E("Introducing the Utah Teapot"),i=T("No description yet"),r=U(),o=k(se,840,450),s=M(),a=m(sn(ae,Zi,"Flat"),"Shading type",!1);s.append(a),r.append(o,s),n.append(e,i,r),t.push(Wi)},Ki=`@group(0) @binding(0) var<storage> cb_vertices : array<vec3f>;
+@group(0) @binding(1) var<storage> cb_triangles : array<vec3u>;
+@group(0) @binding(2) var<storage> cb_mat_indices : array<u32>;
+@group(0) @binding(3) var<storage> cb_light_faces : array<u32>;
+
+struct CornellBoxMeta {
+    triangle_count : u32,
+    light_indices_count : u32,
+    shading_type : u32
+};
+
+@group(1) @binding(0) var<uniform> cb_meta : CornellBoxMeta;
+
+struct Material {
+    color : vec4f,
+    specular : vec4f,
+    emission : vec4f,
+    illum_shininess_ior : vec3f
+};
+
+@group(2) @binding(0) var<storage> materials : array<Material>;
+
+struct Light {
+    L_i : vec3f,
+    w_i : vec3f,
+    dist : f32
+};
+
+struct LightResult {
+    multiplicative : vec3f,
+    additive : vec3f
+};
+
+struct Ray {
+    origin : vec3f,
+    direction : vec3f,
+    tmin : f32,
+    tmax : f32
+};
+
+struct HitInfo {
+    depth : i32,
+    has_hit : bool,
+    continue_trace : bool,
+
+    dist : f32,
+    position : vec3f,
+    normal : vec3f,
+    color : vec3f,
+
+    diffuse : f32,
+};
+
+struct VSOut {
+    @builtin(position) position : vec4f,
+    @location(0) coords : vec2f,
+};
+
+@vertex
+fn main_vs(@builtin(vertex_index) VertexIndex : u32) -> VSOut
+{
+    const pos = array<vec2f, 4 > (vec2f(-1.0, 1.0), vec2f(-1.0, -1.0), vec2f(1.0, 1.0), vec2f(1.0, -1.0));
+
+    var vsOut : VSOut;
+    vsOut.position = vec4f(pos[VertexIndex], 0.0, 1.0);
+    vsOut.coords = pos[VertexIndex];
+
+    return vsOut;
+}
+
+//Constructing rays //
+
+fn generate_default_hitinfo() -> HitInfo
+{
+    return HitInfo(0, false, false, 0., vec3f(0.), vec3f(0.), vec3f(0.), 1.);
+}
+
+fn generate_ray_from_camera(uv : vec2f) -> Ray
+{
+    const up = vec3f(0., 1., 0.);
+    const target_point = vec3f(277., 275., 0.);
+    const origin_point = vec3f(277., 275., -570.);
+    const camera_constant = 1;
+
+    var v = normalize(target_point - origin_point);
+    var b1 = normalize(cross(v, up));
+    var b2 = cross(b1, v);
+
+    var q = b1 * uv.x + b2 * uv.y + v * camera_constant;
+
+    return construct_ray_100units(origin_point, normalize(q));
+}
+
+fn construct_ray_100units(origin : vec3f, direction : vec3f) -> Ray
+{
+    return construct_ray(origin, direction, .01, 10000);
+}
+
+fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> Ray
+{
+    var ray : Ray;
+    ray.origin = origin;
+    ray.direction = direction;
+    ray.tmax = tmax;
+    ray.tmin = tmin;
+    return ray;
+}
+
+
+//Intersecting objects //
+
+fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bool {
+    var vertex_lookup = cb_triangles[face];
+    var v = array<vec3f, 3 > (cb_vertices[vertex_lookup.x], cb_vertices[vertex_lookup.y], cb_vertices[vertex_lookup.z]);
+
+    var mat = materials[cb_mat_indices[face]];
+
+    var e0 = v[1] - v[0];
+    var e1 = v[2] - v[0];
+    var n = cross(e0, e1);
+
+    var denom = dot(r.direction, n);
+    var from_origin = v[0] - r.origin;
+
+    var intersection = dot(from_origin, n) / denom;
+
+    var beta = dot(cross(from_origin, r.direction), e1) / denom;
+    var gamma = -dot(cross(from_origin, r.direction), e0) / denom;
+
+    var has_hit = intersection > r.tmin && intersection < r.tmax && beta >= 0 && gamma >= 0 && beta + gamma <= 1;
+
+    var color = mat.color + mat.emission;
+
+    (*hit).has_hit = (*hit).has_hit || has_hit;
+    (*hit).dist = select((*hit).dist, intersection, has_hit);
+    (*hit).color = select((*hit).color, color.rgb, has_hit);
+    (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
+    (*hit).normal = select((*hit).normal, normalize(n), has_hit);
+
+    return has_hit;
+}
+
+fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
+{
+    (*hit).has_hit = false;
+
+    for (var i : u32 = 0; i < cb_meta.triangle_count; i++)
+    {
+        var has_hit_triangle = intersect_triangle(*r, hit, i);
+        (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
+    }
+
+    return (*hit).has_hit;
+}
+
+//Lighting //
+
+
+fn sample_point_light(pos : vec3f, light_position : vec3f, emission : vec4f) -> Light {
+    var direction = light_position - pos;
+    var dist = length(direction);
+    var incident_light = emission.rgb / (dist * dist);
+
+    var light = Light(vec3f(incident_light), direction, dist);
+
+    return light;
+}
+
+fn check_occulusion(position : vec3f, light : vec3f) -> bool
+{
+    const surface_offset = 0.01;
+
+    var line = light - position;
+    var direction = normalize(line);
+    var distance = length(line) - surface_offset - surface_offset;
+
+    var r = construct_ray(position, direction, surface_offset, distance);
+    var hit = generate_default_hitinfo();
+
+    return intersect_scene(&r, &hit);
+}
+
+fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+{
+    var center_light_position = vec3f(0.);
+    var avg_emission = vec4f();
+    for (var i : u32 = 0; i < cb_meta.light_indices_count; i++)
+    {
+        var face_index = cb_light_faces[i];
+
+        var vertex_lookup = cb_triangles[face_index];
+        center_light_position += cb_vertices[vertex_lookup.x] + cb_vertices[vertex_lookup.y] + cb_vertices[vertex_lookup.z];
+
+        var mat = materials[cb_mat_indices[face_index]];
+        avg_emission += mat.emission;
+    }
+    center_light_position /= f32(cb_meta.light_indices_count * 3);
+    avg_emission /= f32(cb_meta.light_indices_count);
+    avg_emission = 6 * vec4f(27.6, 23.4, 12., 0.);
+
+    var light_info = sample_point_light((*hit).position, center_light_position, avg_emission);
+    var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
+
+    var is_occluded = check_occulusion((*hit).position, center_light_position);
+    var occlusion_modifier = select(1., 0., is_occluded);
+
+    var L_ambient = .1;
+    var L_reflected = .9 * lambertian_light * occlusion_modifier;
+    var L_observed = L_ambient + L_reflected;
+
+    return LightResult(L_observed, vec3f(0));
+}
+
+fn flat(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult {
+    return LightResult(vec3f(1), vec3f(0));
+}
+
+fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+{
+    switch (cb_meta.shading_type)
+    {
+        default :
+        {
+        }
+        case 0 :
+        {
+            return flat(r, hit);
+        }
+        case 1 :
+        {
+            return lambertian(r, hit);
+        }
+    }
+
+    return LightResult(vec3(1.0), vec3(0));
+}
+
+//Fragment shader //
+
+@fragment
+fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
+{
+    const backgroundColor = vec4f(vec3f(), 1.0);
+    const max_depth = 10;
+
+    var light_result : LightResult;
+    var r : Ray;
+    var hit : HitInfo;
+
+    var uv = vec2f(coords.x, coords.y) *.5;
+    r = generate_ray_from_camera(uv);
+    hit = generate_default_hitinfo();
+    light_result = LightResult(vec3f(1), vec3f(0));
+
+    for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
+    {
+        if (!intersect_scene(&r, &hit))
+        {
+            hit.color += backgroundColor.rgb;
+            break;
+        }
+
+        var next_light_result = shader(&r, &hit);
+        light_result.additive += next_light_result.additive;
+        light_result.multiplicative *= next_light_result.multiplicative;
+
+        if (!hit.continue_trace)
+        {
+            break;
+        };
+    }
+
+    var final_result = light_result.multiplicative * hit.color + light_result.additive;
+
+    return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
+}
+`,ce="cornell-box",Qi=["Flat","Lambertian"],le="shading-select-cb",nr=async()=>{const{device:n,context:t,canvasFormat:e}=await F(ce),i=G(n,[],e,Ki,"triangle-strip"),r=await ut("models/CornellBoxWithBlocks.obj"),o=ft(r,{}),s=new Float32Array(r.mtls[0].materials.reduce((b,p)=>[...b,...I([p.color,p.specular,p.emission,u(p.illum,p.shininess,p.ior)])],[])),a=o.materialIndices.reduce((b,p,L)=>(r.mtls[0].materials[p].illum>=1&&b.push(L),b),[]),{storageGroup:c}=yn(n,i,[new Float32Array(I(o.vertices)),new Uint32Array(I(o.triangleIndices)),new Uint32Array(o.materialIndices),new Uint32Array(a)],0),{bindGroup:l,uniformBuffer:h}=D(n,i,new Uint32Array([o.triangleCount,a.length,0]),1),{storageGroup:f}=yn(n,i,[s],2),_=b=>{const p={Flat:0,Lambertian:1}[b];ht(n,h,new Uint32Array([p]),2*4);const{pass:L,executePass:P}=V(n,t,X.black);L.setPipeline(i),L.setBindGroup(0,c),L.setBindGroup(1,l),L.setBindGroup(2,f),L.draw(4),P()},d=gn(le,_);_(d)},tr=(n,t)=>{const e=E("Inside the Cornell box"),i=T("No description yet"),r=U(),o=k(ce),s=M(),a=m(sn(le,Qi,"Flat"),"Shading type",!1);s.append(a),r.append(o,s),n.append(e,i,r),t.push(nr)},he=(n,t)=>{Yi(n,t),Ji(n,t),tr(n,t)},er=(n,t)=>{qt(n,t),Qt(n,t),re(n,t),he(n,t)},ir={name:"rendering",generator:er,children:[{name:"01-raycasting-introduction",generator:qt,children:[]},{name:"02-lighting-models",generator:Qt,children:[]},{name:"03-texture-mapping",generator:re,children:[]},{name:"05-meshes",generator:he,children:[]}]},rr=[Ii,ir],or=Be(),fe=[],sr=Se(rr);sr(or,fe);for(const n of fe)n();
