@@ -38,18 +38,27 @@ export const initializeWebGPU = async (canvasId: string) => {
 export const createPass = (
     device: GPUDevice,
     context: GPUCanvasContext,
-    color: GPUColor = { r: 0, g: 0, b: 0, a: 1 }
+    color: GPUColor = { r: 0, g: 0, b: 0, a: 1 },
+    {
+        msaaTexture,
+        depthStencilAttachment,
+    }: {
+        msaaTexture?: GPUTexture
+        depthStencilAttachment?: GPURenderPassDepthStencilAttachment
+    } = {}
 ) => {
+    const colorAttachment: GPURenderPassColorAttachment = {
+        view: msaaTexture ? msaaTexture.createView() : context.getCurrentTexture().createView(),
+        resolveTarget: msaaTexture ? context.getCurrentTexture().createView() : undefined,
+        loadOp: "clear",
+        clearValue: color,
+        storeOp: "store",
+    }
+
     const encoder = device.createCommandEncoder()
     const pass = encoder.beginRenderPass({
-        colorAttachments: [
-            {
-                view: context.getCurrentTexture().createView(),
-                loadOp: "clear",
-                clearValue: color,
-                storeOp: "store",
-            },
-        ],
+        colorAttachments: [colorAttachment],
+        depthStencilAttachment,
     })
 
     const executePass = () => {
@@ -65,7 +74,8 @@ export const setupShaderPipeline = (
     bufferLayouts: GPUVertexBufferLayout[],
     canvasFormat: GPUTextureFormat,
     shaderCode: string,
-    topology: GPUPrimitiveTopology = "triangle-list"
+    topology: GPUPrimitiveTopology = "triangle-list",
+    additionalOpts: Partial<GPURenderPipelineDescriptor>
 ): GPURenderPipeline => {
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -84,10 +94,58 @@ export const setupShaderPipeline = (
         },
         primitive: {
             topology,
+            frontFace: "ccw",
+            cullMode: "back",
         },
+        ...additionalOpts,
     })
 
     return pipeline
+}
+
+export const generateDepthBuffer = (
+    device: GPUDevice,
+    canvas: HTMLCanvasElement,
+    msaaCount: number
+) => {
+    const depthTexture = device.createTexture({
+        size: { width: canvas.width, height: canvas.height },
+        format: "depth24plus",
+        sampleCount: msaaCount,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+    const depthStencil: GPUDepthStencilState = {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus",
+    }
+    const depthStencilAttachment: GPURenderPassDepthStencilAttachment = {
+        view: depthTexture.createView(),
+        depthLoadOp: "clear",
+        depthClearValue: 1.0,
+        depthStoreOp: "store",
+    }
+
+    return { depthTexture, depthStencil, depthStencilAttachment }
+}
+
+export const generateMultisampleBuffer = (
+    device: GPUDevice,
+    canvas: HTMLCanvasElement,
+    canvasFormat: GPUTextureFormat,
+    msaaCount: 4 | 8
+) => {
+    const msaaTexture = device.createTexture({
+        size: { width: canvas.width, height: canvas.height },
+        format: canvasFormat,
+        sampleCount: msaaCount,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+    const multisample: GPUMultisampleState = {
+        count: msaaCount,
+    }
+
+    return { msaaTexture, multisample }
 }
 
 export const genreateVertexBuffer = (

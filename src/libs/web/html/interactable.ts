@@ -3,12 +3,35 @@ export const createRange = (
     value: number,
     min: number,
     max: number,
-    step: number = 1
+    step: number = 1,
+    disabled: boolean = false
 ): HTMLInputElement => {
     const input = document.createElement("input")
     input.id = id
     input.type = "range"
     input.className = "slider-input"
+
+    input.min = String(min)
+    input.max = String(max)
+    input.step = String(step)
+    input.value = String(value)
+
+    input.disabled = disabled
+
+    return input
+}
+
+export const createNumberInput = (
+    id: string,
+    value: number,
+    min: number,
+    max: number,
+    step: number = 1
+): HTMLInputElement => {
+    const input = document.createElement("input")
+    input.id = id
+    input.type = "number"
+    input.className = "number-input"
 
     input.min = String(min)
     input.max = String(max)

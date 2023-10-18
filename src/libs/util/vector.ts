@@ -11,6 +11,14 @@ export const vec4 = (
     w: number = 1.0
 ): Vector4 => [x, y, z, w]
 
+export const toVec3 = (v: Vector): Vector3 => {
+    const x = v[0] ?? 0
+    const y = v[1] ?? 0
+    const z = v[2] ?? 0
+
+    return vec3(x, y, z)
+}
+
 export const Vector3s: {
     [key in "up" | "down" | "left" | "right" | "forward" | "back"]: Vector3
 } = {
@@ -40,6 +48,12 @@ export const subtract = <T extends Vector>(v1: T, v2: T): T => {
 export const scale = <T extends Vector>(v: T, scale: number): T => {
     const output = []
     for (let i = 0; i < v.length; i++) output.push(scale * v[i])
+    return output as T
+}
+
+export const center = <T extends Vector>(v1: T, v2: T): T => {
+    const output = []
+    for (let i = 0; i < Math.min(v1.length, v2.length); i++) output.push((v1[i] + v2[i]) / 2)
     return output as T
 }
 
@@ -312,11 +326,6 @@ export const vectorsEqual = <T extends Vector>(v1: T, v2: T): boolean => {
 // }
 
 // //----------------------------------------------------------------------------
-
-
-
-
-
 
 //----------------------------------------------------------------------------
 

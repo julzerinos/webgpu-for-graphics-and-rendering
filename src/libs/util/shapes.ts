@@ -1,6 +1,6 @@
 import { Vector2, Vector3, Vector4 } from "../../types"
 import { IShapeInfo } from "../../types/shapes"
-import { add, vec2, vec3, vec4 } from "./vector"
+import { add, normalize, vec2, vec3, vec4, center, toVec3 } from "./vector"
 
 export const Square = (point: Vector2, size: number): Vector2[] => {
     const offset = size / 2
@@ -86,5 +86,73 @@ export const Triangle = (vertices: [Vector3, Vector3, Vector3]): IShapeInfo => {
         triangleIndices: triangleFace,
         triangleCount: 1,
         normals: [],
+    }
+}
+
+export const TetrahedronSphere = (subdivisions: number = 0): IShapeInfo => {
+    const vertices = [
+        vec4(0, 0, 1),
+        vec4(0, (2 * Math.sqrt(2)) / 3, -1 / 3),
+        vec4(-Math.sqrt(6) / 3, -Math.sqrt(2) / 3, -1 / 3),
+        vec4(Math.sqrt(6) / 3, -Math.sqrt(2) / 3, -1 / 3),
+    ]
+    let triangleIndices = [vec4(0, 3, 1), vec4(0, 2, 3), vec4(1, 3, 2), vec4(1, 2, 0)]
+    const lineIndices = new Uint32Array([0, 1, 0, 3, 0, 2, 1, 3, 1, 2, 2, 3])
+
+    const subdivide = (depth: number) => {
+        if (depth <= 0) return
+
+        const newIndices = []
+        const indicesMap = new Map<string, number>()
+        for (const f of triangleIndices) {
+            const v1 = toVec3(vertices[f[0]]),
+                v2 = toVec3(vertices[f[1]]),
+                v3 = toVec3(vertices[f[2]])
+
+            const v12 = vec4(...normalize(center(v1, v2)))
+            const v23 = vec4(...normalize(center(v2, v3)))
+            const v13 = vec4(...normalize(center(v3, v1)))
+
+            const p12 = [f[0], f[1]].sort().toString()
+            let i12 = indicesMap.get(p12)
+            if (!i12) {
+                i12 = vertices.push(v12) - 1
+                indicesMap.set(p12, i12)
+            }
+
+            const p23 = [f[1], f[2]].sort().toString()
+            let i23 = indicesMap.get(p23)
+            if (!i23) {
+                i23 = vertices.push(v23) - 1
+                indicesMap.set(p23, i23)
+            }
+
+            const p13 = [f[0], f[2]].sort().toString()
+            let i13 = indicesMap.get(p13)
+            if (!i13) {
+                i13 = vertices.push(v13) - 1
+                indicesMap.set(p13, i13)
+            }
+
+            newIndices.push(
+                vec4(f[0], i13, i12),
+                vec4(f[1], i12, i23),
+                vec4(f[2], i23, i13),
+                vec4(i12, i13, i23)
+            )
+        }
+        triangleIndices = newIndices
+
+        subdivide(depth - 1)
+    }
+
+    subdivide(subdivisions)
+
+    return {
+        vertices,
+        triangleIndices,
+        triangleCount: triangleIndices.length,
+        normals: [],
+        lineIndices,
     }
 }
