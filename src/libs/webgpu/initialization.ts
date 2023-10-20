@@ -94,7 +94,7 @@ export const setupShaderPipeline = (
         },
         primitive: {
             topology,
-            frontFace: "ccw",
+            frontFace: "cw",
             cullMode: "back",
         },
         ...additionalOpts,

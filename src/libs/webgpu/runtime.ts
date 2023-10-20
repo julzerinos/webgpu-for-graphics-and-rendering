@@ -2,20 +2,20 @@ export const writeToBufferF32 = (
     device: GPUDevice,
     buffer: GPUBuffer,
     array: Float32Array,
-    elementsOffset: number,
+    bytesOffset: number,
     fillRemainder: boolean = false
 ) => {
     if (fillRemainder) {
-        const pre = new Float32Array(elementsOffset)
+        const pre = new Float32Array(bytesOffset / Float32Array.BYTES_PER_ELEMENT)
         const post = new Float32Array(
             (buffer.size - array.byteLength - pre.byteLength) / Float32Array.BYTES_PER_ELEMENT
         )
 
         array = new Float32Array([...pre, ...array, ...post])
-        elementsOffset = 0
+        bytesOffset = 0
     }
 
-    device.queue.writeBuffer(buffer, elementsOffset, array)
+    device.queue.writeBuffer(buffer, bytesOffset, array)
 }
 
 // buffer.size -> bytes
@@ -26,18 +26,18 @@ export const writeToBufferU32 = (
     device: GPUDevice,
     buffer: GPUBuffer,
     array: Uint32Array,
-    elementsOffset: number,
+    bytesOffset: number,
     fillRemainder: boolean = false
 ) => {
     if (fillRemainder) {
-        const pre = new Uint32Array(elementsOffset)
+        const pre = new Uint32Array(bytesOffset / Float32Array.BYTES_PER_ELEMENT)
         const post = new Uint32Array(
             (buffer.size - array.byteLength - pre.byteLength) / Uint32Array.BYTES_PER_ELEMENT
         )
 
         array = new Uint32Array([...pre, ...array, ...post])
-        elementsOffset = 0
+        bytesOffset = 0
     }
 
-    device.queue.writeBuffer(buffer, elementsOffset, array)
+    device.queue.writeBuffer(buffer, bytesOffset, array)
 }
