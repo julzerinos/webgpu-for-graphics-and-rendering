@@ -31,7 +31,6 @@ import {
 } from "../../../libs/web"
 
 import {
-    Colors,
     flattenVector,
     lookAtMatrix,
     multMatrices,
@@ -121,7 +120,7 @@ const execute: Executable = async () => {
         canvasFormat,
         shaderCode,
         "triangle-list",
-        { depthStencil, multisample }
+        { multisample, depthStencil }
     )
 
     const angle = toRadians(getRotation())
@@ -168,6 +167,8 @@ const execute: Executable = async () => {
     }
 
     const updateSubdivision = (subdivision: number) => {
+        console.log(spheres[subdivision])
+
         writeToBufferU32(
             device,
             indexBuffer,

@@ -75,7 +75,7 @@ export const setupShaderPipeline = (
     canvasFormat: GPUTextureFormat,
     shaderCode: string,
     topology: GPUPrimitiveTopology = "triangle-list",
-    additionalOpts: Partial<GPURenderPipelineDescriptor>
+    additionalOpts?: Partial<GPURenderPipelineDescriptor>
 ): GPURenderPipeline => {
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -94,7 +94,7 @@ export const setupShaderPipeline = (
         },
         primitive: {
             topology,
-            frontFace: "cw",
+            frontFace: "ccw",
             cullMode: "back",
         },
         ...additionalOpts,

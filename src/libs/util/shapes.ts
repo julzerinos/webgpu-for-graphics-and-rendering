@@ -96,7 +96,7 @@ export const TetrahedronSphere = (subdivisions: number = 0): IShapeInfo => {
         vec4(-Math.sqrt(6) / 3, -Math.sqrt(2) / 3, -1 / 3),
         vec4(Math.sqrt(6) / 3, -Math.sqrt(2) / 3, -1 / 3),
     ]
-    let triangleIndices = [vec4(0, 1, 3), vec4(0, 3, 2), vec4(1, 2, 3), vec4(1, 0, 2)]
+    let triangleIndices = [vec4(0, 3, 1), vec4(0, 2, 3), vec4(1, 3, 2), vec4(1, 2, 0)]
 
     const subdivide = (depth: number) => {
         if (depth <= 0) return
@@ -140,7 +140,9 @@ export const TetrahedronSphere = (subdivisions: number = 0): IShapeInfo => {
                 vec4(i12, i23, i13)
             )
         }
-        
+
+        console.log(depth, newIndices)
+
         triangleIndices = newIndices
 
         subdivide(depth - 1)
