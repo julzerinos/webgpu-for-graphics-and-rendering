@@ -32,7 +32,7 @@ const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const utahTeapotObj = await parseOBJ("models/teapot.obj")
+    const utahTeapotObj = await parseOBJ("models/bunny.obj")
     const utahTeapotShape = objToShape(utahTeapotObj, {})
 
     const { storageGroup: utahTrapotStorage } = createStorageBind(

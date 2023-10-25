@@ -136,7 +136,7 @@ const execute: Executable = async () => {
     const view = lookAtMatrix(eye, at, up)
 
     const perspective = perspectiveProjection(45, canvas.width / canvas.height, 0.1, 100)
-    const projection = multMatrices(toNDC, perspective)
+    const projection = perspective
     const projectionView = multMatrices(projection, view)
     const pvm = projectionView
 

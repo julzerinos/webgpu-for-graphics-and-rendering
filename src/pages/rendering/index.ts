@@ -4,6 +4,7 @@ import { RaycastingIntroduction } from "./01-raycasting-introduction"
 import { LightingModels } from "./02-lighting-models"
 import { TextureMapping } from "./03-textures"
 import { Meshes } from "./05-meshes"
+import { SpatialPartitioning } from "./06-partitioning"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     RaycastingIntroduction(container, executeQueue)
@@ -19,22 +20,22 @@ export const renderingRoutes: IRoute = {
         {
             name: "01-raycasting-introduction",
             generator: RaycastingIntroduction,
-            children: [],
         },
         {
             name: "02-lighting-models",
             generator: LightingModels,
-            children: [],
         },
         {
             name: "03-texture-mapping",
             generator: TextureMapping,
-            children: [],
         },
         {
             name: "05-meshes",
             generator: Meshes,
-            children: [],
+        },
+        {
+            name: "06-partitioning",
+            generator: SpatialPartitioning,
         },
     ],
 }

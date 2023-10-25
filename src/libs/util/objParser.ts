@@ -430,7 +430,7 @@ export const getDrawingInfo = (
     return drawingInfo
 }
 
-interface DrawingInfo {
+export interface DrawingInfo {
     vertices: Float32Array
     normals: Float32Array
     colors: Float32Array
