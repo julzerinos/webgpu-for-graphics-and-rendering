@@ -319,116 +319,126 @@ const parseMTLLine = (line: string, parseMeta: { material: Material; mtl: MTLDoc
 // }
 
 // // Find color by material name
-// OBJDoc.prototype.findMaterial = function (name) {
-//     for (var i = 0; i < this.mtls.length; i++) {
-//         for (var j = 0; j < this.mtls[i].materials.length; j++) {
-//             if (this.mtls[i].materials[j].name == name) {
-//                 return this.mtls[i].materials[j]
-//             }
-//         }
-//     }
-//     return new Color(0.8, 0.8, 0.8, 1)
-// }
+const findMaterial = (name: string, objDoc: OBJDoc): Material => {
+    for (var i = 0; i < objDoc.mtls.length; i++) {
+        for (var j = 0; j < objDoc.mtls[i].materials.length; j++) {
+            if (objDoc.mtls[i].materials[j].name == name) {
+                return objDoc.mtls[i].materials[j]
+            }
+        }
+    }
+
+    return createMaterial("_defaultMat", vec4(0.8, 0.8, 0.8, 1))
+}
 
 // //------------------------------------------------------------------------------
 // // Retrieve the information for drawing 3D model
-// OBJDoc.prototype.getDrawingInfo = function () {
-//     // Create an arrays for vertex coordinates, normals, colors, and indices
-//     var numVertices = 0
-//     var numIndices = 0
-//     var numFaces = 0
-//     for (var i = 0; i < this.objects.length; i++) {
-//         numIndices += this.objects[i].numIndices + this.objects[i].faces.length
-//         numFaces += this.objects[i].faces.length
-//     }
-//     var numVertices = this.vertices.length
-//     var vertices = new Float32Array(numVertices * 4)
-//     var normals = new Float32Array(numVertices * 4)
-//     var colors = new Float32Array(numVertices * 4)
-//     var indices = new Uint32Array(numIndices)
-//     var mat_indices = new Uint32Array(numFaces)
-//     var materials = []
-//     var mat_map = new Map()
-//     var light_indices = []
+export const getDrawingInfo = (
+    objDoc: OBJDoc,
+    { indicesIn3 }: { indicesIn3?: boolean } = {}
+): DrawingInfo => {
+    // Create an arrays for vertex coordinates, normals, colors, and indices
+    var numVertices = 0
+    var numIndices = 0
+    var numFaces = 0
+    for (var i = 0; i < objDoc.objects.length; i++) {
+        numIndices += objDoc.objects[i].numIndices + objDoc.objects[i].faces.length
+        numFaces += objDoc.objects[i].faces.length
+    }
+    var numVertices = objDoc.vertices.length
+    var vertices = new Float32Array(numVertices * 4)
+    var normals = new Float32Array(numVertices * 4)
+    var colors = new Float32Array(numVertices * 4)
+    var indices = new Uint32Array(numIndices)
+    var matIndices = new Uint32Array(numFaces)
+    var materials = []
+    var mat_map = new Map()
+    var light_indices = []
 
-//     // Set vertex, normal and color
-//     var index_indices = 0
-//     var face_indices = 0
-//     for (var i = 0; i < this.objects.length; i++) {
-//         var object = this.objects[i]
-//         for (var j = 0; j < object.faces.length; j++) {
-//             var face = object.faces[j]
-//             var mat_idx = mat_map.get(face.materialName)
-//             var mat
-//             if (mat_idx === undefined) {
-//                 mat = this.findMaterial(face.materialName)
-//                 mat_map.set(face.materialName, materials.length)
-//                 mat_idx = materials.length
-//                 materials.push(mat)
-//             } else {
-//                 mat = materials[mat_idx]
-//             }
-//             if (
-//                 mat.emission !== undefined &&
-//                 mat.emission.r + mat.emission.g + mat.emission.b > 0.0
-//             )
-//                 light_indices.push(face_indices)
-//             mat_indices[face_indices++] = mat_idx
-//             var color = mat.color === undefined ? new Color(0.8, 0.8, 0.8, 1.0) : mat.color
-//             var faceNormal = face.normal
-//             for (var k = 0; k < face.vIndices.length; k++) {
-//                 // Set index
-//                 var vIdx = face.vIndices[k]
-//                 indices[index_indices] = vIdx
-//                 // Copy vertex
-//                 var vertex = this.vertices[vIdx]
-//                 vertices[vIdx * 4 + 0] = vertex.x
-//                 vertices[vIdx * 4 + 1] = vertex.y
-//                 vertices[vIdx * 4 + 2] = vertex.z
-//                 vertices[vIdx * 4 + 3] = 1.0
-//                 // Copy color
-//                 colors[vIdx * 4 + 0] = color.r
-//                 colors[vIdx * 4 + 1] = color.g
-//                 colors[vIdx * 4 + 2] = color.b
-//                 colors[vIdx * 4 + 3] = color.a
-//                 // Copy normal
-//                 var nIdx = face.nIndices[k]
-//                 if (nIdx >= 0) {
-//                     var normal = this.normals[nIdx]
-//                     normals[vIdx * 4 + 0] = normal.x
-//                     normals[vIdx * 4 + 1] = normal.y
-//                     normals[vIdx * 4 + 2] = normal.z
-//                     normals[vIdx * 4 + 3] = 0.0
-//                 } else {
-//                     normals[vIdx * 4 + 0] = faceNormal.x
-//                     normals[vIdx * 4 + 1] = faceNormal.y
-//                     normals[vIdx * 4 + 2] = faceNormal.z
-//                     normals[vIdx * 4 + 3] = 0.0
-//                 }
-//                 index_indices++
-//             }
-//             indices[index_indices++] = 0
-//         }
-//     }
+    // Set vertex, normal and color
+    var index_indices = 0
+    var face_indices = 0
+    for (var i = 0; i < objDoc.objects.length; i++) {
+        var object = objDoc.objects[i]
+        for (var j = 0; j < object.faces.length; j++) {
+            var face = object.faces[j]
+            var mat_idx = mat_map.get(face.materialName)
+            var mat
+            if (mat_idx === undefined) {
+                mat = findMaterial(face.materialName, objDoc)
+                mat_map.set(face.materialName, materials.length)
+                mat_idx = materials.length
+                materials.push(mat)
+            } else {
+                mat = materials[mat_idx]
+            }
+            if (
+                mat.emission !== undefined &&
+                mat.emission[0] + mat.emission[1] + mat.emission[2] > 0.0
+            )
+                light_indices.push(face_indices)
+            matIndices[face_indices++] = mat_idx
+            var color = mat.color === undefined ? vec4(0.8, 0.8, 0.8, 1.0) : mat.color
+            var faceNormal = face.normal
+            for (var k = 0; k < face.vIndices.length; k++) {
+                // Set index
+                var vIdx = face.vIndices[k]
+                indices[index_indices] = vIdx
+                // Copy vertex
+                var vertex = objDoc.vertices[vIdx]
+                vertices[vIdx * 4 + 0] = vertex[0]
+                vertices[vIdx * 4 + 1] = vertex[1]
+                vertices[vIdx * 4 + 2] = vertex[2]
+                vertices[vIdx * 4 + 3] = 1.0
+                // Copy color
+                colors[vIdx * 4 + 0] = color[0]
+                colors[vIdx * 4 + 1] = color[1]
+                colors[vIdx * 4 + 2] = color[2]
+                colors[vIdx * 4 + 3] = color[3]
+                // Copy normal
+                var nIdx = face.nIndices[k]
+                if (nIdx >= 0) {
+                    var normal = objDoc.normals[nIdx]
+                    normals[vIdx * 4 + 0] = normal[0]
+                    normals[vIdx * 4 + 1] = normal[1]
+                    normals[vIdx * 4 + 2] = normal[2]
+                    normals[vIdx * 4 + 3] = 0.0
+                } else {
+                    normals[vIdx * 4 + 0] = faceNormal[0]
+                    normals[vIdx * 4 + 1] = faceNormal[1]
+                    normals[vIdx * 4 + 2] = faceNormal[2]
+                    normals[vIdx * 4 + 3] = 0.0
+                }
+                index_indices++
+            }
 
-//     return new DrawingInfo(
-//         vertices,
-//         normals,
-//         colors,
-//         indices,
-//         materials,
-//         mat_indices,
-//         new Uint32Array(light_indices)
-//     )
-// }
+            if (!indicesIn3) indices[index_indices++] = 0
+        }
+    }
 
-// //------------------------------------------------------------------------------
-// // MTLDoc Object
-// //------------------------------------------------------------------------------
-// var MTLDoc = function () {
-//     this.complete = false // MTL is configured correctly
-//     this.materials = new Array(0)
-// }
+    const lightIndices = new Uint32Array(light_indices)
+    const drawingInfo: DrawingInfo = {
+        vertices,
+        normals,
+        colors,
+        indices,
+        materials,
+        matIndices,
+        lightIndices,
+    }
+
+    return drawingInfo
+}
+
+interface DrawingInfo {
+    vertices: Float32Array
+    normals: Float32Array
+    colors: Float32Array
+    indices: Uint32Array
+    materials: Material[]
+    matIndices: Uint32Array
+    lightIndices: Uint32Array
+}
 
 const createMTLDoc = (): MTLDoc => ({ complete: false, materials: [] })
 
@@ -494,29 +504,6 @@ interface Face {
     normal: Vector4
     numIndices: number
 }
-
-// //------------------------------------------------------------------------------
-// // DrawInfo Object
-// //------------------------------------------------------------------------------
-// var DrawingInfo = function (
-//     vertices,
-//     normals,
-//     colors,
-//     indices,
-//     materials,
-//     mat_indices,
-//     light_indices
-// ) {
-//     this.vertices = vertices
-//     this.normals = normals
-//     this.colors = colors
-//     this.indices = indices
-//     this.materials = materials
-//     this.mat_indices = mat_indices
-//     this.light_indices = light_indices
-// }
-
-// //------------------------------------------------------------------------------
 
 interface StringParser {
     str: string

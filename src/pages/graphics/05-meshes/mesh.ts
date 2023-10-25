@@ -9,6 +9,8 @@ import {
     createUniformBind,
     toNDC,
     writeToBufferF32,
+    generateDepthBuffer,
+    generateMultisampleBuffer,
 } from "../../../libs/webgpu"
 
 import {
@@ -36,38 +38,47 @@ import {
     identity4x4,
     flattenMatrix,
     toRadians,
+    getDrawingInfo,
 } from "../../../libs/util"
 
 import shaderCode from "./shading.wgsl?raw"
 
-const CANVAS_ID = "perspective"
+import { OBJDoc } from "../../../libs/util/OBJParserT"
+import monkey from "../../../../public/models/monkey.obj?raw"
+
+const CANVAS_ID = "monkey"
 const ROTATION_AROUND = "rotation-around-monkey"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const monkeyObj = await parseOBJ("models/monkey.obj")
-    const monkeyShape = await objToShape(monkeyObj, {})
+    const monkeyObj = await parseOBJ("models/monkey.obj", 1, false)
+    // const monkeyShape = objToShape(monkeyObj)
+    const monkeyDrawingInfo = getDrawingInfo(monkeyObj, { indicesIn3: true })
 
-    console.log(monkeyShape)
+    // const vertices = new Float32Array(flattenVector(monkeyShape.vertices))
+    // const triangles = new Uint32Array(
+    //     flattenVector(monkeyShape.triangleIndices.map(v => toVec3(v)))
+    // )
 
-    const vertices = new Float32Array(flattenVector(monkeyShape.vertices))
-    const triangles = new Uint32Array(
-        flattenVector(monkeyShape.triangleIndices.map(v => toVec3(v)))
-    )
-
-    const { buffer: indexBuffer } = genreateIndexBuffer(device, triangles)
+    const { buffer: indexBuffer } = genreateIndexBuffer(device, monkeyDrawingInfo.indices)
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,
-        vertices,
+        monkeyDrawingInfo.vertices,
         "float32x4"
     )
-
     const { buffer: normalBuffer, bufferLayout: normalBufferLayout } = genreateVertexBuffer(
         device,
-        new Float32Array(flattenVector(monkeyShape.normals)),
+        monkeyDrawingInfo.normals,
         "float32x4",
         1
+    )
+
+    const { msaaTexture, multisample } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
+    const { createDepthTexture, depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(
+        device,
+        canvas,
+        4
     )
 
     const pipeline = setupShaderPipeline(
@@ -75,12 +86,16 @@ const execute: Executable = async () => {
         [vertexBufferLayout, normalBufferLayout],
         canvasFormat,
         shaderCode,
-        "triangle-list"
+        "triangle-list",
+        { depthStencil, multisample, primitive: { frontFace: "ccw", cullMode: "back" } }
     )
 
+    createDepthTexture()
+
     const angle = toRadians(0)
-    const r = 2
-    const eye = vec3(r * Math.sin(angle), 0, r * Math.cos(angle))
+    const r = 4
+    const h = 0
+    const eye = vec3(r * Math.sin(angle), h, r * Math.cos(angle))
     const at = vec3(0)
     const up = vec3(0, 1, 0)
     const view = lookAtMatrix(eye, at, up)
@@ -101,7 +116,7 @@ const execute: Executable = async () => {
 
     const updateRotation = (rotation: number) => {
         const angle = toRadians(rotation)
-        const eye = vec3(r * Math.sin(angle), 0, r * Math.cos(angle))
+        const eye = vec3(r * Math.sin(angle), h, r * Math.cos(angle))
         const view = lookAtMatrix(eye, at, up)
 
         const projectionView = multMatrices(projection, view)
@@ -120,7 +135,10 @@ const execute: Executable = async () => {
     subscribeToInput<number>(ROTATION_AROUND, updateRotation)
 
     const draw = () => {
-        const { pass, executePass } = createPass(device, context, Colors.black)
+        const { pass, executePass } = createPass(device, context, Colors.black, {
+            depthStencilAttachmentFactory,
+            msaaTexture,
+        })
 
         pass.setPipeline(pipeline)
         pass.setVertexBuffer(0, vertexBuffer)
@@ -128,7 +146,7 @@ const execute: Executable = async () => {
         pass.setIndexBuffer(indexBuffer, "uint32")
         pass.setBindGroup(0, pvmBind)
 
-        pass.drawIndexed(monkeyShape.triangleIndices.length * 3)
+        pass.drawIndexed(monkeyDrawingInfo.indices.length)
 
         executePass()
     }
@@ -146,7 +164,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
 
     const rotationAngleSlider = createWithLabel(
         createRange(ROTATION_AROUND, 0, -180, 180, 1),
-        "Rotation around the tetrahedron"
+        "Rotation around the monkey"
     )
 
     interactableSection.append(rotationAngleSlider)

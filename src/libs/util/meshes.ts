@@ -4,7 +4,7 @@ import { IShapeInfo } from "../../types/shapes"
 
 import { OBJDoc } from "./objParser"
 
-export const objToShape = (obj: OBJDoc, {}: {}): IShapeInfo => {
+export const objToShape = (obj: OBJDoc, {}: {} = {}): IShapeInfo => {
     let triangleCount = 0
     const triangleIndices = [] as Vector4[]
     const materialIndices = [] as number[]

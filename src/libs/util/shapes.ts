@@ -141,8 +141,6 @@ export const TetrahedronSphere = (subdivisions: number = 0): IShapeInfo => {
             )
         }
 
-        console.log(depth, newIndices)
-
         triangleIndices = newIndices
 
         subdivide(depth - 1)

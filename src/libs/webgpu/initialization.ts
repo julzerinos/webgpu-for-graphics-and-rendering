@@ -41,10 +41,10 @@ export const createPass = (
     color: GPUColor = { r: 0, g: 0, b: 0, a: 1 },
     {
         msaaTexture,
-        depthStencilAttachment,
+        depthStencilAttachmentFactory,
     }: {
         msaaTexture?: GPUTexture
-        depthStencilAttachment?: GPURenderPassDepthStencilAttachment
+        depthStencilAttachmentFactory?: () => GPURenderPassDepthStencilAttachment
     } = {}
 ) => {
     const colorAttachment: GPURenderPassColorAttachment = {
@@ -58,7 +58,7 @@ export const createPass = (
     const encoder = device.createCommandEncoder()
     const pass = encoder.beginRenderPass({
         colorAttachments: [colorAttachment],
-        depthStencilAttachment,
+        depthStencilAttachment: (depthStencilAttachmentFactory ?? (() => undefined))(),
     })
 
     const executePass = () => {
@@ -80,6 +80,7 @@ export const setupShaderPipeline = (
     const wgsl = device.createShaderModule({
         code: shaderCode,
     })
+
     const pipeline = device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -92,12 +93,13 @@ export const setupShaderPipeline = (
             entryPoint: "main_fs",
             targets: [{ format: canvasFormat }],
         },
+        ...additionalOpts,
         primitive: {
             topology,
             frontFace: "ccw",
             cullMode: "back",
+            ...additionalOpts?.primitive,
         },
-        ...additionalOpts,
     })
 
     return pipeline
@@ -108,25 +110,32 @@ export const generateDepthBuffer = (
     canvas: HTMLCanvasElement,
     msaaCount: number
 ) => {
-    const depthTexture = device.createTexture({
-        size: { width: canvas.width, height: canvas.height },
-        format: "depth24plus",
-        sampleCount: msaaCount,
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-    })
+    let depthTexture: GPUTexture
+    const createDepthTexture = () => {
+        depthTexture = device.createTexture({
+            size: { width: canvas.width, height: canvas.height },
+            format: "depth24plus",
+            sampleCount: msaaCount,
+            usage: GPUTextureUsage.RENDER_ATTACHMENT,
+        })
+    }
     const depthStencil: GPUDepthStencilState = {
         depthWriteEnabled: true,
         depthCompare: "less",
         format: "depth24plus",
     }
-    const depthStencilAttachment: GPURenderPassDepthStencilAttachment = {
-        view: depthTexture.createView(),
-        depthLoadOp: "clear",
-        depthClearValue: 1.0,
-        depthStoreOp: "store",
+    
+    const depthStencilAttachmentFactory: () => GPURenderPassDepthStencilAttachment = () => {
+        if (!depthTexture) createDepthTexture()
+        return {
+            view: depthTexture.createView(),
+            depthLoadOp: "clear",
+            depthClearValue: 1.0,
+            depthStoreOp: "store",
+        }
     }
 
-    return { depthTexture, depthStencil, depthStencilAttachment }
+    return { createDepthTexture, depthStencil, depthStencilAttachmentFactory }
 }
 
 export const generateMultisampleBuffer = (

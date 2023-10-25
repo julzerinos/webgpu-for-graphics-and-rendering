@@ -5,9 +5,9 @@ struct SceneData {
 
 @group(0) @binding(0) var<uniform> scene_data : SceneData;
 
-const light_direction = vec3f(0, 0, -1.);
-const ligth_emission = vec4f(1, 1, 1, 1);
-const ambient_diffuse_specular_shininess = vec4f(.2, 1, .6, 20);
+const light_direction = normalize(vec3f(-1, 0, -1));
+const ligth_emission = vec4f(.8, .8, .8, 1);
+const ambient_diffuse_specular_shininess = vec4f(.4, 1, .6, 20);
 const visibility = 1.;
 
 fn incident_light() -> vec3f
@@ -58,7 +58,7 @@ fn main_vs(@location(0) inPos : vec4f, @location(1) normal : vec3f) -> VSOut
     var gouraud_shading = shading(.5 * inPos + .5, inPos.xyz, inPos.xyz);
 
     var vsOut : VSOut;
-    vsOut.position = scene_data.pvm * inPos;
+    vsOut.position = scene_data.pvm * vec4f(inPos.xyz, 1);
     vsOut.color = vec4f(1, 1, 1, 1);
     vsOut.model_position = inPos.xyz;
     vsOut.normal = normal;

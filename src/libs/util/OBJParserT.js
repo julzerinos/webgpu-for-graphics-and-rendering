@@ -26,7 +26,7 @@ export var OBJDoc = function (fileName) {
 }
 
 // Parsing the OBJ file
-OBJDoc.prototype.parse = function (fileString, scale, reverse) {
+OBJDoc.prototype.parse = async function (fileString, scale, reverse) {
   var lines = fileString.split('\n');  // Break up into lines and store them as array
   lines.push(null); // Append null
   var index = 0;    // Initialize index of line

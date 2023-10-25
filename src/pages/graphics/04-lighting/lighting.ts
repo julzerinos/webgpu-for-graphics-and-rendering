@@ -112,7 +112,11 @@ const execute: Executable = async () => {
         canvasFormat,
         msaaCount
     )
-    const { depthStencil, depthStencilAttachment } = generateDepthBuffer(device, canvas, msaaCount)
+    const { createDepthTexture, depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(
+        device,
+        canvas,
+        msaaCount
+    )
 
     const pipeline = setupShaderPipeline(
         device,
@@ -122,6 +126,8 @@ const execute: Executable = async () => {
         "triangle-list",
         { multisample, depthStencil }
     )
+
+    createDepthTexture()
 
     const angle = toRadians(getRotation())
     const eye = vec3(3 * Math.sin(angle), 0, 3 * Math.cos(angle))
@@ -167,8 +173,6 @@ const execute: Executable = async () => {
     }
 
     const updateSubdivision = (subdivision: number) => {
-        console.log(spheres[subdivision])
-
         writeToBufferU32(
             device,
             indexBuffer,
@@ -212,7 +216,7 @@ const execute: Executable = async () => {
         if (animatedRotation) updateRotation(time / 5e1)
 
         const { pass, executePass } = createPass(device, context, vec4(0.2, 0.2, 0.2), {
-            depthStencilAttachment,
+            depthStencilAttachmentFactory,
             msaaTexture,
         })
 
