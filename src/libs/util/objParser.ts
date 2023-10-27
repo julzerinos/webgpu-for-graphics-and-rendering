@@ -1,7 +1,16 @@
 // objParser.ts is based on the previous implementations in Javascript
 // OBJParser.js from OBJViewer.js (c) 2012 matsuda and itami, later modified by Jeppe Revall Frisvad, 2014/2023
 
-import { AABB, aabbUnion, createAabb, includeVertexInAabb, isSmaller, vec3, vec4 } from "."
+import {
+    AABB,
+    aabbUnion,
+    createAabb,
+    flattenVector,
+    includeVertexInAabb,
+    isSmaller,
+    vec3,
+    vec4,
+} from "."
 import { Vector3, Vector4 } from "../../types"
 
 const createOBJDoc = (filename: string): OBJDoc => ({
@@ -430,7 +439,7 @@ export const getDrawingInfo = (
         materials,
         matIndices,
         lightIndices,
-        aabb,
+        aabb: new Float32Array(flattenVector([aabb.min, aabb.max])),
     }
 
     return drawingInfo
@@ -444,7 +453,7 @@ export interface DrawingInfo {
     materials: Material[]
     matIndices: Uint32Array
     lightIndices: Uint32Array
-    aabb: AABB
+    aabb: Float32Array
 }
 
 const createMTLDoc = (): MTLDoc => ({ complete: false, materials: [] })

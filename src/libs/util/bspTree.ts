@@ -190,15 +190,10 @@ const subdivide_node = (
     subdivide_node(populatedNode.right, right_bbox, level + 1, right_objects, tree_objects)
 }
 
-export interface BspTreeResults {
-    positions: Float32Array
-    normals: Float32Array
-    colors: Float32Array
-    indices: Uint32Array
+export interface BspTreeResults extends DrawingInfo {
     treeIds: Uint32Array
     bspTree: Uint32Array
     bspPlanes: Float32Array
-    aabb: Float32Array
 }
 
 export const build_bsp_tree = (drawingInfo: DrawingInfo) => {
@@ -254,10 +249,7 @@ export const build_bsp_tree = (drawingInfo: DrawingInfo) => {
     build_bsp_array(root, 0, 0)
 
     const buffers: BspTreeResults = {
-        positions: drawingInfo.vertices,
-        normals: drawingInfo.normals,
-        colors: drawingInfo.colors,
-        indices: drawingInfo.indices,
+        ...drawingInfo,
         treeIds: treeIds,
         bspTree: bspTree,
         bspPlanes: bspPlanes,

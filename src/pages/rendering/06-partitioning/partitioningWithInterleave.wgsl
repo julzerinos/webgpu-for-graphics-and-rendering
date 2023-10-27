@@ -1,6 +1,15 @@
-@group(0) @binding(0) var<storage> vertices : array<vec3f>;
-@group(0) @binding(1) var<storage> normals : array<vec3f>;
-@group(0) @binding(2) var<storage> indices : array<vec4u>;
+struct VertexNormal {
+    vertex : vec3f,
+    normal : vec3f
+};
+
+struct IndexMaterial {
+    indices : vec4u,
+    //mat : u32
+};
+
+@group(0) @binding(0) var<storage> vertex_normals : array<VertexNormal>;
+@group(0) @binding(1) var<storage> index_mats : array<IndexMaterial>;
 
 @group(1) @binding(0) var<storage> bspPlanes : array<f32>;
 @group(1) @binding(1) var<storage> bspTree : array<vec4u>;
@@ -12,8 +21,15 @@ struct Aabb {
 };
 
 @group(2) @binding(0) var<uniform> aabb : Aabb;
-@group(2) @binding(1) var<uniform> time : f32;
 
+struct Material {
+    color : vec4f,
+    specular : vec4f,
+    emission : vec4f,
+    illum_shininess_ior : vec3f
+};
+
+@group(3) @binding(0) var<storage> materials : array<Material>;
 
 const MAX_LEVEL = 20u;
 const BSP_LEAF = 3u;
@@ -24,8 +40,9 @@ const light_direction : vec3f = vec3f(-1.);
 const light_intensity = 1.5;
 
 const up = vec3f(0., 1., 0.);
-const target_point = vec3f(-.02, .11, 0.);
-const camera_constant = 3.5; //3.5
+const target_point = vec3f(277., 275., 0.);
+const origin_point = vec3f(277., 275., -570.);
+const camera_constant = 1;
 
 const f1en4 = 0.0001;
 const f1en8 = 0.00000001;
@@ -87,9 +104,6 @@ fn generate_default_hitinfo() -> HitInfo
 
 fn generate_ray_from_camera(uv : vec2f) -> Ray
 {
-    var origin_point = vec3f(-.02, .11, -.6) + vec3f(cos(time), 0, sin(time));
-
-
     var v = normalize(target_point - origin_point);
     var b1 = normalize(cross(v, up));
     var b2 = cross(b1, v);
@@ -124,9 +138,18 @@ fn barycentric_normal(v_ns : array<vec3f, 3 >, beta : f32, gamma : f32) -> vec3f
 }
 
 fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bool {
-    var vertex_lookup = indices[face];
-    var v = array<vec3f, 3 > (vertices[vertex_lookup.x], vertices[vertex_lookup.y], vertices[vertex_lookup.z]);
-    var v_ns = array<vec3f, 3> (normals[vertex_lookup.x], normals[vertex_lookup.y], normals[vertex_lookup.z]);
+    var vertex_mat_lookup = index_mats[face];
+    var indices = vertex_mat_lookup.indices.xyz;
+    var material_index = vertex_mat_lookup.indices.w;
+
+    var vertex_normal_x = vertex_normals[indices.x];
+    var vertex_normal_y = vertex_normals[indices.y];
+    var vertex_normal_z = vertex_normals[indices.z];
+
+    var v = array<vec3f, 3 > (vertex_normal_x.vertex, vertex_normal_y.vertex, vertex_normal_z.vertex);
+    var v_ns = array<vec3f, 3> (vertex_normal_x.normal, vertex_normal_y.normal, vertex_normal_z.normal);
+
+    var mat = materials[material_index];
 
     var e0 = v[1] - v[0];
     var e1 = v[2] - v[0];
@@ -144,9 +167,11 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
 
     var has_hit = intersection > r.tmin && intersection < r.tmax && beta >= 0 && gamma >= 0 && beta + gamma <= 1;
 
+    var color = mat.color + mat.emission;
+
     (*hit).has_hit = (*hit).has_hit || has_hit;
     (*hit).dist = select((*hit).dist, intersection, has_hit);
-    (*hit).color = select((*hit).color, vec3f(.9), has_hit);
+    (*hit).color = select((*hit).color, vec3f(.8), has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
 

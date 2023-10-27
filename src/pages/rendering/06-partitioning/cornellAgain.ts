@@ -13,33 +13,63 @@ import {
     createCanvasSection,
     createInteractableSection,
     createRange,
+    createSelect,
     createText,
     createTitle,
     createWithLabel,
     watchInput,
 } from "../../../libs/web"
 
-import { Colors, build_bsp_tree, getDrawingInfo, parseOBJ } from "../../../libs/util"
+import {
+    Colors,
+    build_bsp_tree,
+    flattenVector,
+    getDrawingInfo,
+    interleaveF32s,
+    parseOBJ,
+    shiftIntoU32InPlace,
+    vec4,
+} from "../../../libs/util"
 
-import shaderCode from "./partitioning.wgsl?raw"
+import shaderCode from "./partitioningWithInterleave.wgsl?raw"
 
-const CANVAS_ID = "bsp"
-const ANIM_SPEED = "animation-speed-bsp"
+const CANVAS_ID = "cornell-interweave"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
-    const getSpeed = watchInput<number>(ANIM_SPEED)
-
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/bunny.obj", 1))
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBoxWithBlocks.obj"))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
+
+    const interleavedVerticesNormals = interleaveF32s([
+        bspTreeResults.vertices,
+        bspTreeResults.normals,
+    ])
+
+    const interleavedIndicesMatIndices = bspTreeResults.indices
+    shiftIntoU32InPlace(interleavedIndicesMatIndices, modelDrawingInfo.matIndices, 4)
+
+    const materialsArray = new Float32Array(
+        modelDrawingInfo.materials.reduce(
+            (arr, mat) => [
+                ...arr,
+                ...flattenVector([
+                    mat.color,
+                    mat.specular,
+                    mat.emission,
+                    vec4(mat.illum, mat.shininess, mat.ior),
+                ]),
+            ],
+            [] as number[]
+        )
+    )
 
     const { bindGroup: modelStorage } = createBind(
         device,
         pipeline,
-        [bspTreeResults.vertices, bspTreeResults.normals, bspTreeResults.indices],
+        [interleavedVerticesNormals, interleavedIndicesMatIndices],
         "STORAGE"
     )
     const { bindGroup: bspTreeStorage } = createBind(
@@ -49,30 +79,36 @@ const execute: Executable = async () => {
         "STORAGE",
         1
     )
-    const {
-        bindGroup: aaabUniform,
-        buffers: [_, timeBuffer],
-    } = createBind(device, pipeline, [bspTreeResults.aabb, new Float32Array([0])], "UNIFORM", 2)
+    const { bindGroup: aaabUniform } = createBind(
+        device,
+        pipeline,
+        [bspTreeResults.aabb],
+        "UNIFORM",
+        2
+    )
 
-    let totalTime = 0
+    const { bindGroup: materialsStorage } = createBind(
+        device,
+        pipeline,
+        [materialsArray],
+        "STORAGE",
+        3
+    )
+
     const draw = () => {
-        totalTime += 0.025 * getSpeed()
-        writeToBufferF32(device, timeBuffer, new Float32Array([totalTime]), 0)
-
         const { pass, executePass } = createPass(device, context, Colors.black)
 
         pass.setPipeline(pipeline)
         pass.setBindGroup(0, modelStorage)
         pass.setBindGroup(1, bspTreeStorage)
         pass.setBindGroup(2, aaabUniform)
+        pass.setBindGroup(3, materialsStorage)
 
         pass.draw(4)
         executePass()
-
-        requestAnimationFrame(draw)
     }
 
-    requestAnimationFrame(draw)
+    draw()
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
@@ -83,12 +119,6 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const canvas = createCanvas(CANVAS_ID)
     const interactables = createInteractableSection()
 
-    const animationModifier = createWithLabel(
-        createRange(ANIM_SPEED, 0, 0, 1, 0.01),
-        "Speed of the animation"
-    )
-
-    interactables.append(animationModifier)
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)
 
