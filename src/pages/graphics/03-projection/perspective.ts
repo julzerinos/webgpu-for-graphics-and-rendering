@@ -6,8 +6,8 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     genreateIndexBuffer,
-    createUniformBind,
     toNDC,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -102,12 +102,19 @@ const execute: Executable = async () => {
     const projectionModel1Point = multMatrices(projectionView, model1Point)
     const projectionModel2Point = multMatrices(projectionView, model2Point)
     const projectionModel3Point = multMatrices(projectionView, model3Point)
-    const { bindGroup: mvpsBind } = createUniformBind(
+    const { bindGroup: mvpsBind } = createBind(
         device,
         pipeline,
-        new Float32Array(
-            flattenMatrices([projectionModel1Point, projectionModel2Point, projectionModel3Point])
-        ),
+        [
+            new Float32Array(
+                flattenMatrices([
+                    projectionModel1Point,
+                    projectionModel2Point,
+                    projectionModel3Point,
+                ])
+            ),
+        ],
+        "UNIFORM",
         0
     )
 

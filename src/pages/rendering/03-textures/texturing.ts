@@ -6,7 +6,6 @@ import {
     setupShaderPipeline,
     generateTexture,
     createTextureBind,
-    createUniformBind,
     writeToBufferF32,
     createBind,
 } from "../../../libs/webgpu"
@@ -75,17 +74,21 @@ const execute: Executable = async () => {
 
     await loadImages("repeat")
 
-    const { bindGroup: globalsBind, uniformBuffer: globalsBuffer } = createUniformBind(
+    const {
+        bindGroup: globalsBind,
+        buffers: [globalsBuffer],
+    } = createBind(
         device,
         pipeline,
-        new Float32Array([getScale(), getSubdivisions() * getSubdivisions()]),
+        [new Float32Array([getScale(), getSubdivisions() * getSubdivisions()])],
+        "UNIFORM",
         1
     )
 
     const {
-        storageGroup: jittersBind,
-        storageBuffers: [jittersBuffer],
-    } = createBind(device, pipeline, [new Float32Array(200)], 2)
+        bindGroup: jittersBind,
+        buffers: [jittersBuffer],
+    } = createBind(device, pipeline, [new Float32Array(200)], "STORAGE", 2)
 
     const draw = () => {
         writeToBufferF32(
@@ -113,7 +116,7 @@ const execute: Executable = async () => {
 
     const setSubdivisions = (subdivisions: number) => {
         const jitters = computeJitters(canvas.height, subdivisions)
-        writeToBufferF32(device, jittersBuffer, new Float32Array(flattenVector(jitters)), 0, 0)
+        writeToBufferF32(device, jittersBuffer, new Float32Array(flattenVector(jitters)), 0, true)
     }
 
     const subdivisions = subscribeToInput<number>(JITTER_SUBD_SLIDER_ID, setSubdivisions)

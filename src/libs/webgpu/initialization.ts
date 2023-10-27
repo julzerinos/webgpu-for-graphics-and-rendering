@@ -229,7 +229,7 @@ export const createBind = (
     arrays: Array<Float32Array | Uint32Array>,
     type: "STORAGE" | "UNIFORM",
     groupIndex: number = 0
-): { storageBuffers: GPUBuffer[]; storageGroup: GPUBindGroup } => {
+): { buffers: GPUBuffer[]; bindGroup: GPUBindGroup } => {
     const buffers = arrays.map(a => {
         const buffer = device.createBuffer({
             size: a.byteLength,
@@ -247,7 +247,7 @@ export const createBind = (
         })),
     })
 
-    return { storageBuffers: buffers, storageGroup: bindGroup }
+    return { buffers, bindGroup }
 }
 
 export const createTextureBind = (

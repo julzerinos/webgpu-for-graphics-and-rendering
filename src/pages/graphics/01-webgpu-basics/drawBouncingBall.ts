@@ -18,8 +18,8 @@ import {
     createPass,
     genreateVertexBuffer,
     setupShaderPipeline,
-    createUniformBind,
     writeToBufferF32,
+    createBind,
 } from "../../../libs/webgpu"
 
 import shaderDrawCircle from "./shaderDrawCircle.wgsl?raw"
@@ -47,21 +47,23 @@ const execute: Executable = async () => {
         shaderDrawCircle
     )
 
-    const { bindGroup: timeBindGroup, uniformBuffer: timeBuffer } = createUniformBind(
-        device,
-        pipeline,
-        new Float32Array([0])
-    )
-    const { bindGroup: ballBindGroup, uniformBuffer: ballBuffer } = createUniformBind(
-        device,
-        pipeline,
-        new Float32Array(3),
-        1
-    )
+    const {
+        bindGroup: timeBindGroup,
+        buffers: [timeBuffer],
+    } = createBind(device, pipeline, [new Float32Array([0])], "UNIFORM")
+    const {
+        bindGroup: ballBindGroup,
+        buffers: [ballBuffer],
+    } = createBind(device, pipeline, [new Float32Array(3)], "UNIFORM", 1)
 
     const frame = (time: number) => {
         writeToBufferF32(device, timeBuffer, new Float32Array([time / 1e3]), 0)
-        writeToBufferF32(device, ballBuffer, new Float32Array([getHeight(), getSpeed(), getSize()]), 0)
+        writeToBufferF32(
+            device,
+            ballBuffer,
+            new Float32Array([getHeight(), getSpeed(), getSize()]),
+            0
+        )
 
         const { pass, executePass } = createPass(device, context, Colors.blueScreenBlue)
 

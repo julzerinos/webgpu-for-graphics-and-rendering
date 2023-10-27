@@ -9,8 +9,8 @@ import {
     createPass,
     genreateVertexBuffer,
     setupShaderPipeline,
-    createUniformBind,
     writeToBufferF32,
+    createBind,
 } from "../../../libs/webgpu"
 
 import shaderRotateWithTime from "./shaderRotateWithTime.wgsl?raw"
@@ -31,10 +31,11 @@ const execute: Executable = async () => {
         canvasFormat,
         shaderRotateWithTime
     )
-    const { bindGroup: timeBindGroup, uniformBuffer: timeBuffer } = createUniformBind(
+    const { bindGroup: timeBindGroup, buffers: [timeBuffer] } = createBind(
         device,
         pipeline,
-        new Float32Array(1)
+        [new Float32Array(1)],
+        "UNIFORM"
     )
 
     const frame = (time: number) => {

@@ -28,13 +28,14 @@ const execute: Executable = async () => {
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
     const triangle = Triangle([vec3(-0.2, 0.1, 0.9), vec3(0.2, 0.1, 0.9), vec3(-0.2, 0.1, -0.1)])
-    const { storageGroup: triangleStorage } = createBind(
+    const { bindGroup: triangleStorage } = createBind(
         device,
         pipeline,
         [
             new Float32Array(flattenVector(triangle.vertices)),
             new Uint32Array(flattenVector(triangle.triangleIndices)),
         ],
+        "STORAGE",
         1
     )
 

@@ -5,7 +5,6 @@ import {
     createPass,
     setupShaderPipeline,
     createBind,
-    createUniformBind,
     writeToBufferU32,
 } from "../../../libs/webgpu"
 
@@ -57,7 +56,7 @@ const execute: Executable = async () => {
         [] as number[]
     )
 
-    const { storageGroup: cornellBoxStorage } = createBind(
+    const { bindGroup: cornellBoxStorage } = createBind(
         device,
         pipeline,
         [
@@ -66,20 +65,26 @@ const execute: Executable = async () => {
             new Uint32Array(cornellBoxShape.materialIndices as number[]),
             new Uint32Array(lightFaceIndices),
         ],
+        "STORAGE",
         0
     )
 
-    const { bindGroup: cornellBoxMetaBind, uniformBuffer: cornellBoxMetaBuffer } =
-        createUniformBind(
-            device,
-            pipeline,
-            new Uint32Array([cornellBoxShape.triangleCount, lightFaceIndices.length, 0]),
-            1
-        )
-    const { storageGroup: materialsStorage } = createBind(
+    const {
+        bindGroup: cornellBoxMetaBind,
+        buffers: [cornellBoxMetaBuffer],
+    } = createBind(
+        device,
+        pipeline,
+        [new Uint32Array([cornellBoxShape.triangleCount, lightFaceIndices.length, 0])],
+
+        "UNIFORM",
+        1
+    )
+    const { bindGroup: materialsStorage } = createBind(
         device,
         pipeline,
         [materialsArray],
+        "STORAGE",
         2
     )
 

@@ -5,7 +5,6 @@ import {
     createPass,
     setupShaderPipeline,
     createBind,
-    createUniformBind,
     writeToBufferU32,
 } from "../../../libs/webgpu"
 
@@ -35,7 +34,7 @@ const execute: Executable = async () => {
     const utahTeapotObj = await parseOBJ("models/bunny.obj")
     const utahTeapotShape = objToShape(utahTeapotObj, {})
 
-    const { storageGroup: utahTrapotStorage } = createBind(
+    const { bindGroup: utahTrapotStorage } = createBind(
         device,
         pipeline,
         [
@@ -43,10 +42,17 @@ const execute: Executable = async () => {
             new Uint32Array(flattenVector(utahTeapotShape.triangleIndices)),
             new Float32Array(flattenVector(utahTeapotShape.normals)),
         ],
+        "STORAGE",
         0
     )
-    const { bindGroup: utahTeapotTriangleMetaBind, uniformBuffer: utahTeapotTriangleMetaBuffer } =
-        createUniformBind(device, pipeline, new Uint32Array([utahTeapotShape.triangleCount, 0]), 1)
+    const { bindGroup: utahTeapotTriangleMetaBind, buffers: [utahTeapotTriangleMetaBuffer] } =
+        createBind(
+            device,
+            pipeline,
+            [new Uint32Array([utahTeapotShape.triangleCount, 0])],
+            "UNIFORM",
+            1
+        )
 
     const draw = (shadingType: "Flat" | "Vertex normals") => {
         const shadingTypeMap = {

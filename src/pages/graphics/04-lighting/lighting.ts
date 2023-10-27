@@ -6,12 +6,11 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     genreateIndexBuffer,
-    createUniformBind,
-    toNDC,
     generateDepthBuffer,
     generateMultisampleBuffer,
     writeToBufferF32,
     writeToBufferU32,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -144,16 +143,22 @@ const execute: Executable = async () => {
         [key: string]: number
     }
 
-    const { bindGroup: sceneDataBind, uniformBuffer: sceneDataBuffer } = createUniformBind(
+    const {
+        bindGroup: sceneDataBind,
+        buffers: [sceneDataBuffer],
+    } = createBind(
         device,
         pipeline,
-        new Float32Array([
-            ...flattenMatrix(pvm),
-            ...vec4(...eye),
-            ...colorToVec4(hexToColor(getLight())),
-            ...vec4(getAmbient(), getDiffuse(), getSpecular(), getShininess()),
-            ...vec4(shadingTypeMap[getShadingType()]),
-        ]),
+        [
+            new Float32Array([
+                ...flattenMatrix(pvm),
+                ...vec4(...eye),
+                ...colorToVec4(hexToColor(getLight())),
+                ...vec4(getAmbient(), getDiffuse(), getSpecular(), getShininess()),
+                ...vec4(shadingTypeMap[getShadingType()]),
+            ]),
+        ],
+        "UNIFORM",
         0
     )
 

@@ -33,19 +33,19 @@ const execute: Executable = async () => {
     const modelDrawingInfo = getDrawingInfo(await parseOBJ(MODELS["Teapot"], 0.02))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
-    const { storageGroup: modelStorage } = createBind(
+    const { bindGroup: modelStorage } = createBind(
         device,
         pipeline,
         [bspTreeResults.positions, bspTreeResults.normals, bspTreeResults.indices],
         "STORAGE"
     )
-    const { storageGroup: bspTreeStorage } = createBind(
+    const { bindGroup: bspTreeStorage } = createBind(
         device,
         pipeline,
         [bspTreeResults.bspPlanes, bspTreeResults.bspTree, bspTreeResults.treeIds],
         "STORAGE"
     )
-    const { storageGroup: aaabUniform } = createBind(
+    const { bindGroup: aaabUniform } = createBind(
         device,
         pipeline,
         [bspTreeResults.aabb],

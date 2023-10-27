@@ -4,8 +4,8 @@ import {
     initializeWebGPU,
     createPass,
     setupShaderPipeline,
-    createUniformBind,
     writeToBufferF32,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -57,8 +57,10 @@ const execute: Executable = async () => {
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
     const viewboxOptions = new Float32Array([aspectRatio, 0])
-    const { bindGroup: viewboxOptionsBind, uniformBuffer: viewboxOptionsBuffer } =
-        createUniformBind(device, pipeline, viewboxOptions)
+    const {
+        bindGroup: viewboxOptionsBind,
+        buffers: [viewboxOptionsBuffer],
+    } = createBind(device, pipeline, [viewboxOptions], "UNIFORM")
 
     const lightSettings = new Float32Array([
         getLightPosX(),
@@ -71,12 +73,10 @@ const execute: Executable = async () => {
         0,
         0,
     ])
-    const { bindGroup: lightSettingsBind, uniformBuffer: lightSettingsBuffer } = createUniformBind(
-        device,
-        pipeline,
-        lightSettings,
-        1
-    )
+    const {
+        bindGroup: lightSettingsBind,
+        buffers: [lightSettingsBuffer],
+    } = createBind(device, pipeline, [lightSettings], "UNIFORM", 1)
 
     const draw = (time: number) => {
         writeToBufferF32(

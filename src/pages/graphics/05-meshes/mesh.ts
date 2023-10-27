@@ -6,11 +6,10 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     genreateIndexBuffer,
-    createUniformBind,
-    toNDC,
     writeToBufferF32,
     generateDepthBuffer,
     generateMultisampleBuffer,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -26,15 +25,11 @@ import {
 
 import {
     Colors,
-    flattenVector,
     lookAtMatrix,
     multMatrices,
     vec3,
     perspectiveProjection,
-    vec4,
     parseOBJ,
-    objToShape,
-    toVec3,
     identity4x4,
     flattenMatrix,
     toRadians,
@@ -42,9 +37,6 @@ import {
 } from "../../../libs/util"
 
 import shaderCode from "./shading.wgsl?raw"
-
-import { OBJDoc } from "../../../libs/util/OBJParserT"
-import monkey from "../../../../public/models/monkey.obj?raw"
 
 const CANVAS_ID = "monkey"
 const ROTATION_AROUND = "rotation-around-monkey"
@@ -107,10 +99,14 @@ const execute: Executable = async () => {
     const model = identity4x4()
 
     const projectionModel = multMatrices(projectionView, model)
-    const { bindGroup: pvmBind, uniformBuffer: pvmBuffer } = createUniformBind(
+    const {
+        bindGroup: pvmBind,
+        buffers: [pvmBuffer],
+    } = createBind(
         device,
         pipeline,
-        new Float32Array([...flattenMatrix(projectionModel), ...eye, 1]),
+        [new Float32Array([...flattenMatrix(projectionModel), ...eye, 1])],
+        "UNIFORM",
         0
     )
 

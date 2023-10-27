@@ -6,7 +6,6 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     genreateIndexBuffer,
-    createUniformBind,
     toNDC,
     createBind,
     writeToBufferF32,
@@ -83,10 +82,14 @@ const execute: Executable = async () => {
     const perspective = perspectiveProjection(35, canvas.width / canvas.height, 0.1, 100)
     const projection = multMatrices(toNDC, perspective)
 
-    const { bindGroup: uniformsBind, uniformBuffer: uniformsBuffer } = createUniformBind(
+    const {
+        bindGroup: uniformsBind,
+        buffers: [uniformsBuffer],
+    } = createBind(
         device,
         pipeline,
-        new Float32Array([0, 0, 0, 0, ...flattenMatrix(view), ...flattenMatrix(projection)]),
+        [new Float32Array([0, 0, 0, 0, ...flattenMatrix(view), ...flattenMatrix(projection)])],
+        "UNIFORM",
         0
     )
 
@@ -169,13 +172,14 @@ const execute: Executable = async () => {
         createAileronRight(),
     ]
 
-    const { storageGroup: modelsStorage, storageBuffers: modelsBuffers } = createBind(
+    const { bindGroup: modelsStorage, buffers: modelsBuffers } = createBind(
         device,
         pipeline,
         [
             new Float32Array(flattenMatrices(allModels)),
             new Float32Array(flattenVector(modelColors)),
         ],
+        "STORAGE",
         1
     )
 

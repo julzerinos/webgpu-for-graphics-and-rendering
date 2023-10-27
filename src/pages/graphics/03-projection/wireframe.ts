@@ -6,9 +6,9 @@ import {
     genreateVertexBuffer,
     setupShaderPipeline,
     genreateIndexBuffer,
-    createUniformBind,
     writeToBufferF32,
     toNDC,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -65,12 +65,10 @@ const execute: Executable = async () => {
         "line-list"
     )
 
-    const { bindGroup: mvpBind, uniformBuffer: mvpBuffer } = createUniformBind(
-        device,
-        pipeline,
-        new Float32Array(flattenMatrix(identity4x4())),
-        0
-    )
+    const {
+        bindGroup: mvpBind,
+        buffers: [mvpBuffer],
+    } = createBind(device, pipeline, [new Float32Array(flattenMatrix(identity4x4()))], "UNIFORM", 0)
 
     const translateMatrix = createTranslateMatrix(vec3(0.5, 0.5, 0.5))
 
