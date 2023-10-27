@@ -21,6 +21,7 @@ const max_objects = 4 // maximum number of objects in a leaf
 const max_level = 20 // maximum number of levels in the tree
 const f_eps = 1.0e-6
 const d_eps = 1.0e-12
+const TESTS = 4
 
 enum BspNodeType {
     BspXAxis,
@@ -60,15 +61,17 @@ interface BspTreeNode {
 }
 
 const createBspTree = (objects: AccObj[]): { bspTreeRoot: BspTreeNode; tree_objects: AccObj[] } => {
+    let bbox = createAabb()
+    for (var i = 0; i < objects.length; ++i) {
+        bbox = aabbUnion(bbox, objects[i].bbox)
+    }
+
     const bspTreeRoot: BspTreeNode = {
         maxLevel: max_level,
         count: objects.length,
         id: 0,
-        bbox: createAabb(),
+        bbox,
     }
-
-    for (var i = 0; i < objects.length; ++i)
-        bspTreeRoot.bbox = aabbUnion(bspTreeRoot.bbox, objects[i].bbox)
 
     const tree_objects = [] as AccObj[]
     subdivide_node(bspTreeRoot, bspTreeRoot.bbox, 0, objects, tree_objects)
@@ -83,101 +86,108 @@ const subdivide_node = (
     objects: AccObj[],
     tree_objects: AccObj[]
 ): void => {
-    const TESTS = 4
-
-    if (objects.length <= max_objects || level == max_level) {
+    if (objects.length <= max_objects || level === max_level) {
         node.axisType = BspNodeType.BspLeaf
         node.id = tree_objects.length
         node.count = objects.length
         node.plane = 0.0
 
         for (var i = 0; i < objects.length; ++i) tree_objects.push(objects[i])
-    } else {
-        let left_objects = []
-        let right_objects = []
-        node.left = { id: -1, bbox: createAabb(), maxLevel: max_level, count: 0 }
-        node.right = { id: -1, bbox: createAabb(), maxLevel: max_level, count: 0 }
 
-        var min_cost = Number.MAX_VALUE
-        for (var i = 0; i < 3; ++i) {
-            for (var k = 1; k < TESTS; ++k) {
-                let left_bbox: AABB = { ...bbox }
-                let right_bbox: AABB = { ...bbox }
-                const max_corner = bbox.max[i]
-                const min_corner = bbox.min[i]
-                const center = ((max_corner - min_corner) * k) / TESTS + min_corner
-                left_bbox.max[i] = center
-                right_bbox.min[i] = center
+        return
+    }
 
-                // Try putting the triangles in the left and right boxes
-                var left_count = 0
-                var right_count = 0
-                for (var j = 0; j < objects.length; ++j) {
-                    let obj = objects[j]
-                    left_count += doAabbsIntersect(left_bbox, obj.bbox) ? 1 : 0
-                    right_count += doAabbsIntersect(right_bbox, obj.bbox) ? 1 : 0
-                }
+    const left_objects = []
+    const right_objects = []
+    node.left = { id: -1, bbox: createAabb(), maxLevel: max_level, count: 0 }
+    node.right = { id: -1, bbox: createAabb(), maxLevel: max_level, count: 0 }
 
-                const cost = left_count * aabbArea(left_bbox) + right_count * aabbArea(right_bbox)
-                if (cost < min_cost) {
-                    min_cost = cost
-                    node.axisType = i
-                    node.plane = center
-                    node.left.count = left_count
-                    node.left.id = 0
-                    node.right.count = right_count
-                    node.right.id = 0
-                }
+    let min_cost = Number.MAX_VALUE
+    for (let i = 0; i < 3; ++i) {
+        for (let k = 1; k < TESTS; ++k) {
+            let left_bbox: AABB = { min: [...bbox.min], max: [...bbox.max] }
+            let right_bbox: AABB = { min: [...bbox.min], max: [...bbox.max] }
+            const max_corner = bbox.max[i]
+            const min_corner = bbox.min[i]
+            const center = ((max_corner - min_corner) * k) / TESTS + min_corner
+            left_bbox.max[i] = center
+            right_bbox.min[i] = center
+
+            // Try putting the triangles in the left and right boxes
+            let left_count = 0
+            let right_count = 0
+            for (let j = 0; j < objects.length; ++j) {
+                const obj = objects[j]
+
+                left_count += doAabbsIntersect(left_bbox, obj.bbox) ? 1 : 0
+                right_count += doAabbsIntersect(right_bbox, obj.bbox) ? 1 : 0
+            }
+
+            const cost = left_count * aabbArea(left_bbox) + right_count * aabbArea(right_bbox)
+            if (cost < min_cost) {
+                min_cost = cost
+                node.axisType = i
+                node.plane = center
+                node.left.count = left_count
+                node.left.id = 0
+                node.right.count = right_count
+                node.right.id = 0
             }
         }
+    }
 
-        const populatedNode = node as Required<BspTreeNode>
+    const populatedNode = node as Required<BspTreeNode>
 
-        // Now chose the right splitting plane
-        const max_corner = bbox.max[populatedNode.axisType]
-        const min_corner = bbox.min[populatedNode.axisType]
-        const size = max_corner - min_corner
-        const diff = f_eps < size / 8.0 ? size / 8.0 : f_eps
-        let center = populatedNode.plane
+    // Now chose the right splitting plane
+    const max_corner = bbox.max[populatedNode.axisType]
+    const min_corner = bbox.min[populatedNode.axisType]
+    const size = max_corner - min_corner
+    const diff = f_eps < size / 8.0 ? size / 8.0 : f_eps
+    let center = populatedNode.plane
 
-        if (populatedNode.left.count == 0) {
-            // Find min position of all triangle vertices and place the center there
-            center = max_corner
-            for (var j = 0; j < objects.length; ++j) {
-                let obj = objects[j]
-                const obj_min_corner = obj.bbox.min[populatedNode.axisType]
-                if (obj_min_corner < center) center = obj_min_corner
-            }
-            center -= diff
-        }
-        if (populatedNode.right.count == 0) {
-            // Find max position of all triangle vertices and place the center there
-            center = min_corner
-            for (var j = 0; j < objects.length; ++j) {
-                let obj = objects[j]
-                const obj_max_corner = obj.bbox.max[populatedNode.axisType]
-                if (obj_max_corner > center) center = obj_max_corner
-            }
-            center += diff
-        }
-
-        populatedNode.plane = center
-        let left_bbox: AABB = { ...bbox }
-        let right_bbox: AABB = { ...bbox }
-        left_bbox.max[populatedNode.axisType] = center
-        right_bbox.min[populatedNode.axisType] = center
-
-        // Now put the triangles in the right and left node
+    if (populatedNode.left.count == 0) {
+        // Find min position of all triangle vertices and place the center there
+        center = max_corner
         for (var j = 0; j < objects.length; ++j) {
             let obj = objects[j]
-            if (doAabbsIntersect(left_bbox, obj.bbox)) left_objects.push(obj)
-            if (doAabbsIntersect(right_bbox, obj.bbox)) right_objects.push(obj)
+            const obj_min_corner = obj.bbox.min[populatedNode.axisType]
+            if (obj_min_corner < center) center = obj_min_corner
         }
-
-        objects = []
-        subdivide_node(populatedNode.left, left_bbox, level + 1, left_objects, tree_objects)
-        subdivide_node(populatedNode.right, right_bbox, level + 1, right_objects, tree_objects)
+        center -= diff
     }
+    if (populatedNode.right.count == 0) {
+        // Find max position of all triangle vertices and place the center there
+        center = min_corner
+        for (var j = 0; j < objects.length; ++j) {
+            let obj = objects[j]
+            const obj_max_corner = obj.bbox.max[populatedNode.axisType]
+            if (obj_max_corner > center) center = obj_max_corner
+        }
+        center += diff
+    }
+
+    populatedNode.plane = center
+    let left_bbox: AABB = { min: [...bbox.min], max: [...bbox.max] }
+    let right_bbox: AABB = { min: [...bbox.min], max: [...bbox.max] }
+    left_bbox.max[populatedNode.axisType] = center
+    right_bbox.min[populatedNode.axisType] = center
+
+    const res = []
+
+    // Now put the triangles in the right and left node
+    for (let j = 0; j < objects.length; ++j) {
+        const obj = objects[j]
+
+        res.push([j, doAabbsIntersect(left_bbox, obj.bbox)])
+
+        if (doAabbsIntersect(left_bbox, obj.bbox)) left_objects.push(obj)
+        if (doAabbsIntersect(right_bbox, obj.bbox)) right_objects.push(obj)
+    }
+
+    objects = []
+
+    subdivide_node(populatedNode.left, left_bbox, level + 1, left_objects, tree_objects)
+    subdivide_node(populatedNode.right, right_bbox, level + 1, right_objects, tree_objects)
 }
 
 export interface BspTreeResults {
@@ -218,8 +228,8 @@ export const build_bsp_tree = (drawingInfo: DrawingInfo) => {
         objects.push(acc_obj)
     }
     const { bspTreeRoot: root, tree_objects } = createBspTree(objects)
-    const treeIds = new Uint32Array(tree_objects.length)
-    for (var i = 0; i < tree_objects.length; ++i) treeIds[i] = tree_objects[i].primIdx
+    const treeIds = new Uint32Array(tree_objects.map(o => o.primIdx))
+
     const bspTreeNodes = (1 << (max_level + 1)) - 1
     const bspPlanes = new Float32Array(bspTreeNodes)
     const bspTree = new Uint32Array(bspTreeNodes * 4)

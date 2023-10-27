@@ -79,7 +79,7 @@ export const isSmaller = (v1: Vector, v2: Vector): boolean => {
 export const absoluteMinVectors = <T extends Vector>(v1: T, v2: T): T => {
     const output = []
     for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
-        let min = Number.MAX_VALUE
+        let min = Number.POSITIVE_INFINITY
         if (i < v1.length) min = v1[i]
         if (i < v2.length) min = Math.min(min, v2[i])
         output.push(min)
@@ -90,7 +90,7 @@ export const absoluteMinVectors = <T extends Vector>(v1: T, v2: T): T => {
 export const absoluteMaxVectors = <T extends Vector>(v1: T, v2: T): T => {
     const output = []
     for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
-        let max = Number.MIN_VALUE
+        let max = Number.NEGATIVE_INFINITY
         if (i < v1.length) max = v1[i]
         if (i < v2.length) max = Math.max(max, v2[i])
         output.push(max)

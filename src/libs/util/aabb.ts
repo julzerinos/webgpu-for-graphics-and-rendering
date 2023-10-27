@@ -17,20 +17,30 @@ export interface AABB {
 // Axis-aligned bounding box (Aabb)
 
 export const createAabb = (vertices: Vector[] = []): AABB => {
-    let minVertex: Vector4 = vec4(Number.MAX_VALUE, Number.MAX_VALUE, Number.MAX_VALUE, 1)
-    let maxVertex: Vector4 = vec4(Number.MIN_VALUE, Number.MIN_VALUE, Number.MIN_VALUE, 1)
+    let minVertex: Vector4 = vec4(
+        Number.POSITIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
+        Number.POSITIVE_INFINITY,
+        1
+    )
+    let maxVertex: Vector4 = vec4(
+        Number.NEGATIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+        Number.NEGATIVE_INFINITY,
+        1
+    )
 
     for (const v of vertices) {
-        if (isSmaller(v, minVertex)) minVertex = vec4(...v)
-        if (isSmaller(maxVertex, v)) maxVertex = vec4(...v)
+        minVertex = absoluteMinVectors(minVertex, v) as Vector4
+        maxVertex = absoluteMaxVectors(maxVertex, v) as Vector4
     }
 
     return { max: maxVertex, min: minVertex }
 }
 
 export const includeVertexInAabb = (aabb: AABB, v: Vector): void => {
-    if (isSmaller(v, aabb.min)) aabb.min = vec4(...v)
-    if (isSmaller(aabb.max, v)) aabb.max = vec4(...v)
+    aabb.min = absoluteMinVectors(aabb.min, v) as Vector4
+    aabb.max = absoluteMaxVectors(aabb.max, v) as Vector4
 }
 
 export const aabbUnion = (aabbL: AABB, aabbR: AABB): AABB => ({
@@ -63,7 +73,7 @@ export const aabbMaxExtent = (aabb: AABB): number => Math.max(...aabbExtent(aabb
 
 export const doAabbsIntersect = (aabbL: AABB, aabbR: AABB): boolean => {
     for (let i = 0; i < 3; i++)
-        if (aabbL.min[i] > aabbR.max[i] || aabbL.max[i] < aabbR.min[i]) return false
+        if (aabbR.min[i] > aabbL.max[i] || aabbR.max[i] < aabbL.min[i]) return false
 
     return true
 }

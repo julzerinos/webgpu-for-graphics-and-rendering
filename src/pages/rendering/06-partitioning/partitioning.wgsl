@@ -1,24 +1,18 @@
-@group(0) @binding(0) var<storage> indices : array<vec4u>;
-@group(0) @binding(1) var<storage> vertices : array<vec3f>;
-@group(0) @binding(2) var<storage> normals : array<vec3f>;
+@group(0) @binding(0) var<storage> vertices : array<vec3f>;
+@group(0) @binding(1) var<storage> normals : array<vec3f>;
+@group(0) @binding(2) var<storage> indices : array<vec4u>;
+
+@group(1) @binding(0) var<storage> bspPlanes : array<f32>;
+@group(1) @binding(1) var<storage> bspTree : array<vec4u>;
+@group(1) @binding(2) var<storage> treeIds : array<u32>;
 
 struct Aabb {
     min : vec3f,
     max : vec3f,
 };
 
-struct objMeta {
-    aabb : Aabb,
-    triangle_count : u32
-};
-
-@group(1) @binding(0) var<uniform> obj_meta : objMeta;
-
-
-
-@group(2) @binding(0) var<storage> treeIds : array<u32>;
-@group(2) @binding(1) var<storage> bspTree : array<vec4u>;
-@group(2) @binding(2) var<storage> bspPlanes : array<f32>;
+@group(2) @binding(0) var<uniform> aabb : Aabb;
+@group(2) @binding(1) var<uniform> time : f32;
 
 const MAX_LEVEL = 20u;
 const BSP_LEAF = 3u;
@@ -30,8 +24,7 @@ const light_intensity = 1.5;
 
 const up = vec3f(0., 1., 0.);
 const target_point = vec3f(-.02, .11, 0.);
-const origin_point = vec3f(-.02, .11, .6);
-const camera_constant = 3.5;
+const camera_constant = 3.5; //3.5
 
 const f1en4 = 0.0001;
 const f1en8 = 0.00000001;
@@ -93,6 +86,9 @@ fn generate_default_hitinfo() -> HitInfo
 
 fn generate_ray_from_camera(uv : vec2f) -> Ray
 {
+    var origin_point = vec3f(-.02, .11, -.6) + vec3f(cos(time), 0, sin(time));
+
+
     var v = normalize(target_point - origin_point);
     var b1 = normalize(cross(v, up));
     var b2 = cross(b1, v);
@@ -166,7 +162,7 @@ fn intersect_trimesh(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -
     for(var i = 0u; i <= MAX_LEVEL; i++)
     {
         let tree_node = bspTree[node];
-        let node_axis_leaf = tree_node.x&3u;
+        let node_axis_leaf = tree_node.x & 3u;
         if (node_axis_leaf == BSP_LEAF)
         {
             let node_count = tree_node.x>>2u;
@@ -240,15 +236,14 @@ fn intersect_trimesh(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -
 
 fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
 {
-    (*hit).has_hit = false;
-
-    for (var i : u32 = 0; i < obj_meta.triangle_count; i++)
+    if (!intersect_min_max(r))
     {
-        var has_hit_triangle = intersect_triangle(*r, hit, i);
-        (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_triangle);
+        return false;
     }
 
-    return (*hit).has_hit;
+    (*hit).has_hit = false;
+
+    return intersect_trimesh(r, hit);
 }
 
         //Lighting
@@ -278,7 +273,8 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1;
-    var L_reflected = .9 * lambertian_light * occlusion_modifier;
+    //TODO : return occ
+    var L_reflected = .9 * lambertian_light * 1.;
     var L_observed = L_ambient + L_reflected;
 
     return LightResult(L_observed, vec3f(0));
@@ -294,8 +290,8 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResu
 
 fn intersect_min_max(r : ptr < function, Ray>) -> bool
 {
-    let p1 = (obj_meta.aabb.min - (*r).origin) / (*r).direction;
-    let p2 = (obj_meta.aabb.max - (*r).origin) / (*r).direction;
+    let p1 = (aabb.min - (*r).origin) / (*r).direction;
+    let p2 = (aabb.max - (*r).origin) / (*r).direction;
     let pmin = min(p1, p2);
     let pmax = max(p1, p2);
     let tmin = max(pmin.x, max(pmin.y, pmin.z));
