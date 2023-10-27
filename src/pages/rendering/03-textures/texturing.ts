@@ -8,7 +8,7 @@ import {
     createTextureBind,
     createUniformBind,
     writeToBufferF32,
-    createStorageBind,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -85,7 +85,7 @@ const execute: Executable = async () => {
     const {
         storageGroup: jittersBind,
         storageBuffers: [jittersBuffer],
-    } = createStorageBind(device, pipeline, [new Float32Array(200)], 2)
+    } = createBind(device, pipeline, [new Float32Array(200)], 2)
 
     const draw = () => {
         writeToBufferF32(

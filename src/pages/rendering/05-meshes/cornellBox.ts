@@ -4,7 +4,7 @@ import {
     initializeWebGPU,
     createPass,
     setupShaderPipeline,
-    createStorageBind,
+    createBind,
     createUniformBind,
     writeToBufferU32,
 } from "../../../libs/webgpu"
@@ -57,7 +57,7 @@ const execute: Executable = async () => {
         [] as number[]
     )
 
-    const { storageGroup: cornellBoxStorage } = createStorageBind(
+    const { storageGroup: cornellBoxStorage } = createBind(
         device,
         pipeline,
         [
@@ -76,7 +76,7 @@ const execute: Executable = async () => {
             new Uint32Array([cornellBoxShape.triangleCount, lightFaceIndices.length, 0]),
             1
         )
-    const { storageGroup: materialsStorage } = createStorageBind(
+    const { storageGroup: materialsStorage } = createBind(
         device,
         pipeline,
         [materialsArray],

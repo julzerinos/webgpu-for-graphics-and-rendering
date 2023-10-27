@@ -1,15 +1,6 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import {
-    initializeWebGPU,
-    createPass,
-    setupShaderPipeline,
-    createStorageBind,
-    createUniformBind,
-    writeToBufferU32,
-    genreateVertexBuffer,
-    genreateIndexBuffer,
-} from "../../../libs/webgpu"
+import { initializeWebGPU, createPass, setupShaderPipeline, createBind } from "../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -20,25 +11,16 @@ import {
     createTitle,
     createWithLabel,
     subscribeToInput,
-    watchInput,
 } from "../../../libs/web"
 
-import {
-    Colors,
-    DrawingInfo,
-    flattenVector,
-    getDrawingInfo,
-    objToShape,
-    parseOBJ,
-    vec4,
-} from "../../../libs/util"
+import { Colors, build_bsp_tree, getDrawingInfo, parseOBJ } from "../../../libs/util"
 
 import shaderCode from "./partitioning.wgsl?raw"
 
 const CANVAS_ID = "bsp"
 const MODELS = {
-    Teapot: "models/teapot.obj",
     Bunny: "models/bunny.obj",
+    Teapot: "models/teapot.obj",
     Dragon: "models/dragon.obj",
 } as { [key: string]: string }
 const MODEL_SELECT_ID = "model-select-bsp"
@@ -46,53 +28,37 @@ const MODEL_SELECT_ID = "model-select-bsp"
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
 
-    const modelRenderInfo = {} as {
-        [key: string]: {
-            storageGroup: GPUBindGroup
-            bindGroup: GPUBindGroup
-            pipeline: GPURenderPipeline
-        }
-    }
+    const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    // const [m1, m2, m3] = await Promise.all(Object.values(MODELS).map(m => parseOBJ(m)))
-    // const modelObjs = { Bunny: m1, Teapot: m2, Dragon: m3 } as { [key: string]: OBJDoc }
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ(MODELS["Teapot"], 0.02))
+    const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
-    for (const m in MODELS) {
-        const drawingInfo = getDrawingInfo(await parseOBJ(MODELS[m]))
-        const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-list")
-
-        console.log(drawingInfo);
-        
-
-        const { storageGroup } = createStorageBind(device, pipeline, [
-            drawingInfo.indices,
-            drawingInfo.vertices,
-            drawingInfo.normals,
-        ])
-        const { bindGroup } = createUniformBind(
-            device,
-            pipeline,
-            new Uint32Array(vec4(drawingInfo.indices.length / 3)),
-            1
-        )
-
-        modelRenderInfo[m] = {
-            storageGroup,
-            bindGroup,
-            pipeline,
-        }
-
-        break
-    }
+    const { storageGroup: modelStorage } = createBind(
+        device,
+        pipeline,
+        [bspTreeResults.positions, bspTreeResults.normals, bspTreeResults.indices],
+        "STORAGE"
+    )
+    const { storageGroup: bspTreeStorage } = createBind(
+        device,
+        pipeline,
+        [bspTreeResults.bspPlanes, bspTreeResults.bspTree, bspTreeResults.treeIds],
+        "STORAGE"
+    )
+    const { storageGroup: aaabUniform } = createBind(
+        device,
+        pipeline,
+        [bspTreeResults.aabb],
+        "UNIFORM"
+    )
 
     const draw = (model: string) => {
         const { pass, executePass } = createPass(device, context, Colors.black)
 
-        const { pipeline, storageGroup, bindGroup } = modelRenderInfo[model]
-
         pass.setPipeline(pipeline)
-        pass.setBindGroup(0, storageGroup)
-        pass.setBindGroup(1, bindGroup)
+        pass.setBindGroup(0, modelStorage)
+        pass.setBindGroup(1, bspTreeStorage)
+        pass.setBindGroup(2, aaabUniform)
 
         pass.draw(4)
         executePass()

@@ -8,7 +8,7 @@ import {
     genreateIndexBuffer,
     createUniformBind,
     toNDC,
-    createStorageBind,
+    createBind,
     writeToBufferF32,
 } from "../../../libs/webgpu"
 
@@ -169,7 +169,7 @@ const execute: Executable = async () => {
         createAileronRight(),
     ]
 
-    const { storageGroup: modelsStorage, storageBuffers: modelsBuffers } = createStorageBind(
+    const { storageGroup: modelsStorage, storageBuffers: modelsBuffers } = createBind(
         device,
         pipeline,
         [

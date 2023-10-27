@@ -6,7 +6,7 @@ import {
     setupShaderPipeline,
     generateTexture,
     createTextureBind,
-    createStorageBind,
+    createBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -28,7 +28,7 @@ const execute: Executable = async () => {
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
     const triangle = Triangle([vec3(-0.2, 0.1, 0.9), vec3(0.2, 0.1, 0.9), vec3(-0.2, 0.1, -0.1)])
-    const { storageGroup: triangleStorage } = createStorageBind(
+    const { storageGroup: triangleStorage } = createBind(
         device,
         pipeline,
         [

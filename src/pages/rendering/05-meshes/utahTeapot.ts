@@ -4,7 +4,7 @@ import {
     initializeWebGPU,
     createPass,
     setupShaderPipeline,
-    createStorageBind,
+    createBind,
     createUniformBind,
     writeToBufferU32,
 } from "../../../libs/webgpu"
@@ -35,7 +35,7 @@ const execute: Executable = async () => {
     const utahTeapotObj = await parseOBJ("models/bunny.obj")
     const utahTeapotShape = objToShape(utahTeapotObj, {})
 
-    const { storageGroup: utahTrapotStorage } = createStorageBind(
+    const { storageGroup: utahTrapotStorage } = createBind(
         device,
         pipeline,
         [

@@ -71,6 +71,33 @@ export const cross = (v1: Vector3, v2: Vector3): Vector3 => {
     ]
 }
 
+export const isSmaller = (v1: Vector, v2: Vector): boolean => {
+    for (let i = 0; i < Math.min(v1.length, v2.length); i++) if (v1[i] >= v2[i]) return false
+    return true
+}
+
+export const absoluteMinVectors = <T extends Vector>(v1: T, v2: T): T => {
+    const output = []
+    for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+        let min = Number.MAX_VALUE
+        if (i < v1.length) min = v1[i]
+        if (i < v2.length) min = Math.min(min, v2[i])
+        output.push(min)
+    }
+    return output as T
+}
+
+export const absoluteMaxVectors = <T extends Vector>(v1: T, v2: T): T => {
+    const output = []
+    for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+        let max = Number.MIN_VALUE
+        if (i < v1.length) max = v1[i]
+        if (i < v2.length) max = Math.max(max, v2[i])
+        output.push(max)
+    }
+    return output as T
+}
+
 export const normalize = <T extends Vector>(v: T) => scale<T>(v, 1 / magnitude(v))
 
 export const magnitude = (v: Vector): number => Math.sqrt(dot(v, v))

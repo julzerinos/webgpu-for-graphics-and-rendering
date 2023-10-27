@@ -2,24 +2,39 @@
 @group(0) @binding(1) var<storage> vertices : array<vec3f>;
 @group(0) @binding(2) var<storage> normals : array<vec3f>;
 
+struct Aabb {
+    min : vec3f,
+    max : vec3f,
+};
+
 struct objMeta {
-    triangle_count : u32,
+    aabb : Aabb,
+    triangle_count : u32
 };
 
 @group(1) @binding(0) var<uniform> obj_meta : objMeta;
 
+
+
+@group(2) @binding(0) var<storage> treeIds : array<u32>;
+@group(2) @binding(1) var<storage> bspTree : array<vec4u>;
+@group(2) @binding(2) var<storage> bspPlanes : array<f32>;
+
+const MAX_LEVEL = 20u;
+const BSP_LEAF = 3u;
+var<private> branch_node : array<vec2u, MAX_LEVEL>;
+var<private> branch_ray : array<vec2f, MAX_LEVEL>;
+
 const light_direction : vec3f = vec3f(-1.);
 const light_intensity = 1.5;
 
-//const up = vec3f(0., 1., 0.);
-//const target_point = vec3f(-.02, .11, 0.);
-//const origin_point = vec3f(-.02, .11, .6);
-//const camera_constant = 3.5;
+const up = vec3f(0., 1., 0.);
+const target_point = vec3f(-.02, .11, 0.);
+const origin_point = vec3f(-.02, .11, .6);
+const camera_constant = 3.5;
 
-    const up = vec3f(0., 1., 0.);
-    const target_point = vec3f(.15, 1.5, 0.);
-    const origin_point = vec3f(.15, 1.5, 10.);
-    const camera_constant = 2.5;
+const f1en4 = 0.0001;
+const f1en8 = 0.00000001;
 
 struct Light {
     L_i : vec3f,
@@ -141,6 +156,88 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
     return has_hit;
 }
 
+fn intersect_trimesh(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
+{
+    var branch_lvl = 0u;
+    var near_node = 0u;
+    var far_node = 0u;
+    var t = 0.0f;
+    var node = 0u;
+    for(var i = 0u; i <= MAX_LEVEL; i++)
+    {
+        let tree_node = bspTree[node];
+        let node_axis_leaf = tree_node.x&3u;
+        if (node_axis_leaf == BSP_LEAF)
+        {
+            let node_count = tree_node.x>>2u;
+            let node_id = tree_node.y;
+            var found = false;
+
+            for(var j = 0u; j < node_count; j++)
+            {
+                let obj_idx = treeIds[node_id + j];
+                if(intersect_triangle(*r, hit, obj_idx))
+                {
+                    (*r).tmax = (*hit).dist;
+                    found = true;
+                }
+            }
+
+            if (found)
+            {
+                return true;
+            }
+
+            if (branch_lvl == 0u)
+            {
+                return false;
+            }
+
+            branch_lvl -= 1;
+            i = branch_node[branch_lvl].x;
+            node = branch_node[branch_lvl].y;
+            (*r).tmin = branch_ray[branch_lvl].x;
+            (*r).tmax = branch_ray[branch_lvl].y;
+
+            continue;
+        }
+        let axis_direction = (*r).direction[node_axis_leaf];
+        let axis_origin = (*r).origin[node_axis_leaf];
+        if(axis_direction >= 0.0f)
+        {
+            near_node = tree_node.z;
+            far_node = tree_node.w;
+        }
+        else
+        {
+            near_node = tree_node.w;
+            far_node = tree_node.z;
+        }
+        let node_plane = bspPlanes[node];
+        let denom = select(axis_direction, f1en8, abs(axis_direction) < f1en8);
+        t = (node_plane - axis_origin) / denom;
+        if(t > (*r).tmax)
+        {
+            node = near_node;
+        }
+        else if(t < (*r).tmin)
+        {
+            node = far_node;
+        }
+        else
+        {
+            branch_node[branch_lvl].x = i;
+            branch_node[branch_lvl].y = far_node;
+            branch_ray[branch_lvl].x = t;
+            branch_ray[branch_lvl].y = (*r).tmax;
+            branch_lvl++;
+            (*r).tmax = t;
+            node = near_node;
+        }
+    }
+    return false;
+}
+
 fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
 {
     (*hit).has_hit = false;
@@ -154,7 +251,7 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     return (*hit).has_hit;
 }
 
-//Lighting //
+        //Lighting
 
 fn sample_directional_light(light_direction : vec3f) -> Light {
     var light = Light(vec3f(light_intensity), -light_direction, 0.);
@@ -177,11 +274,11 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
     var light_info = sample_directional_light(light_direction);
     var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
 
-    //var is_occluded = check_occulusion_directional((*hit).position, light_direction);
-    //var occlusion_modifier = select(1., 0., is_occluded);
+    var is_occluded = check_occulusion_directional((*hit).position, light_direction);
+    var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1;
-    var L_reflected = .9 * lambertian_light;//* occlusion_modifier;
+    var L_reflected = .9 * lambertian_light * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
     return LightResult(L_observed, vec3f(0));
@@ -192,7 +289,27 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResu
     return lambertian(r, hit);
 }
 
-//Fragment shader //
+//BSP
+
+
+fn intersect_min_max(r : ptr < function, Ray>) -> bool
+{
+    let p1 = (obj_meta.aabb.min - (*r).origin) / (*r).direction;
+    let p2 = (obj_meta.aabb.max - (*r).origin) / (*r).direction;
+    let pmin = min(p1, p2);
+    let pmax = max(p1, p2);
+    let tmin = max(pmin.x, max(pmin.y, pmin.z));
+    let tmax = min(pmax.x, min(pmax.y, pmax.z));
+    if(tmin > tmax || tmin > (*r).tmax || tmax < (*r).tmin)
+    {
+        return false;
+    }
+    (*r).tmin = max(tmin - f1en4, (*r).tmin);
+    (*r).tmax = min(tmax + f1en4, (*r).tmax);
+    return true;
+}
+
+//Fragment shader
 
 @fragment
 fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f

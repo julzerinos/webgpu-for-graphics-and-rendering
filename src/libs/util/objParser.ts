@@ -1,7 +1,7 @@
 // objParser.ts is based on the previous implementations in Javascript
 // OBJParser.js from OBJViewer.js (c) 2012 matsuda and itami, later modified by Jeppe Revall Frisvad, 2014/2023
 
-import { vec4 } from "."
+import { AABB, aabbUnion, createAabb, includeVertexInAabb, isSmaller, vec3, vec4 } from "."
 import { Vector3, Vector4 } from "../../types"
 
 const createOBJDoc = (filename: string): OBJDoc => ({
@@ -338,28 +338,30 @@ export const getDrawingInfo = (
     { indicesIn3 }: { indicesIn3?: boolean } = {}
 ): DrawingInfo => {
     // Create an arrays for vertex coordinates, normals, colors, and indices
-    var numVertices = 0
-    var numIndices = 0
-    var numFaces = 0
+    let numVertices = 0
+    let numIndices = 0
+    let numFaces = 0
     for (var i = 0; i < objDoc.objects.length; i++) {
         numIndices += objDoc.objects[i].numIndices + objDoc.objects[i].faces.length
         numFaces += objDoc.objects[i].faces.length
     }
-    var numVertices = objDoc.vertices.length
-    var vertices = new Float32Array(numVertices * 4)
-    var normals = new Float32Array(numVertices * 4)
-    var colors = new Float32Array(numVertices * 4)
-    var indices = new Uint32Array(numIndices)
-    var matIndices = new Uint32Array(numFaces)
-    var materials = []
-    var mat_map = new Map()
-    var light_indices = []
+    numVertices = objDoc.vertices.length
+    const vertices = new Float32Array(numVertices * 4)
+    const normals = new Float32Array(numVertices * 4)
+    const colors = new Float32Array(numVertices * 4)
+    const indices = new Uint32Array(numIndices)
+    const matIndices = new Uint32Array(numFaces)
+    const materials = []
+    const mat_map = new Map()
+    const light_indices = []
+
+    const aabb = createAabb()
 
     // Set vertex, normal and color
-    var index_indices = 0
-    var face_indices = 0
-    for (var i = 0; i < objDoc.objects.length; i++) {
-        var object = objDoc.objects[i]
+    let index_indices = 0
+    let face_indices = 0
+    for (let i = 0; i < objDoc.objects.length; i++) {
+        const object = objDoc.objects[i]
         for (var j = 0; j < object.faces.length; j++) {
             var face = object.faces[j]
             var mat_idx = mat_map.get(face.materialName)
@@ -390,6 +392,9 @@ export const getDrawingInfo = (
                 vertices[vIdx * 4 + 1] = vertex[1]
                 vertices[vIdx * 4 + 2] = vertex[2]
                 vertices[vIdx * 4 + 3] = 1.0
+
+                includeVertexInAabb(aabb, vertex)
+
                 // Copy color
                 colors[vIdx * 4 + 0] = color[0]
                 colors[vIdx * 4 + 1] = color[1]
@@ -425,6 +430,7 @@ export const getDrawingInfo = (
         materials,
         matIndices,
         lightIndices,
+        aabb,
     }
 
     return drawingInfo
@@ -438,6 +444,7 @@ export interface DrawingInfo {
     materials: Material[]
     matIndices: Uint32Array
     lightIndices: Uint32Array
+    aabb: AABB
 }
 
 const createMTLDoc = (): MTLDoc => ({ complete: false, materials: [] })
