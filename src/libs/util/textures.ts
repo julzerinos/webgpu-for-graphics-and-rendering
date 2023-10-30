@@ -127,9 +127,7 @@ const createNextMipLevelRgba8Unorm = ({ data: src, width: srcWidth, height: srcH
             const dstOffset = (y * dstWidth + x) * 4
 
             const filteredColor = bilinearFilter(tl, tr, bl, br, t1, t2)
-            console.log(filteredColor);
-            
-            filteredColor[0] = 6* dstWidth
+            filteredColor[0] = 6 * dstWidth
 
             dst.set(filteredColor, dstOffset)
         }

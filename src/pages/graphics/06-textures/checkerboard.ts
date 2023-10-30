@@ -19,18 +19,14 @@ import {
     createTitle,
     createWithLabel,
     subscribeMultiple,
-    subscribeToInput,
     watchInput,
 } from "../../../libs/web"
 
 import {
     Colors,
     checkerboardTexture,
-    flattenMatrix,
     flattenVector,
     generateMips,
-    perspectiveProjection,
-    readImageData,
     vec2,
     vec4,
 } from "../../../libs/util"
@@ -83,8 +79,6 @@ const execute: Executable = async () => {
 
     const textureData = checkerboardTexture(64, 8, 8)
     const mips = generateMips(textureData, 64)
-
-    console.log(mips)
 
     const draw = async () => {
         const { texture, sampler } = generateTexture(
