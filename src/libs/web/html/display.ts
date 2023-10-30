@@ -40,12 +40,15 @@ export const createWithLabel = (
 export const createCanvas = (
     canvasId: string,
     width: number = 512,
-    height: number = 512
+    height: number = 512,
+    lowRes?: boolean
 ): HTMLCanvasElement => {
     const canvas = document.createElement("canvas")
     canvas.width = width
     canvas.height = height
     canvas.id = canvasId
+
+    if (lowRes) canvas.classList.add("low-res")
 
     return canvas
 }

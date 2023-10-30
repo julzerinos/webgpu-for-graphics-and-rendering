@@ -5,6 +5,7 @@ import { Drawing } from "./02-interaction"
 import { Projection } from "./03-projection"
 import { Lighting } from "./04-lighting"
 import { Meshes } from "./05-meshes"
+import { Texturing } from "./06-textures"
 
 export const Graphics: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     WebGPUBasics(container, executeQueue)
@@ -35,5 +36,9 @@ export const grapichsRoutes: IRoute = {
             generator: Lighting,
         },
         { name: "05-meshes", generator: Meshes },
+        {
+            name: "06-texturing",
+            generator: Texturing,
+        },
     ],
 }

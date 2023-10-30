@@ -98,3 +98,8 @@ button:focus-visible {
 
 .routes-container {
 }
+
+canvas.low-res {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}

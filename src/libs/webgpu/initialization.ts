@@ -1,4 +1,5 @@
 import { VectorFormat } from "../../types"
+import { Mip } from "../util"
 import { vectorByteLength } from "../util/vector"
 
 export const initializeWebGPU = async (canvasId: string) => {
@@ -279,20 +280,26 @@ export const generateTexture = (
     textureData: Uint8Array,
     width: number,
     height: number,
-    samplerOverwrites?: Partial<GPUSamplerDescriptor>
+    samplerOverwrites?: Partial<GPUSamplerDescriptor>,
+    { mips }: { mips?: Mip[] } = {}
 ): { texture: GPUTexture; sampler: GPUSampler } => {
     const texture = device.createTexture({
         size: [width, height, 1],
         format: "rgba8unorm",
         usage: GPUTextureUsage.COPY_DST | GPUTextureUsage.TEXTURE_BINDING,
+        mipLevelCount: mips ? mips.length : undefined,
     })
 
-    device.queue.writeTexture(
-        { texture: texture },
-        textureData,
-        { offset: 0, bytesPerRow: width * 4, rowsPerImage: height },
-        [width, height, 1]
-    )
+    const textures = mips ? mips : [{ data: textureData, width, height }]
+
+    textures.forEach(({ data, width, height }, mipLevel) => {
+        device.queue.writeTexture(
+            { texture, mipLevel },
+            data,
+            { bytesPerRow: width * 4 },
+            { width, height }
+        )
+    })
 
     const sampler = device.createSampler({
         addressModeU: "repeat",

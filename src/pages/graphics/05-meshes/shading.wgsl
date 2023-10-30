@@ -55,8 +55,6 @@ struct VSOut {
 @vertex
 fn main_vs(@location(0) inPos : vec4f, @location(1) normal : vec3f) -> VSOut
 {
-    var gouraud_shading = shading(.5 * inPos + .5, inPos.xyz, inPos.xyz);
-
     var vsOut : VSOut;
     vsOut.position = scene_data.pvm * vec4f(inPos.xyz, 1);
     vsOut.color = vec4f(1, 1, 1, 1);
