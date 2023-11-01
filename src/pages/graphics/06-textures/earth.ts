@@ -137,7 +137,7 @@ const execute: Executable = async () => {
     const draw = (time: number) => {
         updateRotation(time / 5e1)
 
-        const { pass, executePass } = createPass(device, context, vec4(0.2, 0.2, 0.2), {
+        const { pass, executePass } = createPass(device, context, vec4(.5, 0.1, .5), {
             depthStencilAttachmentFactory,
             msaaTexture,
         })
