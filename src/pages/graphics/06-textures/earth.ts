@@ -9,26 +9,17 @@ import {
     generateDepthBuffer,
     generateMultisampleBuffer,
     writeToBufferF32,
-    writeToBufferU32,
     createBind,
     generateTexture,
     createTextureBind,
 } from "../../../libs/webgpu"
 
 import {
-    createBoolInput,
     createCanvas,
     createCanvasSection,
-    createColorPicker,
     createInteractableSection,
-    createRange,
-    createSelect,
     createText,
     createTitle,
-    createWithLabel,
-    subscribeMultiple,
-    subscribeToInput,
-    watchInput,
 } from "../../../libs/web"
 
 import {
@@ -42,8 +33,6 @@ import {
     flattenMatrix,
     vec4,
     toRadians,
-    hexToColor,
-    colorToVec4,
     readImageData,
 } from "../../../libs/util"
 

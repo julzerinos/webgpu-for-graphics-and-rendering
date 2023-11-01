@@ -256,7 +256,8 @@ export const createTextureBind = (
     pipeline: GPURenderPipeline,
     texture: GPUTexture,
     sampler: GPUSampler,
-    groupIndex: number = 0
+    groupIndex: number = 0,
+    { createViewOverwrite }: { createViewOverwrite?: GPUTextureViewDescriptor } = {}
 ): GPUBindGroup => {
     const bindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(groupIndex),
@@ -267,7 +268,7 @@ export const createTextureBind = (
             },
             {
                 binding: 1,
-                resource: texture.createView(),
+                resource: texture.createView(createViewOverwrite),
             },
         ],
     })
@@ -311,4 +312,37 @@ export const generateTexture = (
     })
 
     return { texture, sampler }
+}
+
+// https://webgpu.github.io/webgpu-samples/samples/cubemap#main.ts
+export const generateCubeMap = (
+    device: GPUDevice,
+    imagesData: [Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array, Uint8Array],
+    width: number,
+    height: number
+) => {
+    const cubemapTexture = device.createTexture({
+        dimension: "2d",
+        // Create a 2d array texture.
+        // Assume each image has the same size.
+        size: [width, height, 6],
+        format: "rgba8unorm",
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST, // | GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+
+    for (let i = 0; i < imagesData.length; i++) {
+        device.queue.writeTexture(
+            { texture: cubemapTexture, origin: [0, 0, i] },
+            imagesData[i],
+            { bytesPerRow: width * 4 },
+            [width, height]
+        )
+    }
+
+    const sampler = device.createSampler({
+        magFilter: "linear",
+        minFilter: "linear",
+    })
+
+    return { cubemapTexture, sampler }
 }

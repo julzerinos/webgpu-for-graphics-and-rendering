@@ -1,6 +1,6 @@
 // Adapted from https://github.com/esangel/WebGL/blob/master/Common/MV.js
 
-import { Vector, Vector2, Vector3, Vector4, VectorFormat } from "../../types"
+import { Matrix, Vector, Vector2, Vector3, Vector4, VectorFormat } from "../../types"
 
 export const vec2 = (x: number = 0.0, y: number = 0.0): Vector2 => [x, y]
 export const vec3 = (x: number = 0.0, y: number = 0.0, z: number = 0.0): Vector3 => [x, y, z]
@@ -115,55 +115,18 @@ export const vectorsEqual = <T extends Vector>(v1: T, v2: T): boolean => {
     return true
 }
 
-// function mat2() {
-//     var v = _argumentsToArray(arguments)
+export const vectorMatrixMult = <T extends Vector, U extends Matrix>(v: T, m: U): T => {
+    const output = []
 
-//     var m = []
-//     switch (v.length) {
-//         case 0:
-//             v[0] = 1
-//         case 1:
-//             m = [vec2(v[0], 0.0), vec2(0.0, v[0])]
-//             break
+    for (let i = 0; i < v.length; i++) {
+        let sum = 0.0
+        for (let j = 0; j < v.length; j++) sum += m[i][j] * v[j]
 
-//         default:
-//             m.push(vec2(v))
-//             v.splice(0, 2)
-//             m.push(vec2(v))
-//             break
-//     }
+        output.push(sum)
+    }
 
-//     m.matrix = true
-
-//     return m
-// }
-
-// //----------------------------------------------------------------------------
-
-// function mat3() {
-//     var v = _argumentsToArray(arguments)
-
-//     var m = []
-//     switch (v.length) {
-//         case 0:
-//             v[0] = 1
-//         case 1:
-//             m = [vec3(v[0], 0.0, 0.0), vec3(0.0, v[0], 0.0), vec3(0.0, 0.0, v[0])]
-//             break
-
-//         default:
-//             m.push(vec3(v))
-//             v.splice(0, 3)
-//             m.push(vec3(v))
-//             v.splice(0, 3)
-//             m.push(vec3(v))
-//             break
-//     }
-
-//     m.matrix = true
-
-//     return m
-// }
+    return output as T
+}
 
 // //----------------------------------------------------------------------------
 
