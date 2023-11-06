@@ -43,10 +43,12 @@ export const createPass = (
     {
         msaaTexture,
         depthStencilAttachmentFactory,
+        otherColorAttachments,
     }: {
         msaaTexture?: GPUTexture
         depthStencilAttachmentFactory?: () => GPURenderPassDepthStencilAttachment
-    } = {}
+        otherColorAttachments: GPURenderPassColorAttachment[]
+    } = { otherColorAttachments: [] }
 ) => {
     const colorAttachment: GPURenderPassColorAttachment = {
         view: msaaTexture ? msaaTexture.createView() : context.getCurrentTexture().createView(),
@@ -58,7 +60,7 @@ export const createPass = (
 
     const encoder = device.createCommandEncoder()
     const pass = encoder.beginRenderPass({
-        colorAttachments: [colorAttachment],
+        colorAttachments: [colorAttachment, ...otherColorAttachments],
         depthStencilAttachment: (depthStencilAttachmentFactory ?? (() => undefined))(),
     })
 
@@ -67,7 +69,7 @@ export const createPass = (
         device.queue.submit([encoder.finish()])
     }
 
-    return { pass, executePass }
+    return { pass, executePass, encoder }
 }
 
 export const setupShaderPipeline = (
@@ -76,7 +78,8 @@ export const setupShaderPipeline = (
     canvasFormat: GPUTextureFormat,
     shaderCode: string,
     topology: GPUPrimitiveTopology = "triangle-list",
-    additionalOpts?: Partial<GPURenderPipelineDescriptor>
+    additionalOpts?: Partial<GPURenderPipelineDescriptor>,
+    { fragmentOverrides }: { fragmentOverrides?: Partial<GPUFragmentState> } = {}
 ): GPURenderPipeline => {
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -93,6 +96,7 @@ export const setupShaderPipeline = (
             module: wgsl,
             entryPoint: "main_fs",
             targets: [{ format: canvasFormat }],
+            ...fragmentOverrides,
         },
         ...additionalOpts,
         primitive: {
@@ -345,4 +349,27 @@ export const generateCubeMap = (
     })
 
     return { cubemapTexture, sampler }
+}
+
+export const generatePingPongTextures = (device: GPUDevice, canvas: HTMLCanvasElement) => {
+    // textures.width = canvas.width;
+    // textures.height = canvas.height;
+    const renderSrc = device.createTexture({
+        size: [canvas.width, canvas.height],
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        format: "rgba32float",
+    })
+    const renderDst = device.createTexture({
+        size: [canvas.width, canvas.height],
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        format: "rgba32float",
+    })
+
+    const blitPingPong = (encoder: GPUCommandEncoder) =>
+        encoder.copyTextureToTexture({ texture: renderSrc }, { texture: renderDst }, [
+            canvas.width,
+            canvas.height,
+        ])
+
+    return { renderDst, renderSrc, blitPingPong }
 }

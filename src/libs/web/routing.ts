@@ -1,9 +1,12 @@
 import { LandingPage } from "../../pages"
+import { RunTests } from "../../tests"
 import { IRoute, ViewGenerator } from "../../types"
 
 export const route = (routes: IRoute[]): ViewGenerator => {
     const query = new URLSearchParams(document.location.search)
     const paths = [query.get("t"), query.get("p")]
+
+    if (paths[0] === "test") return RunTests
 
     let foundRoute: IRoute | undefined = undefined
     let routesToSearch: IRoute[] = routes

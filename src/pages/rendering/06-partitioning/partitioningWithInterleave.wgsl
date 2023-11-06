@@ -4,8 +4,8 @@ struct VertexNormal {
 };
 
 struct IndexMaterial {
-    indices : vec4u,
-    //mat : u32
+    indices : vec3u,
+    mat : u32
 };
 
 @group(0) @binding(0) var<storage> vertex_normals : array<VertexNormal>;
@@ -40,6 +40,7 @@ const light_direction : vec3f = vec3f(-1.);
 const light_intensity = 1.5;
 
 const up = vec3f(0., 1., 0.);
+
 const target_point = vec3f(277., 275., 0.);
 const origin_point = vec3f(277., 275., -570.);
 const camera_constant = 1;
@@ -110,12 +111,12 @@ fn generate_ray_from_camera(uv : vec2f) -> Ray
 
     var q = b1 * uv.x + b2 * uv.y + v * camera_constant;
 
-    return construct_ray_100units(origin_point, normalize(q));
+    return construct_ray_10000units(origin_point, normalize(q));
 }
 
-fn construct_ray_100units(origin : vec3f, direction : vec3f) -> Ray
+fn construct_ray_10000units(origin : vec3f, direction : vec3f) -> Ray
 {
-    return construct_ray(origin, direction, .001, 100);
+    return construct_ray(origin, direction, .01, 10000);
 }
 
 fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> Ray
@@ -140,7 +141,7 @@ fn barycentric_normal(v_ns : array<vec3f, 3 >, beta : f32, gamma : f32) -> vec3f
 fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bool {
     var vertex_mat_lookup = index_mats[face];
     var indices = vertex_mat_lookup.indices.xyz;
-    var material_index = vertex_mat_lookup.indices.w;
+    var material_index = vertex_mat_lookup.mat;
 
     var vertex_normal_x = vertex_normals[indices.x];
     var vertex_normal_y = vertex_normals[indices.y];
@@ -284,6 +285,7 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
     {
         return false;
     }
+    var a = aabb.min;
 
     (*hit).has_hit = false;
 
@@ -325,7 +327,8 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
 
 fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
-    return lambertian(r, hit);
+    var lambertian = lambertian(r, hit);
+    return lambertian;
 }
 
 //Fragment shader

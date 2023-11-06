@@ -1,23 +1,13 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import {
-    initializeWebGPU,
-    createPass,
-    setupShaderPipeline,
-    createBind,
-    writeToBufferF32,
-} from "../../../libs/webgpu"
+import { initializeWebGPU, createPass, setupShaderPipeline, createBind } from "../../../libs/webgpu"
 
 import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
-    createRange,
-    createSelect,
     createText,
     createTitle,
-    createWithLabel,
-    watchInput,
 } from "../../../libs/web"
 
 import {
@@ -33,7 +23,7 @@ import {
 
 import shaderCode from "./partitioningWithInterleave.wgsl?raw"
 
-const CANVAS_ID = "cornell-interweave"
+const CANVAS_ID = "cornell-interleave"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
@@ -48,7 +38,7 @@ const execute: Executable = async () => {
         bspTreeResults.normals,
     ])
 
-    const interleavedIndicesMatIndices = bspTreeResults.indices
+    const interleavedIndicesMatIndices = new Uint32Array(bspTreeResults.indices)
     shiftIntoU32InPlace(interleavedIndicesMatIndices, modelDrawingInfo.matIndices, 4)
 
     const materialsArray = new Float32Array(

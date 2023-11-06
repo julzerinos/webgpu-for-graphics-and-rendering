@@ -5,3 +5,4 @@ import { renderingRoutes } from "./rendering"
 export * from "./other"
 
 export const allRoutes: IRoute[] = [grapichsRoutes, renderingRoutes]
+
