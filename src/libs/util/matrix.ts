@@ -1,5 +1,5 @@
 import { cross, dot, normalize, scale, subtract, toRadians, vec4, vectorsEqual } from "."
-import { Matrix, Matrix4x4, Vector3 } from "../../types"
+import { Matrix, Matrix2x2, Matrix3x3, Matrix4x4, MatrixNxM, Vector3 } from "../../types"
 
 export const mat4 = (
     a1: number = 0,
@@ -25,6 +25,27 @@ export const mat4 = (
     [d1, d2, d3, d4],
 ]
 
+export const mat3 = (
+    a1: number = 0,
+    a2: number = 0,
+    a3: number = 0,
+    b1: number = 0,
+    b2: number = 0,
+    b3: number = 0,
+    c1: number = 0,
+    c2: number = 0,
+    c3: number = 0
+): Matrix3x3 => [
+    [a1, a2, a3],
+    [b1, b2, b3],
+    [c1, c2, c3],
+]
+
+export const mat2 = (a1: number = 0, a2: number = 0, b1: number = 0, b2: number = 0): Matrix2x2 => [
+    [a1, a2],
+    [b1, b2],
+]
+
 export const identity4x4 = () => mat4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
 
 export const flattenMatrix = (matrix: Matrix): number[] =>
@@ -32,12 +53,7 @@ export const flattenMatrix = (matrix: Matrix): number[] =>
 export const flattenMatrices = (matrices: Matrix[]): number[] =>
     ([] as Array<number>).concat(...matrices.map(m => flattenMatrix(m)))
 
-// export const matrixByteLength: { [key in MatrixFormat]: number } = {
-// float32x4: new Float32Array(mat4()).byteLength,
-// mat2: new Float32Array(flatten(mat2())).byteLength,
-// mat3: new Float32Array(flatten(mat3())).byteLength,
-// mat4: new Float32Array(flatten(mat4())).byteLength,
-// }
+
 
 export const lookAtMatrix = (eye: Vector3, at: Vector3, up: Vector3): Matrix4x4 => {
     if (vectorsEqual(eye, at)) return identity4x4()
@@ -178,10 +194,10 @@ export const multMatrices = <T extends Matrix>(m1: T, m2: T): T => {
 }
 
 export const transpose = <T extends Matrix>(m: T): T => {
-    var result = [] as number[][]
-    for (var i = 0; i < m.length; ++i) {
+    const result = [] as number[][]
+    for (let i = 0; i < m.length; ++i) {
         result.push([])
-        for (var j = 0; j < m[i].length; ++j) {
+        for (let j = 0; j < m[i].length; ++j) {
             result[i].push(m[j][i])
         }
     }
@@ -189,53 +205,265 @@ export const transpose = <T extends Matrix>(m: T): T => {
     return result as T
 }
 
+export const det2 = (m: Matrix2x2): number => {
+    return m[0][0] * m[1][1] - m[0][1] * m[1][0]
+}
 
-// function mat2() {
-//     var v = _argumentsToArray(arguments)
+export const det3 = (m: Matrix3x3): number => {
+    const d =
+        m[0][0] * m[1][1] * m[2][2] +
+        m[0][1] * m[1][2] * m[2][0] +
+        m[0][2] * m[2][1] * m[1][0] -
+        m[2][0] * m[1][1] * m[0][2] -
+        m[1][0] * m[0][1] * m[2][2] -
+        m[0][0] * m[1][2] * m[2][1]
+    return d
+}
 
-//     var m = []
-//     switch (v.length) {
-//         case 0:
-//             v[0] = 1
-//         case 1:
-//             m = [vec2(v[0], 0.0), vec2(0.0, v[0])]
-//             break
+export const det4 = (m: Matrix4x4): number => {
+    const m0 = mat3(m[1][1], m[1][2], m[1][3], m[2][1], m[2][2], m[2][3], m[3][1], m[3][2], m[3][3])
+    const m1 = mat3(m[1][0], m[1][2], m[1][3], m[2][0], m[2][2], m[2][3], m[3][0], m[3][2], m[3][3])
+    const m2 = mat3(m[1][0], m[1][1], m[1][3], m[2][0], m[2][1], m[2][3], m[3][0], m[3][1], m[3][3])
+    const m3 = mat3(m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2], m[3][0], m[3][1], m[3][2])
+    return m[0][0] * det3(m0) - m[0][1] * det3(m1) + m[0][2] * det3(m2) - m[0][3] * det3(m3)
+}
 
-//         default:
-//             m.push(vec2(v))
-//             v.splice(0, 2)
-//             m.push(vec2(v))
-//             break
-//     }
+export const inverse3 = (m: Matrix3x3): Matrix3x3 => {
+    const a = mat3()
+    const d = det3(m)
 
-//     m.matrix = true
+    const a00 = mat2(m[1][1], m[1][2], m[2][1], m[2][2])
+    const a01 = mat2(m[1][0], m[1][2], m[2][0], m[2][2])
+    const a02 = mat2(m[1][0], m[1][1], m[2][0], m[2][1])
+    const a10 = mat2(m[0][1], m[0][2], m[2][1], m[2][2])
+    const a11 = mat2(m[0][0], m[0][2], m[2][0], m[2][2])
+    const a12 = mat2(m[0][0], m[0][1], m[2][0], m[2][1])
+    const a20 = mat2(m[0][1], m[0][2], m[1][1], m[1][2])
+    const a21 = mat2(m[0][0], m[0][2], m[1][0], m[1][2])
+    const a22 = mat2(m[0][0], m[0][1], m[1][0], m[1][1])
 
-//     return m
-// }
+    a[0][0] = det2(a00) / d
+    a[0][1] = -det2(a10) / d
+    a[0][2] = det2(a20) / d
+    a[1][0] = -det2(a01) / d
+    a[1][1] = det2(a11) / d
+    a[1][2] = -det2(a21) / d
+    a[2][0] = det2(a02) / d
+    a[2][1] = -det2(a12) / d
+    a[2][2] = det2(a22) / d
 
-// //----------------------------------------------------------------------------
+    return a
+}
 
-// function mat3() {
-//     var v = _argumentsToArray(arguments)
+export const inverse4 = (m: Matrix4x4): Matrix4x4 => {
+    const a = identity4x4()
+    const d = det4(m)
 
-//     var m = []
-//     switch (v.length) {
-//         case 0:
-//             v[0] = 1
-//         case 1:
-//             m = [vec3(v[0], 0.0, 0.0), vec3(0.0, v[0], 0.0), vec3(0.0, 0.0, v[0])]
-//             break
+    const a00 = mat3(
+        m[1][1],
+        m[1][2],
+        m[1][3],
+        m[2][1],
+        m[2][2],
+        m[2][3],
+        m[3][1],
+        m[3][2],
+        m[3][3]
+    )
+    const a01 = mat3(
+        m[1][0],
+        m[1][2],
+        m[1][3],
+        m[2][0],
+        m[2][2],
+        m[2][3],
+        m[3][0],
+        m[3][2],
+        m[3][3]
+    )
+    const a02 = mat3(
+        m[1][0],
+        m[1][1],
+        m[1][3],
+        m[2][0],
+        m[2][1],
+        m[2][3],
+        m[3][0],
+        m[3][1],
+        m[3][3]
+    )
+    const a03 = mat3(
+        m[1][0],
+        m[1][1],
+        m[1][2],
+        m[2][0],
+        m[2][1],
+        m[2][2],
+        m[3][0],
+        m[3][1],
+        m[3][2]
+    )
+    const a10 = mat3(
+        m[0][1],
+        m[0][2],
+        m[0][3],
+        m[2][1],
+        m[2][2],
+        m[2][3],
+        m[3][1],
+        m[3][2],
+        m[3][3]
+    )
+    const a11 = mat3(
+        m[0][0],
+        m[0][2],
+        m[0][3],
+        m[2][0],
+        m[2][2],
+        m[2][3],
+        m[3][0],
+        m[3][2],
+        m[3][3]
+    )
+    const a12 = mat3(
+        m[0][0],
+        m[0][1],
+        m[0][3],
+        m[2][0],
+        m[2][1],
+        m[2][3],
+        m[3][0],
+        m[3][1],
+        m[3][3]
+    )
+    const a13 = mat3(
+        m[0][0],
+        m[0][1],
+        m[0][2],
+        m[2][0],
+        m[2][1],
+        m[2][2],
+        m[3][0],
+        m[3][1],
+        m[3][2]
+    )
+    const a20 = mat3(
+        m[0][1],
+        m[0][2],
+        m[0][3],
+        m[1][1],
+        m[1][2],
+        m[1][3],
+        m[3][1],
+        m[3][2],
+        m[3][3]
+    )
+    const a21 = mat3(
+        m[0][0],
+        m[0][2],
+        m[0][3],
+        m[1][0],
+        m[1][2],
+        m[1][3],
+        m[3][0],
+        m[3][2],
+        m[3][3]
+    )
+    const a22 = mat3(
+        m[0][0],
+        m[0][1],
+        m[0][3],
+        m[1][0],
+        m[1][1],
+        m[1][3],
+        m[3][0],
+        m[3][1],
+        m[3][3]
+    )
+    const a23 = mat3(
+        m[0][0],
+        m[0][1],
+        m[0][2],
+        m[1][0],
+        m[1][1],
+        m[1][2],
+        m[3][0],
+        m[3][1],
+        m[3][2]
+    )
+    const a30 = mat3(
+        m[0][1],
+        m[0][2],
+        m[0][3],
+        m[1][1],
+        m[1][2],
+        m[1][3],
+        m[2][1],
+        m[2][2],
+        m[2][3]
+    )
+    const a31 = mat3(
+        m[0][0],
+        m[0][2],
+        m[0][3],
+        m[1][0],
+        m[1][2],
+        m[1][3],
+        m[2][0],
+        m[2][2],
+        m[2][3]
+    )
+    const a32 = mat3(
+        m[0][0],
+        m[0][1],
+        m[0][3],
+        m[1][0],
+        m[1][1],
+        m[1][3],
+        m[2][0],
+        m[2][1],
+        m[2][3]
+    )
+    const a33 = mat3(
+        m[0][0],
+        m[0][1],
+        m[0][2],
+        m[1][0],
+        m[1][1],
+        m[1][2],
+        m[2][0],
+        m[2][1],
+        m[2][2]
+    )
 
-//         default:
-//             m.push(vec3(v))
-//             v.splice(0, 3)
-//             m.push(vec3(v))
-//             v.splice(0, 3)
-//             m.push(vec3(v))
-//             break
-//     }
+    a[0][0] = det3(a00) / d
+    a[0][1] = -det3(a10) / d
+    a[0][2] = det3(a20) / d
+    a[0][3] = -det3(a30) / d
+    a[1][0] = -det3(a01) / d
+    a[1][1] = det3(a11) / d
+    a[1][2] = -det3(a21) / d
+    a[1][3] = det3(a31) / d
+    a[2][0] = det3(a02) / d
+    a[2][1] = -det3(a12) / d
+    a[2][2] = det3(a22) / d
+    a[2][3] = -det3(a32) / d
+    a[3][0] = -det3(a03) / d
+    a[3][1] = det3(a13) / d
+    a[3][2] = -det3(a23) / d
+    a[3][3] = det3(a33) / d
 
-//     m.matrix = true
+    return a
+}
 
-//     return m
-// }
+export const matSlice = (
+    source: Matrix,
+    from: [number, number] = [0, 0],
+    to: [number, number] = [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER]
+): MatrixNxM => source.slice(from[1], to[1]).map(r => r.slice(from[0], to[0])) as MatrixNxM
+
+export const matFitInPlace = <T extends Matrix>(fit: MatrixNxM | Matrix, into: T): T => {
+    for (let i = 0; i < fit.length; i++) into[i].splice(0, fit[i].length, ...fit[i])
+
+    return into
+}

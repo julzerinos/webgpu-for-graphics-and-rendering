@@ -8,12 +8,9 @@ import {
     genreateIndexBuffer,
     generateDepthBuffer,
     generateMultisampleBuffer,
-    writeToBufferF32,
     createBind,
-    generateTexture,
     createTextureBind,
     generateCubeMap,
-    toNDC,
 } from "../../../libs/webgpu"
 
 import {
@@ -32,12 +29,15 @@ import {
     perspectiveProjection,
     TetrahedronSphere,
     toVec3,
-    flattenMatrix,
     vec4,
-    toRadians,
     readImageData,
     identity4x4,
     vectorMatrixMult,
+    inverse4,
+    matSlice,
+    mat4,
+    matFitInPlace,
+    flattenMatrices,
 } from "../../../libs/util"
 
 import shaderCode from "./texturedSphereWithQuad.wgsl?raw"
@@ -60,9 +60,6 @@ const execute: Executable = async () => {
         ].map(tp => readImageData(tp))
     )
 
-    const sphere = TetrahedronSphere(7)
-    const sphereIndices = flattenVector(sphere.triangleIndices.map(v => toVec3(v)))
-
     const eye = vec3(0, 0, 3)
     const at = vec3(0)
     const up = vec3(0, 1, 0)
@@ -72,15 +69,27 @@ const execute: Executable = async () => {
     const projection = perspective
     const projectionView = multMatrices(projection, view)
 
+    const projectionInv = inverse4(projection)
+    const viewInv = inverse4(view)
+    const viewInvSlice = matSlice(viewInv, [0, 0], [3, 3])
+
+    const empty = mat4()
+    const viewInvSlice4x4 = matFitInPlace(viewInvSlice, empty)
+
+    const Mtex = multMatrices(viewInvSlice4x4, projectionInv)
+
+    const sphere = TetrahedronSphere(7)
+    const sphereIndices = flattenVector(sphere.triangleIndices.map(v => toVec3(v)))
     const sphereVertices = flattenVector(
         sphere.vertices.map(v => vectorMatrixMult(v, projectionView))
     )
 
+    const depth = 0.999
     const quadVertices = flattenVector([
-        vec4(-1, -1, 0, 1),
-        vec4(1, -1, 0, 1),
-        vec4(-1, 1, 0, 1),
-        vec4(1, 1, 0, 1),
+        vec4(-1, -1, depth, 1),
+        vec4(1, -1, depth, 1),
+        vec4(-1, 1, depth, 1),
+        vec4(1, 1, depth, 1),
     ])
     const quadIndices = [
         sphere.vertices.length + 0,
@@ -100,6 +109,26 @@ const execute: Executable = async () => {
         new Float32Array([...sphereVertices, ...quadVertices]),
         "float32x4"
     )
+    const { buffer: normalBuffer, bufferLayout: normalBufferLayout } = genreateVertexBuffer(
+        device,
+        new Float32Array([
+            ...flattenVector(sphere.vertices),
+            ...flattenVector([
+                vec4(-1, -1, depth, 1),
+                vec4(1, -1, depth, 1),
+                vec4(-1, 1, depth, 1),
+                vec4(1, 1, depth, 1),
+            ]),
+        ]),
+        "float32x4",
+        1
+    )
+    const { buffer: MtexIndexBuffer, bufferLayout: MtexIndexBufferLayout } = genreateVertexBuffer(
+        device,
+        new Float32Array([...Array(sphere.vertices.length).fill(0), ...Array(4).fill(1)]),
+        "uint32",
+        2
+    )
 
     const msaaCount = 4
     const { multisample, msaaTexture } = generateMultisampleBuffer(
@@ -116,7 +145,7 @@ const execute: Executable = async () => {
 
     const pipeline = setupShaderPipeline(
         device,
-        [vertexBufferLayout],
+        [vertexBufferLayout, normalBufferLayout, MtexIndexBufferLayout],
         canvasFormat,
         shaderCode,
         "triangle-list",
@@ -140,13 +169,13 @@ const execute: Executable = async () => {
         createViewOverwrite: { dimension: "cube" },
     })
 
-    // const { bindGroup: sceneDataBind } = createBind(
-    //     device,
-    //     pipeline,
-    //     [new Float32Array(flattenMatrix(pvm))],
-    //     "UNIFORM",
-    //     0
-    // )
+    const { bindGroup: mTexBind } = createBind(
+        device,
+        pipeline,
+        [new Float32Array(flattenMatrices([identity4x4(), Mtex])), new Float32Array([...eye])],
+        "UNIFORM",
+        1
+    )
 
     const draw = () => {
         const { pass, executePass } = createPass(device, context, vec4(0.5, 0.1, 0.5), {
@@ -157,12 +186,14 @@ const execute: Executable = async () => {
         pass.setPipeline(pipeline)
 
         pass.setVertexBuffer(0, vertexBuffer)
+        pass.setVertexBuffer(1, normalBuffer)
+        pass.setVertexBuffer(2, MtexIndexBuffer)
         pass.setIndexBuffer(indexBuffer, "uint32")
 
-        // pass.setBindGroup(0, sceneDataBind)
         pass.setBindGroup(0, textureBind)
+        pass.setBindGroup(1, mTexBind)
 
-        pass.drawIndexed(sphere.triangleCount * 3 )
+        pass.drawIndexed(sphere.triangleCount * 3 + quadIndices.length)
 
         executePass()
     }
@@ -172,7 +203,7 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("A sphere")
-    const description = createText("no desc yet")
+    const description = createText("explain transformation")
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

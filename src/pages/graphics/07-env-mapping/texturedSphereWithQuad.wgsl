@@ -1,11 +1,12 @@
-//struct SceneData {
-//pvm : mat4x4f,
-//};
-//
-//@group(0) @binding(0) var<uniform> scene_data : SceneData;
-
 @group(0) @binding(0) var cube_sampler : sampler;
 @group(0) @binding(1) var cube_texture : texture_cube < f32>;
+
+struct MTex {
+    m_texs : array<mat4x4f, 2>
+}
+
+@group(1) @binding(0) var<uniform> m_tex : MTex;
+@group(1) @binding(1) var<uniform> eye : vec3f;
 
 const light_direction = vec3f(0, 0, -1.);
 const visibility = 1.;
@@ -22,18 +23,18 @@ fn incident_light() -> vec3f
 
 struct VSOut {
     @builtin(position) position : vec4f,
-    @location(0) normal : vec3f
+    @location(0) normal : vec3f,
+    @location(1) reflective : f32
 };
 
 @vertex
-fn main_vs(@location(0) inPos : vec4f) -> VSOut
+fn main_vs(@location(0) inPos : vec4f, @location(1) normal : vec4f, @location(2) m_tex_index : u32) -> VSOut
 {
-    var gouraud_shading = shading(.5 * inPos + .5, inPos.xyz, inPos.xyz);
-
     var vsOut : VSOut;
     vsOut.position = inPos;
 
-    vsOut.normal = inPos.xyz;
+    vsOut.reflective = 1. - f32(m_tex_index);
+    vsOut.normal = (m_tex.m_texs[m_tex_index] * normal).xyz;
 
     return vsOut;
 }
@@ -51,9 +52,14 @@ fn shading(color : vec4f, normal : vec3f, position : vec3f) -> vec4f
 }
 
 @fragment
-fn main_fs(@location(0) normal : vec3f) -> @location(0) vec4f
+fn main_fs(@location(0) normal : vec3f, @location(1) reflective : f32) -> @location(0) vec4f
 {
-    var sample = textureSample(cube_texture, cube_sampler, normal);
+    var incident = normalize(normal - eye);
+    var reflected = reflect(incident, normal);
+
+    var direction = select(normal, reflected, reflective == 1.);
+
+    var sample = textureSample(cube_texture, cube_sampler, direction);
 
     //var result = shading(sample, normalize(normal), position);
     return sample;

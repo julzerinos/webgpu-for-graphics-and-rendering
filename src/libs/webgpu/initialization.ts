@@ -1,6 +1,6 @@
-import { VectorFormat } from "../../types"
+import { DataFormat } from "../../types"
 import { Mip } from "../util"
-import { vectorByteLength } from "../util/vector"
+import { byteLength } from "../util/byteLengths"
 
 export const initializeWebGPU = async (canvasId: string) => {
     if (!navigator.gpu) window.alert("WebGPU is not enabled for this browser.")
@@ -47,8 +47,8 @@ export const createPass = (
     }: {
         msaaTexture?: GPUTexture
         depthStencilAttachmentFactory?: () => GPURenderPassDepthStencilAttachment
-        otherColorAttachments: GPURenderPassColorAttachment[]
-    } = { otherColorAttachments: [] }
+        otherColorAttachments?: GPURenderPassColorAttachment[]
+    } = {}
 ) => {
     const colorAttachment: GPURenderPassColorAttachment = {
         view: msaaTexture ? msaaTexture.createView() : context.getCurrentTexture().createView(),
@@ -60,7 +60,7 @@ export const createPass = (
 
     const encoder = device.createCommandEncoder()
     const pass = encoder.beginRenderPass({
-        colorAttachments: [colorAttachment, ...otherColorAttachments],
+        colorAttachments: [colorAttachment, ...(otherColorAttachments ?? [])],
         depthStencilAttachment: (depthStencilAttachmentFactory ?? (() => undefined))(),
     })
 
@@ -165,7 +165,7 @@ export const generateMultisampleBuffer = (
 export const genreateVertexBuffer = (
     device: GPUDevice,
     array: Float32Array,
-    format: VectorFormat,
+    format: DataFormat,
     shaderLocation: number = 0,
     usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
 ) => {
@@ -175,7 +175,7 @@ export const genreateVertexBuffer = (
     })
 
     const bufferLayout: GPUVertexBufferLayout = {
-        arrayStride: vectorByteLength[format],
+        arrayStride: byteLength[format],
         attributes: [
             {
                 format,

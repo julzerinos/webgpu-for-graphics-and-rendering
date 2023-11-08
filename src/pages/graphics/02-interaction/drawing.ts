@@ -35,10 +35,10 @@ import {
     subtract,
     vec2,
     vec3,
-    vectorByteLength,
 } from "../../../libs/util"
 
 import shaderCode from "./shader.wgsl?raw"
+import { vectorByteLength } from "../../../libs/util/byteLengths"
 
 const CANVAS_ID = "drawing"
 const DRAWING_MODE_SELECT_ID = "drawing-mode"
