@@ -51,6 +51,8 @@ struct HitInfo {
     diffuse : f32,
 };
 
+const visibility = 1;
+
 struct VSOut {
     @builtin(position) position : vec4f,
     @location(0) coords : vec2f,
@@ -166,6 +168,39 @@ fn sample_point_light(pos : vec3f, light_position : vec3f, emission : vec4f) -> 
     return light;
 }
 
+fn get_area_light_center() -> vec3f
+{
+    var center_light_position = vec3f(0.);
+    for (var i : u32 = 0; i < cb_meta.light_indices_count; i++)
+    {
+        var face_index = cb_light_faces[i];
+        var vertex_lookup = cb_triangles[face_index];
+        center_light_position += cb_vertices[vertex_lookup.x] + cb_vertices[vertex_lookup.y] + cb_vertices[vertex_lookup.z];
+    }
+    center_light_position /= f32(cb_meta.light_indices_count * 3);
+    return center_light_position;
+}
+
+fn calculate_area_light_intensity(direction : vec3f) -> vec3f
+{
+    var intensity = vec3f(0.);
+    for (var i : u32 = 0; i < cb_meta.light_indices_count; i++)
+    {
+        var face_index = cb_light_faces[i];
+        var vertex_lookup = cb_triangles[face_index];
+        var mat = materials[cb_mat_indices[face_index]];
+
+        var e0 = cb_vertices[vertex_lookup.y] - cb_vertices[vertex_lookup.x];
+        var e1 = cb_vertices[vertex_lookup.z] - cb_vertices[vertex_lookup.x];
+        var n = cross(e0, e1);
+        var area = length(n) / 2;
+
+        intensity += dot(-direction, normalize(n)) * mat.emission.rgb * area;
+    }
+
+    return intensity;
+}
+
 fn check_occulusion(position : vec3f, light : vec3f) -> bool
 {
     const surface_offset = 0.01;
@@ -182,30 +217,18 @@ fn check_occulusion(position : vec3f, light : vec3f) -> bool
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
-    var center_light_position = vec3f(0.);
-    var avg_emission = vec4f();
-    for (var i : u32 = 0; i < cb_meta.light_indices_count; i++)
-    {
-        var face_index = cb_light_faces[i];
+    var area_light_center = get_area_light_center();
 
-        var vertex_lookup = cb_triangles[face_index];
-        center_light_position += cb_vertices[vertex_lookup.x] + cb_vertices[vertex_lookup.y] + cb_vertices[vertex_lookup.z];
+    var light_info = sample_point_light((*hit).position, area_light_center, vec4f(0));
 
-        var mat = materials[cb_mat_indices[face_index]];
-        avg_emission += mat.emission;
-    }
-    center_light_position /= f32(cb_meta.light_indices_count * 3);
-    // avg_emission /= f32(cb_meta.light_indices_count);
-    // avg_emission = 6 * vec4f(27.6, 23.4, 12., 0.);
+    var lambertian_light = ((*hit).diffuse / 3.14) * (visibility / (light_info.dist * light_info.dist)) * dot((*hit).normal, light_info.w_i);
+    var area_light_intensity = lambertian_light * calculate_area_light_intensity(light_info.w_i)/100000;
 
-    var light_info = sample_point_light((*hit).position, center_light_position, avg_emission);
-    var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
-
-    var is_occluded = check_occulusion((*hit).position, center_light_position);
+    var is_occluded = check_occulusion((*hit).position, area_light_center);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1;
-    var L_reflected = .9 * lambertian_light * occlusion_modifier;
+    var L_reflected = .9 * area_light_intensity * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
     return LightResult(L_observed, vec3f(0));

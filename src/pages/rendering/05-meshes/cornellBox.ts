@@ -117,7 +117,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const interactables = createInteractableSection()
 
     const shadingSelect = createWithLabel(
-        createSelect(SHADING_SELECT_TYPE_ID, SHADING_SELECT_TYPES, "Flat"),
+        createSelect(SHADING_SELECT_TYPE_ID, SHADING_SELECT_TYPES, "Lambertian"),
         "Shading type",
         false
     )

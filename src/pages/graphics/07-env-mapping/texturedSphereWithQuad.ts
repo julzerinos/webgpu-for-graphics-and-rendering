@@ -11,14 +11,17 @@ import {
     createBind,
     createTextureBind,
     generateCubeMap,
+    generateTexture,
 } from "../../../libs/webgpu"
 
 import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createSelect,
     createText,
     createTitle,
+    createWithLabel,
 } from "../../../libs/web"
 
 import {
@@ -43,14 +46,14 @@ import {
 import shaderCode from "./texturedSphereWithQuad.wgsl?raw"
 
 const CANVAS_ID = "texture-sphere-with-quad"
+const REFLECTION = "env-sphere-reflect-type"
+const REFLECTION_TYPES = ["Faux reflection", "Mirror reflection"]
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
-    //const { textureData, width, height } = await readImageData("textures/earth.jpg")
-
-    // textureLeft, textureRight, textureTop, textureBottom, textureBack, textureFront
-    const cubemapTextures = await Promise.all(
+    const [normalMapTexture, ...cubemapTextures] = await Promise.all(
         [
+            "textures/normalmap.png",
             "textures/cubemap/cm_left.png", // POSITIVE_X
             "textures/cubemap/cm_right.png", // NEGATIVE_X
             "textures/cubemap/cm_top.png", // POSITIVE_Y
@@ -111,15 +114,7 @@ const execute: Executable = async () => {
     )
     const { buffer: normalBuffer, bufferLayout: normalBufferLayout } = genreateVertexBuffer(
         device,
-        new Float32Array([
-            ...flattenVector(sphere.vertices),
-            ...flattenVector([
-                vec4(-1, -1, depth, 1),
-                vec4(1, -1, depth, 1),
-                vec4(-1, 1, depth, 1),
-                vec4(1, 1, depth, 1),
-            ]),
-        ]),
+        new Float32Array([...flattenVector(sphere.vertices), ...quadVertices]),
         "float32x4",
         1
     )
@@ -177,6 +172,14 @@ const execute: Executable = async () => {
         1
     )
 
+    const { texture: normalTexture, sampler: normalSampler } = generateTexture(
+        device,
+        normalMapTexture.textureData,
+        normalMapTexture.width,
+        normalMapTexture.height
+    )
+    const normalTextureBind = createTextureBind(device, pipeline, normalTexture, normalSampler, 2)
+
     const draw = () => {
         const { pass, executePass } = createPass(device, context, vec4(0.5, 0.1, 0.5), {
             depthStencilAttachmentFactory,
@@ -192,6 +195,7 @@ const execute: Executable = async () => {
 
         pass.setBindGroup(0, textureBind)
         pass.setBindGroup(1, mTexBind)
+        pass.setBindGroup(2, normalTextureBind)
 
         pass.drawIndexed(sphere.triangleCount * 3 + quadIndices.length)
 
@@ -209,7 +213,13 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const canvas = createCanvas(CANVAS_ID)
     const interactableSection = createInteractableSection()
 
-    interactableSection.append()
+    const selectReflection = createWithLabel(
+        createSelect(REFLECTION, REFLECTION_TYPES, "Faux reflection"),
+        "Reflection type",
+        false
+    )
+
+    interactableSection.append(selectReflection)
     canvasSection.append(canvas, interactableSection)
     div.append(title, description, canvasSection)
 
