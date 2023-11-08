@@ -163,7 +163,7 @@ fn sample_point_light(pos : vec3f, light_position : vec3f, emission : vec4f) -> 
     var dist = length(direction);
     var incident_light = emission.rgb / (dist * dist);
 
-    var light = Light(vec3f(incident_light), direction, dist);
+    var light = Light(vec3f(incident_light), normalize(direction), dist);
 
     return light;
 }
@@ -195,7 +195,7 @@ fn calculate_area_light_intensity(direction : vec3f) -> vec3f
         var n = cross(e0, e1);
         var area = length(n) / 2;
 
-        intensity += dot(-direction, normalize(n)) * mat.emission.rgb * area;
+        intensity += max(0, dot(-direction, normalize(n))) * mat.emission.rgb * area;
     }
 
     return intensity;
@@ -221,8 +221,9 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
 
     var light_info = sample_point_light((*hit).position, area_light_center, vec4f(0));
 
-    var lambertian_light = ((*hit).diffuse / 3.14) * (visibility / (light_info.dist * light_info.dist)) * dot((*hit).normal, light_info.w_i);
-    var area_light_intensity = lambertian_light * calculate_area_light_intensity(light_info.w_i)/100000;
+    var lambertian_light = ((*hit).diffuse / 3.14) * (visibility / (light_info.dist * light_info.dist)) * max(0, dot((*hit).normal, light_info.w_i));
+    var area_light_intensity = lambertian_light * calculate_area_light_intensity(light_info.w_i);
+    //area_light_intensity /= 100000;
 
     var is_occluded = check_occulusion((*hit).position, area_light_center);
     var occlusion_modifier = select(1., 0., is_occluded);
