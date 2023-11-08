@@ -25,7 +25,7 @@ const light_intensity = 1.5;
 
 const up = vec3f(0., 1., 0.);
 const target_point = vec3f(-.02, .11, 0.);
-const camera_constant = 3.5; //3.5
+const camera_constant = 3.5;
 
 const f1en4 = 0.0001;
 const f1en8 = 0.00000001;

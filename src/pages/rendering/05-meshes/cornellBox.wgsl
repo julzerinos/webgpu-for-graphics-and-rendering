@@ -195,8 +195,8 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
         avg_emission += mat.emission;
     }
     center_light_position /= f32(cb_meta.light_indices_count * 3);
-    avg_emission /= f32(cb_meta.light_indices_count);
-    avg_emission = 6 * vec4f(27.6, 23.4, 12., 0.);
+    // avg_emission /= f32(cb_meta.light_indices_count);
+    // avg_emission = 6 * vec4f(27.6, 23.4, 12., 0.);
 
     var light_info = sample_point_light((*hit).position, center_light_position, avg_emission);
     var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
