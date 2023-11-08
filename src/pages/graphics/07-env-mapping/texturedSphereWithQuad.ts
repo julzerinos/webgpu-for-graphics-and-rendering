@@ -12,6 +12,7 @@ import {
     createTextureBind,
     generateCubeMap,
     generateTexture,
+    writeToBufferU32,
 } from "../../../libs/webgpu"
 
 import {
@@ -22,6 +23,7 @@ import {
     createText,
     createTitle,
     createWithLabel,
+    subscribeToInput,
 } from "../../../libs/web"
 
 import {
@@ -47,7 +49,12 @@ import shaderCode from "./texturedSphereWithQuad.wgsl?raw"
 
 const CANVAS_ID = "texture-sphere-with-quad"
 const REFLECTION = "env-sphere-reflect-type"
-const REFLECTION_TYPES = ["Faux reflection", "Mirror reflection"]
+const REFLECTION_TYPES = {
+    "Faux reflection": 0,
+    "Mirror reflection": 1,
+    "Show normal map": 2,
+    "Bump reflection": 3,
+} as { [key: string]: number }
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
@@ -164,10 +171,17 @@ const execute: Executable = async () => {
         createViewOverwrite: { dimension: "cube" },
     })
 
-    const { bindGroup: mTexBind } = createBind(
+    const {
+        bindGroup: mTexBind,
+        buffers: [_, __, reflectionTypeBuffer],
+    } = createBind(
         device,
         pipeline,
-        [new Float32Array(flattenMatrices([identity4x4(), Mtex])), new Float32Array([...eye])],
+        [
+            new Float32Array(flattenMatrices([identity4x4(), Mtex])),
+            new Float32Array([...eye]),
+            new Uint32Array([0]),
+        ],
         "UNIFORM",
         1
     )
@@ -180,7 +194,10 @@ const execute: Executable = async () => {
     )
     const normalTextureBind = createTextureBind(device, pipeline, normalTexture, normalSampler, 2)
 
-    const draw = () => {
+    const draw = (reflection: string) => {
+        const reflectionType = REFLECTION_TYPES[reflection]
+        writeToBufferU32(device, reflectionTypeBuffer, new Uint32Array([reflectionType]), 0)
+
         const { pass, executePass } = createPass(device, context, vec4(0.5, 0.1, 0.5), {
             depthStencilAttachmentFactory,
             msaaTexture,
@@ -202,7 +219,7 @@ const execute: Executable = async () => {
         executePass()
     }
 
-    draw()
+    draw(subscribeToInput<string>(REFLECTION, draw))
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
@@ -214,7 +231,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const interactableSection = createInteractableSection()
 
     const selectReflection = createWithLabel(
-        createSelect(REFLECTION, REFLECTION_TYPES, "Faux reflection"),
+        createSelect(REFLECTION, Object.keys(REFLECTION_TYPES), "Faux reflection"),
         "Reflection type",
         false
     )

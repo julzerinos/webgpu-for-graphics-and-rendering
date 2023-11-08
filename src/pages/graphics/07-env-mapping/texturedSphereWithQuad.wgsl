@@ -7,6 +7,7 @@ struct MTex {
 
 @group(1) @binding(0) var<uniform> m_tex : MTex;
 @group(1) @binding(1) var<uniform> eye : vec3f;
+@group(1) @binding(2) var<uniform> reflection_type : u32;
 
 @group(2) @binding(0) var normal_sampler : sampler;
 @group(2) @binding(1) var normal_texture : texture_2d<f32>;
@@ -63,7 +64,23 @@ fn spherical_to_uv(spherical : vec3f) -> vec2f
     return vec2f(u, v);
 }
 
-const view_type = 3;
+const en16 = 0.000000000000001;
+
+fn rotate_to_normal(n : vec3f, v : vec3f) -> vec3f {
+    var sgn_nz = sign(n.z + en16);
+    var a = -1.0 / (1.0 + abs(n.z));
+    var b = n.x * n.y * a;
+    return vec3f(1.0 + n.x * n.x * a, b, -sgn_nz * n.x) * v.x
+    + vec3f(sgn_nz * b, sgn_nz * (1.0 + n.y * n.y * a), -n.y) * v.y
+    + n * v.z;
+}
+
+fn flip_uv(uv : vec2f) -> vec2f
+{
+    return vec2f(uv.x, 1 - uv.y);
+}
+
+const view_type = 4;
 
 @fragment
 fn main_fs(@location(0) normal : vec3f, @location(1) object_type : f32) -> @location(0) vec4f
@@ -85,26 +102,37 @@ fn main_fs(@location(0) normal : vec3f, @location(1) object_type : f32) -> @loca
 
     //Show normal map
 
-    var normal_map_color = textureSample(normal_texture, normal_sampler, spherical_to_uv(normal));
+    var normal_map_color = textureSample(normal_texture, normal_sampler, flip_uv(spherical_to_uv(normal)));
     var when_normal_map_color = select(faux_sample, normal_map_color, is_sphere);
 
-    switch (view_type)
+    //Reflections with bumps
+
+    var normal_mapped = normal_map_color * 2 - 1;
+    var rotated_normal = rotate_to_normal(normal, normal_mapped.xyz);
+    var bump_sample = textureSample(cube_texture, cube_sampler, rotated_normal);
+    var when_bump_color = select(faux_sample, bump_sample, is_sphere);
+
+    switch (reflection_type)
     {
         default :
         {
             return vec4f(0);
         }
-        case 1 :
+        case 0 :
         {
             return faux_sample;
         }
-        case 2 :
+        case 1 :
         {
             return mirror_sample;
         }
-        case 3 :
+        case 2 :
         {
             return when_normal_map_color;
+        }
+        case 3 :
+        {
+            return when_bump_color;
         }
     }
 }
