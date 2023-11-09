@@ -10,6 +10,7 @@ struct IndexMaterial {
 
 @group(0) @binding(0) var<storage> vertex_normals : array<VertexNormal>;
 @group(0) @binding(1) var<storage> index_mats : array<IndexMaterial>;
+@group(0) @binding(2) var<storage> light_faces : array<u32>;
 
 @group(1) @binding(0) var<storage> bspPlanes : array<f32>;
 @group(1) @binding(1) var<storage> bspTree : array<vec4u>;
@@ -21,6 +22,7 @@ struct Aabb {
 };
 
 @group(2) @binding(0) var<uniform> aabb : Aabb;
+@group(2) @binding(1) var<uniform> light_indices_count : u32;
 
 struct Material {
     color : vec4f,
@@ -38,6 +40,7 @@ var<private> branch_ray : array<vec2f, MAX_LEVEL>;
 
 const light_direction : vec3f = vec3f(-1.);
 const light_intensity = 1.5;
+const visibility = 1.;
 
 const up = vec3f(0., 1., 0.);
 
@@ -52,7 +55,8 @@ const f1en8 = 0.00000001;
 struct Light {
     L_i : vec3f,
     w_i : vec3f,
-    dist : f32
+    dist : f32,
+    pos : vec3f
 };
 
 struct LightResult {
@@ -173,7 +177,7 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
 
     (*hit).has_hit = (*hit).has_hit || has_hit;
     (*hit).dist = select((*hit).dist, intersection, has_hit);
-    (*hit).color = select((*hit).color, vec3f(.8), has_hit);
+    (*hit).color = select((*hit).color, color.rgb, has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
 
@@ -295,9 +299,60 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 
         //Lighting
 
-fn sample_directional_light(light_direction : vec3f) -> Light {
-    var light = Light(vec3f(light_intensity), -light_direction, 0.);
-    return light;
+fn get_area_light_center() -> vec3f
+{
+    var center_light_position = vec3f(0.);
+    for (var i : u32 = 0; i < light_indices_count; i++)
+    {
+        var vertex_mat_lookup = index_mats[light_faces[i]];
+        var indices = vertex_mat_lookup.indices.xyz;
+
+        var vertex_0 = vertex_normals[indices.x].vertex;
+        var vertex_1 = vertex_normals[indices.y].vertex;
+        var vertex_2 = vertex_normals[indices.z].vertex;
+
+        center_light_position += vertex_0 + vertex_1 + vertex_2;
+    }
+    center_light_position /= f32(light_indices_count * 3);
+    return center_light_position;
+}
+
+fn calculate_area_light_intensity(direction : vec3f) -> vec3f
+{
+    var intensity = vec3f(0.);
+    for (var i : u32 = 0; i < light_indices_count; i++)
+    {
+        var vertex_mat_lookup = index_mats[light_faces[i]];
+        var indices = vertex_mat_lookup.indices.xyz;
+        var material_index = vertex_mat_lookup.mat;
+        var mat = materials[material_index];
+
+        var vertex_0 = vertex_normals[indices.x].vertex;
+        var vertex_1 = vertex_normals[indices.y].vertex;
+        var vertex_2 = vertex_normals[indices.z].vertex;
+
+        var e0 = vertex_1 - vertex_0;
+        var e1 = vertex_2 - vertex_0;
+        var n = cross(e0, e1);
+        var area = length(n) / 2;
+
+        intensity += max(0, dot(-direction, normalize(n))) * mat.emission.rgb * area;
+    }
+
+    return intensity;
+}
+
+fn sample_area_light(pos : vec3f) -> Light
+{
+    var area_light_center = get_area_light_center();
+
+    var line = area_light_center - pos;
+    var dist = length(line);
+    var direction = line / dist;
+
+    var incident_light = calculate_area_light_intensity(direction) / (dist * dist);
+
+    return Light(vec3f(incident_light), normalize(direction), dist, area_light_center);
 }
 
 fn check_occulusion_directional(position : vec3f, direction : vec3f) -> bool
@@ -313,8 +368,8 @@ fn check_occulusion_directional(position : vec3f, direction : vec3f) -> bool
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
-    var light_info = sample_directional_light(light_direction);
-    var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
+    var light_info = sample_area_light((*hit).position);
+    var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
 
     var is_occluded = check_occulusion_directional((*hit).position, light_direction);
     var occlusion_modifier = select(1., 0., is_occluded);

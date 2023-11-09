@@ -23,7 +23,8 @@ struct Material {
 struct Light {
     L_i : vec3f,
     w_i : vec3f,
-    dist : f32
+    dist : f32,
+    pos : vec3f
 };
 
 struct LightResult {
@@ -157,17 +158,6 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 
 //Lighting //
 
-
-fn sample_point_light(pos : vec3f, light_position : vec3f, emission : vec4f) -> Light {
-    var direction = light_position - pos;
-    var dist = length(direction);
-    var incident_light = emission.rgb / (dist * dist);
-
-    var light = Light(vec3f(incident_light), normalize(direction), dist);
-
-    return light;
-}
-
 fn get_area_light_center() -> vec3f
 {
     var center_light_position = vec3f(0.);
@@ -201,6 +191,19 @@ fn calculate_area_light_intensity(direction : vec3f) -> vec3f
     return intensity;
 }
 
+fn sample_area_light(pos : vec3f) -> Light
+{
+    var area_light_center = get_area_light_center();
+
+    var line = area_light_center - pos;
+    var dist = length(line);
+    var direction = line / dist;
+
+    var incident_light = calculate_area_light_intensity(direction) / (dist * dist);
+
+    return Light(vec3f(incident_light), normalize(direction), dist, area_light_center);
+}
+
 fn check_occulusion(position : vec3f, light : vec3f) -> bool
 {
     const surface_offset = 0.01;
@@ -217,19 +220,15 @@ fn check_occulusion(position : vec3f, light : vec3f) -> bool
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
-    var area_light_center = get_area_light_center();
+    var light_info = sample_area_light((*hit).position);
 
-    var light_info = sample_point_light((*hit).position, area_light_center, vec4f(0));
+    var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
 
-    var lambertian_light = ((*hit).diffuse / 3.14) * (visibility / (light_info.dist * light_info.dist)) * max(0, dot((*hit).normal, light_info.w_i));
-    var area_light_intensity = lambertian_light * calculate_area_light_intensity(light_info.w_i);
-    //area_light_intensity /= 100000;
-
-    var is_occluded = check_occulusion((*hit).position, area_light_center);
+    var is_occluded = check_occulusion((*hit).position, light_info.pos);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1;
-    var L_reflected = .9 * area_light_intensity * occlusion_modifier;
+    var L_reflected = .9 * lambertian_light * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
     return LightResult(L_observed, vec3f(0));

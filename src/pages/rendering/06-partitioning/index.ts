@@ -9,6 +9,6 @@ export const SpatialPartitioning: ViewGenerator = (
     container: HTMLElement,
     executeQueue: ExecutableQueue
 ) => {
-    // bsp(container, executeQueue)
+    bsp(container, executeQueue)
     interleaving(container, executeQueue)
 }

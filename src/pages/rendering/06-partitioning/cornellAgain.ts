@@ -40,6 +40,7 @@ const execute: Executable = async () => {
 
     const interleavedIndicesMatIndices = new Uint32Array(bspTreeResults.indices)
     shiftIntoU32InPlace(interleavedIndicesMatIndices, modelDrawingInfo.matIndices, 4)
+    const lightFaceIndices = new Uint32Array(modelDrawingInfo.lightIndices)
 
     const materialsArray = new Float32Array(
         modelDrawingInfo.materials.reduce(
@@ -59,7 +60,7 @@ const execute: Executable = async () => {
     const { bindGroup: modelStorage } = createBind(
         device,
         pipeline,
-        [interleavedVerticesNormals, interleavedIndicesMatIndices],
+        [interleavedVerticesNormals, interleavedIndicesMatIndices, lightFaceIndices],
         "STORAGE"
     )
     const { bindGroup: bspTreeStorage } = createBind(
@@ -69,10 +70,10 @@ const execute: Executable = async () => {
         "STORAGE",
         1
     )
-    const { bindGroup: aaabUniform } = createBind(
+    const { bindGroup: uniformsBind } = createBind(
         device,
         pipeline,
-        [bspTreeResults.aabb],
+        [bspTreeResults.aabb, new Uint32Array([lightFaceIndices.length])],
         "UNIFORM",
         2
     )
@@ -91,7 +92,7 @@ const execute: Executable = async () => {
         pass.setPipeline(pipeline)
         pass.setBindGroup(0, modelStorage)
         pass.setBindGroup(1, bspTreeStorage)
-        pass.setBindGroup(2, aaabUniform)
+        pass.setBindGroup(2, uniformsBind)
         pass.setBindGroup(3, materialsStorage)
 
         pass.draw(4)

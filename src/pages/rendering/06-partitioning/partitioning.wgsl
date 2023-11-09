@@ -27,6 +27,7 @@ const up = vec3f(0., 1., 0.);
 const target_point = vec3f(-.02, .11, 0.);
 const camera_constant = 3.5;
 
+const f1en2 = 0.01;
 const f1en4 = 0.0001;
 const f1en8 = 0.00000001;
 
@@ -247,8 +248,8 @@ fn intersect_min_max(r : ptr < function, Ray>) -> bool
     {
         return false;
     }
-    (*r).tmin = max(tmin - f1en4, (*r).tmin);
-    (*r).tmax = min(tmax + f1en4, (*r).tmax);
+    (*r).tmin = max(tmin - f1en2, (*r).tmin);
+    (*r).tmax = min(tmax + f1en2, (*r).tmax);
     return true;
 }
 

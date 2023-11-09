@@ -77,7 +77,7 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("Using the Binary Space Partitioning tree")
-    const description = createText("No description yet")
+    const description = createText("why dots in black?")
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
