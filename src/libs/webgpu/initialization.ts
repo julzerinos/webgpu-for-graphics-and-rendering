@@ -79,7 +79,13 @@ export const setupShaderPipeline = (
     shaderCode: string,
     topology: GPUPrimitiveTopology = "triangle-list",
     additionalOpts?: Partial<GPURenderPipelineDescriptor>,
-    { fragmentOverrides }: { fragmentOverrides?: Partial<GPUFragmentState> } = {}
+    {
+        fragmentOverrides,
+        blend,
+    }: {
+        fragmentOverrides?: Partial<GPUFragmentState>
+        blend?: GPUBlendState
+    } = {}
 ): GPURenderPipeline => {
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -95,7 +101,7 @@ export const setupShaderPipeline = (
         fragment: {
             module: wgsl,
             entryPoint: "main_fs",
-            targets: [{ format: canvasFormat }],
+            targets: [{ format: canvasFormat, blend }],
             ...fragmentOverrides,
         },
         ...additionalOpts,
@@ -113,7 +119,8 @@ export const setupShaderPipeline = (
 export const generateDepthBuffer = (
     device: GPUDevice,
     canvas: HTMLCanvasElement,
-    msaaCount: number
+    msaaCount: number,
+    { depthStencilOverwrites }: { depthStencilOverwrites?: Partial<GPUDepthStencilState> } = {}
 ) => {
     let depthTexture: GPUTexture
     const createDepthTexture = () => {
@@ -128,6 +135,7 @@ export const generateDepthBuffer = (
         depthWriteEnabled: true,
         depthCompare: "less",
         format: "depth24plus",
+        ...depthStencilOverwrites,
     }
 
     const depthStencilAttachmentFactory: () => GPURenderPassDepthStencilAttachment = () => {

@@ -7,6 +7,7 @@ import { Lighting } from "./04-lighting"
 import { Meshes } from "./05-meshes"
 import { Texturing } from "./06-textures"
 import { EnvMapping } from "./07-env-mapping"
+import { Shadows } from "./08-shadows"
 
 export const Graphics: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     WebGPUBasics(container, executeQueue)
@@ -15,6 +16,7 @@ export const Graphics: ViewGenerator = (container: HTMLElement, executeQueue: Ex
     Lighting(container, executeQueue)
     Meshes(container, executeQueue)
     EnvMapping(container, executeQueue)
+    Shadows(container, executeQueue)
 }
 
 export const grapichsRoutes: IRoute = {
@@ -45,6 +47,10 @@ export const grapichsRoutes: IRoute = {
         {
             name: "07-env-mapping",
             generator: EnvMapping,
+        },
+        {
+            name: "08-shadows",
+            generator: Shadows,
         },
     ],
 }

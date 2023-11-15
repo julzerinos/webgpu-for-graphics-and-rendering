@@ -78,7 +78,7 @@ const execute: Executable = async () => {
     )
 
     const textureData = checkerboardTexture(64, 8, 8)
-    const mips = generateMips(textureData, 64)
+    const mips = generateMips(textureData, 64, true)
 
     const draw = async () => {
         const { texture, sampler } = generateTexture(

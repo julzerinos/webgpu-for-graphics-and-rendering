@@ -72,7 +72,10 @@ export const checkerboardTexture = (
 }
 
 // https://webgpufundamentals.org/webgpu/lessons/webgpu-textures.html
-const createNextMipLevelRgba8Unorm = ({ data: src, width: srcWidth, height: srcHeight }: Mip) => {
+const createNextMipLevelRgba8Unorm = (
+    { data: src, width: srcWidth, height: srcHeight }: Mip,
+    applyLevelColorFilter: boolean = false
+) => {
     // compute the size of the next mip
     const dstWidth = Math.max(1, (srcWidth / 2) | 0)
     const dstHeight = Math.max(1, (srcHeight / 2) | 0)
@@ -127,7 +130,7 @@ const createNextMipLevelRgba8Unorm = ({ data: src, width: srcWidth, height: srcH
             const dstOffset = (y * dstWidth + x) * 4
 
             const filteredColor = bilinearFilter(tl, tr, bl, br, t1, t2)
-            filteredColor[0] = 6 * dstWidth
+            if (applyLevelColorFilter) filteredColor[0] = 6 * dstWidth
 
             dst.set(filteredColor, dstOffset)
         }
@@ -142,7 +145,7 @@ export interface Mip {
 }
 
 // https://webgpufundamentals.org/webgpu/lessons/webgpu-textures.html
-export const generateMips = (src: Uint8Array, srcWidth: number): Mip[] => {
+export const generateMips = (src: Uint8Array, srcWidth: number, debug: boolean = false): Mip[] => {
     const srcHeight = src.length / 4 / srcWidth
 
     // populate with first mip level (base level)
@@ -150,7 +153,7 @@ export const generateMips = (src: Uint8Array, srcWidth: number): Mip[] => {
     const mips = [mip]
 
     while (mip.width > 1 || mip.height > 1) {
-        mip = createNextMipLevelRgba8Unorm(mip)
+        mip = createNextMipLevelRgba8Unorm(mip, debug)
         mips.push(mip)
     }
     return mips
