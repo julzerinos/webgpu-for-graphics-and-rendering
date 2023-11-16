@@ -227,7 +227,7 @@ fn sample_point_light(pos : vec3f) -> Light {
     var dist = length(direction);
     var incident_light = light_intensity / (dist * dist);
 
-    var light = Light(vec3f(incident_light), direction, dist);
+    var light = Light(vec3f(incident_light), normalize(direction), dist);
 
     return light;
 }

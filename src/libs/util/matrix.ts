@@ -53,8 +53,6 @@ export const flattenMatrix = (matrix: Matrix): number[] =>
 export const flattenMatrices = (matrices: Matrix[]): number[] =>
     ([] as Array<number>).concat(...matrices.map(m => flattenMatrix(m)))
 
-
-
 export const lookAtMatrix = (eye: Vector3, at: Vector3, up: Vector3): Matrix4x4 => {
     if (vectorsEqual(eye, at)) return identity4x4()
 

@@ -17,12 +17,8 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
-    createSelect,
     createText,
     createTitle,
-    createWithLabel,
-    subscribeMultiple,
-    watchInput,
 } from "../../../libs/web"
 
 import {
@@ -39,7 +35,6 @@ import {
     vec2,
     vec3,
     vec4,
-    vectorMatrixMult,
 } from "../../../libs/util"
 
 import shaderCode from "./shadows.wgsl?raw"
