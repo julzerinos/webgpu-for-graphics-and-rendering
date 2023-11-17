@@ -3,8 +3,8 @@
  * This is a class for working with quaternions.
  */
 
-import { dot, elementWise, mat4, normalize, scale, vec4 } from "."
-import { Matrix3x3, Matrix4x4, Vector, Vector3, Vector4 } from "../../types"
+import { elementWise, mat4, normalize, scale, vec4 } from "."
+import { Matrix4x4, Vector3, Vector4 } from "../../types"
 
 /**
  * Constructor of Quaternion.
