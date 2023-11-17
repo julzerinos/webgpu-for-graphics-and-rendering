@@ -63,6 +63,19 @@ export const dot = <T extends Vector>(v1: T, v2: T): number => {
     return sum
 }
 
+export const elementWise = <T extends Vector>(v1: T, v2: T, zeroForMissing = true): T => {
+    const output = []
+    for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+        let a = zeroForMissing ? 0 : 1
+        let b = zeroForMissing ? 0 : 1
+        if (i < v1.length) a = v1[i]
+        if (i < v2.length) b = v2[i]
+
+        output.push(a * b)
+    }
+    return output as T
+}
+
 export const cross = (v1: Vector3, v2: Vector3): Vector3 => {
     return [
         v1[1] * v2[2] - v1[2] * v2[1],
@@ -390,8 +403,6 @@ export const vectorMatrixMult = <T extends Vector, U extends Matrix>(v: T, m: U)
 // }
 // determinants
 
-
-
 // function det(m) {
 //     if (m.matrix != true) console.log("not a matrix")
 //     if (m.length == 2) return det2(m)
@@ -413,8 +424,6 @@ export const vectorMatrixMult = <T extends Vector, U extends Matrix>(v: T, m: U)
 //     a.matrix = true
 //     return a
 // }
-
-
 
 // function inverse(m) {
 //     if (m.matrix != true) console.log("not a matrix")

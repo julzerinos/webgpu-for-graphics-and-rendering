@@ -9,16 +9,12 @@ import { Texturing } from "./06-textures"
 import { EnvMapping } from "./07-env-mapping"
 import { Shadows } from "./08-shadows"
 import { ShadowMapping } from "./09-shadow-mapping"
+import { CameraMovement } from "./10-camera-movement"
 
 export const Graphics: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
-    WebGPUBasics(container, executeQueue)
-    Drawing(container, executeQueue)
-    Projection(container, executeQueue)
-    Lighting(container, executeQueue)
-    Meshes(container, executeQueue)
-    EnvMapping(container, executeQueue)
-    Shadows(container, executeQueue)
-    ShadowMapping(container, executeQueue)
+    if (!grapichsRoutes.children) throw "Graphics routes do not exist"
+    
+    for (const g of grapichsRoutes.children.map(c => c.generator)) g(container, executeQueue)
 }
 
 export const grapichsRoutes: IRoute = {
@@ -57,6 +53,10 @@ export const grapichsRoutes: IRoute = {
         {
             name: "09-shadow-mapping",
             generator: ShadowMapping,
+        },
+        {
+            name: "10-camera-movement",
+            generator: CameraMovement,
         },
     ],
 }

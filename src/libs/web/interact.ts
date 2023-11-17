@@ -43,6 +43,49 @@ export const subscribeToCanvasClick = (
     })
 }
 
+export const subscribeToCanvasDrag = (
+    id: string,
+    {
+        onStart,
+        onMove,
+        onEnd,
+    }: {
+        [callback in "onStart" | "onMove" | "onEnd"]?: (coordinates: ICanvasCoordinates) => void
+    }
+) => {
+    const canvas = document.getElementById(id)
+    if (!canvas) throw new Error(`Could not locate canvas with id ${id}`)
+
+    const rect = canvas.getBoundingClientRect()
+
+    const getCoordinates = (event: MouseEvent): ICanvasCoordinates => ({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+    })
+
+    let isDragging = false
+
+    canvas.addEventListener("mousedown", (event: MouseEvent) => {
+        isDragging = true
+        onStart?.(getCoordinates(event))
+    })
+
+    canvas.addEventListener("mouseup", (event: MouseEvent) => {
+        isDragging = false
+        onEnd?.(getCoordinates(event))
+    })
+
+    canvas.addEventListener("mouseleave", (event: MouseEvent) => {
+        isDragging = false
+        onEnd?.(getCoordinates(event))
+    })
+
+    canvas.addEventListener("mousemove", (event: MouseEvent) => {
+        if (!isDragging) return
+        onMove?.(getCoordinates(event))
+    })
+}
+
 export const subscribeMultiple = (elementIds: string[], callback: (trigger: string) => void) => {
     for (const id of elementIds) {
         const element = document.getElementById(id) as HTMLElement
