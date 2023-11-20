@@ -145,7 +145,6 @@ export const generateDepthBuffer = (
             depthLoadOp: "clear",
             depthClearValue: 1.0,
             depthStoreOp: "store",
-            
         }
     }
 

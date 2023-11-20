@@ -18,12 +18,14 @@ import { Vector2, Vector3 } from "../../../types"
 export interface GamePlayer {
     position: Vector3
     lookDirection: Vector3
+    right: Vector3
 }
 
 export const initializePlayer = (): GamePlayer => {
     return {
-        position: vec3(),
-        lookDirection: vec3(0, 0, 1),
+        position: vec3(5, 0, 5),
+        lookDirection: vec3(-1, 0, 0),
+        right: vec3(1, 0, 0),
     } as GamePlayer
 }
 
@@ -33,14 +35,15 @@ export const updatePlayerLookDirection = (
     normalizedVerticalMovement: number
 ) => {
     const quatY = quatFromAxisAngle(vec3(0, 1, 0), normalizedHorizontalMovement)
-    const quatX = quatFromAxisAngle(vec3(1, 0, 0), normalizedVerticalMovement)
+    const quatX = quatFromAxisAngle(player.right, normalizedVerticalMovement)
     const quat = quatMultiply(quatY, quatX)
 
     player.lookDirection = normalize(toVec3(quatApply(vec4(...player.lookDirection, 1), quat)))
+    player.right = cross(Vector3s.up, player.lookDirection)
 }
 
 export const handleKeyInput = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
-    const moveFrameSpeed = 5e-2
+    const moveFrameSpeed = 1e-1
 
     const forward = moveFrameSpeed * (boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"]))
     const strafe = moveFrameSpeed * (boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"]))
@@ -50,15 +53,14 @@ export const handleKeyInput = (player: GamePlayer, keyMap: { [key: string]: bool
 
 export const updatePlayerPosition = (player: GamePlayer, forward: number, strafe: number) => {
     if (forward) {
-        const forwardDisplacement = scale(player.lookDirection, forward)
+        const forwardDisplacement = [...player.lookDirection] as Vector3
         forwardDisplacement[1] = 0
-        player.position = add(player.position, forwardDisplacement)
+        player.position = add(player.position, scale(normalize(forwardDisplacement), forward))
     }
 
     if (strafe) {
-        const right = cross(Vector3s.up, player.lookDirection)
-        const strafeDisplacement = scale(right, strafe)
+        const strafeDisplacement = [...player.right] as Vector3
         strafeDisplacement[1] = 0
-        player.position = add(player.position, strafeDisplacement)
+        player.position = add(player.position, scale(normalize(strafeDisplacement), strafe))
     }
 }

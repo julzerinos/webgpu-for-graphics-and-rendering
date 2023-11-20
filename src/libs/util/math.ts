@@ -12,4 +12,4 @@ export const mapRange = (
     bMax: number
 ): number => ((x - aMin) / (aMax - aMin)) * (bMax - bMin) + bMin
 
-export const boolToNumber = (b: boolean): number => (b ? 1 : 0)
+export const boolToNumber = (b: boolean | undefined): number => (b ? 1 : 0)
