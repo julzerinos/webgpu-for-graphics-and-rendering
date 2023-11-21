@@ -92,6 +92,8 @@ struct HitInfo {
     color : vec3f,
 
     diffuse : f32,
+    specular : f32,
+    shininess : f32,
     prev_refractive : f32,
     next_refractive : f32,
 };
@@ -117,7 +119,7 @@ fn main_vs(@builtin(vertex_index) VertexIndex : u32) -> VSOut
 
 fn generate_default_hitinfo() -> HitInfo
 {
-    return HitInfo(0, false, false, 0., vec3f(0.), vec3f(0.), 0, vec3f(0.), 1., 1, 1);
+    return HitInfo(0, false, false, 0., vec3f(0.), vec3f(0.), 0, vec3f(0.), 1., 1., 1., 1, 1);
 }
 
 fn generate_ray_from_camera(uv : vec2f) -> Ray
@@ -332,8 +334,8 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, cente
     (*hit).object = select((*hit).object, object, has_hit);
     (*hit).normal = select((*hit).normal, context_n, has_hit);
 
-    (*hit).prev_refractive = select((*hit).prev_refractive, (*hit).next_refractive, has_hit);
-    (*hit).next_refractive = select((*hit).next_refractive, next_refr_index, has_hit);
+    (*hit).prev_refractive = select((*hit).prev_refractive, (*hit).next_refractive, has_hit && object == 2);
+    (*hit).next_refractive = select((*hit).next_refractive, next_refr_index, has_hit && object == 2);
 
     return has_hit;
 }
@@ -474,12 +476,38 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
     var reflected_direction = reflect((*r).direction, (*hit).normal);
 
     (*r).direction = normalize(select(direction, reflected_direction, is_reflected));
-    (*r).origin = (*hit).position + (*r).direction * .001;
+    (*r).origin = (*hit).position + (*r).direction * .01;
+    (*r).tmin = .01;
     (*r).tmax = default_tmax;
 
     (*hit).continue_trace = true;
 
+    var debug = select(vec3f(0), (*r).origin / 500, (*hit).depth == 0);
+
     return LightResult(vec3f(1), vec3f(0));
+}
+
+fn glossy(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+{
+    const specular_factor = .8;
+    const shininess = 30;
+
+    var light_info = sample_area_light((*hit).position);
+    var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
+
+    var reflection = normalize(reflect(-light_info.w_i, (*hit).normal));
+    var specular = specular_factor * ((*hit).shininess + 2) * .5 * pow(dot(-(*r).direction, reflection), shininess) * light_info.L_i / 3.14;
+
+    var is_occluded = check_occulusion((*hit).position, light_info.pos);
+    var occlusion_modifier = select(1., 0., is_occluded);
+
+    var L_ambient = .1 * (*hit).color;
+    var L_diffuse = .9 * lambertian_light * occlusion_modifier;
+    var L_specular = specular * occlusion_modifier;
+
+    refractive(r, hit);
+
+    return LightResult(vec3f(1), vec3f(max(L_specular.r, 0)));
 }
 
 fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
