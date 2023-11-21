@@ -11,11 +11,15 @@ export const watchInput = <T>(
     return getValue
 }
 
-export const subscribeToInput = <T>(id: string, callback: (value: T) => void): T => {
+export const subscribeToInput = <T>(
+    id: string,
+    callback: (value: T) => void,
+    property: keyof HTMLInputElement = "value"
+): T => {
     const input = document.getElementById(id) as HTMLInputElement
     if (!input) throw new Error(`Could not locate input with id ${id}`)
 
-    input.addEventListener("input", () => callback(input.value as T))
+    input.addEventListener("input", () => callback(input[property] as T))
 
     return input.value as T
 }
