@@ -342,10 +342,6 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, cente
 
 fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
 {
-    //if (!intersect_min_max(r))
-    //{
-    //return false;
-    //}
     var a = aabb;
 
     (*hit).has_hit = false;
@@ -355,6 +351,11 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 
     var hit_refractive_sphere = intersect_sphere(*r, hit, 2, vec3f(130, 90, 250));
     (*r).tmax = select((*r).tmax, (*hit).dist, hit_refractive_sphere);
+
+    if (!intersect_min_max(r))
+    {
+        return (*hit).has_hit;
+    }
 
     var hit_cb = intersect_trimesh(r, hit);
     (*r).tmax = select((*r).tmax, (*hit).dist, hit_cb);
@@ -455,6 +456,7 @@ fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResu
     (*r).direction = normalize(reflect((*r).direction, (*hit).normal));
     (*r).origin = (*hit).position + (*r).direction * .001;
     (*r).tmax = default_tmax;
+    (*r).tmin = .01;
 
     (*hit).continue_trace = true;
 
@@ -482,32 +484,7 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
 
     (*hit).continue_trace = true;
 
-    var debug = select(vec3f(0), (*r).origin / 500, (*hit).depth == 0);
-
     return LightResult(vec3f(1), vec3f(0));
-}
-
-fn glossy(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
-{
-    const specular_factor = .8;
-    const shininess = 30;
-
-    var light_info = sample_area_light((*hit).position);
-    var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
-
-    var reflection = normalize(reflect(-light_info.w_i, (*hit).normal));
-    var specular = specular_factor * ((*hit).shininess + 2) * .5 * pow(dot(-(*r).direction, reflection), shininess) * light_info.L_i / 3.14;
-
-    var is_occluded = check_occulusion((*hit).position, light_info.pos);
-    var occlusion_modifier = select(1., 0., is_occluded);
-
-    var L_ambient = .1 * (*hit).color;
-    var L_diffuse = .9 * lambertian_light * occlusion_modifier;
-    var L_specular = specular * occlusion_modifier;
-
-    refractive(r, hit);
-
-    return LightResult(vec3f(1), vec3f(max(L_specular.r, 0)));
 }
 
 fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult

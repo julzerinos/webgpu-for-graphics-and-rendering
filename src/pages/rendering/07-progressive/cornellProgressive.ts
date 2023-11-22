@@ -16,9 +16,11 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createSelect,
     createText,
     createTitle,
     createWithLabel,
+    subscribeToInput,
     watchInput,
 } from "../../../libs/web"
 
@@ -33,34 +35,18 @@ import {
     vec4,
 } from "../../../libs/util"
 
-import shaderCode from "./cornellProgressive.wgsl?raw"
+import shaderCodeProgressiveSimple from "./progressiveSimple.wgsl?raw"
+import shaderCodeProgressiveSoftShadows from "./progressiveSoftShadows.wgsl?raw"
+import shaderCodeProgressiveWithIndirect from "./progressiveWithIndirect.wgsl?raw"
 
 const CANVAS_ID = "cornell-progressive"
 const PROG_ENB = "progressive-enabled-cb"
+const SEL_SHDR = "select-shader-cb-progressive"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
     const getProgressiveEnabled = watchInput<boolean>(PROG_ENB, "checked")
-
-    const wgsl = device.createShaderModule({
-        code: shaderCode,
-    })
-    const pipeline = device.createRenderPipeline({
-        layout: "auto",
-        vertex: {
-            module: wgsl,
-            entryPoint: "main_vs",
-        },
-        fragment: {
-            module: wgsl,
-            entryPoint: "main_fs",
-            targets: [{ format: canvasFormat }, { format: "rgba32float" }],
-        },
-        primitive: {
-            topology: "triangle-strip",
-        },
-    })
 
     const { renderSrc, renderDst, blitPingPong } = generatePingPongTextures(device, canvas)
 
@@ -91,78 +77,112 @@ const execute: Executable = async () => {
         )
     )
 
-    const { bindGroup: modelStorage } = createBind(
-        device,
-        pipeline,
-        [
-            interleavedVerticesNormals,
-            interleavedIndicesMatIndices,
-            lightFaceIndices,
-            materialsArray,
-        ],
-        "STORAGE"
-    )
-    const { bindGroup: bspTreeStorage } = createBind(
-        device,
-        pipeline,
-        [bspTreeResults.bspPlanes, bspTreeResults.bspTree, bspTreeResults.treeIds],
-        "STORAGE",
-        1
-    )
-    const {
-        bindGroup: uniformsBind,
-        buffers: [_, __, sceneDataBuffer],
-    } = createBind(
-        device,
-        pipeline,
-        [
-            bspTreeResults.aabb,
-            new Uint32Array([lightFaceIndices.length]),
-            new Uint32Array([0, canvas.width, canvas.height]),
-        ],
-        "UNIFORM",
-        2
-    )
+    const shaderMap = {
+        "Simple progressive": shaderCodeProgressiveSimple,
+        "Simple progressive with soft shadows": shaderCodeProgressiveSoftShadows,
+        "Complex progressive": shaderCodeProgressiveWithIndirect,
+    } as { [key: string]: string }
 
-    const renderTextureBind = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(3),
-        entries: [
-            {
-                binding: 0,
-                resource: renderDst.createView(),
+    const setupPipelineAndScene = (shaderType: string) => {
+        const wgsl = device.createShaderModule({
+            code: shaderMap[shaderType],
+        })
+        const pipeline = device.createRenderPipeline({
+            layout: "auto",
+            vertex: {
+                module: wgsl,
+                entryPoint: "main_vs",
             },
-        ],
-    })
+            fragment: {
+                module: wgsl,
+                entryPoint: "main_fs",
+                targets: [{ format: canvasFormat }, { format: "rgba32float" }],
+            },
+            primitive: {
+                topology: "triangle-strip",
+            },
+        })
 
-    let framesWhileProgressive = 0
-    const progress = () => {
-        const { pass, encoder } = createPass(device, context, Colors.black, {
-            otherColorAttachments: [
-                { view: renderSrc.createView(), loadOp: "load", storeOp: "store" },
+        const { bindGroup: modelStorage } = createBind(
+            device,
+            pipeline,
+            [
+                interleavedVerticesNormals,
+                interleavedIndicesMatIndices,
+                lightFaceIndices,
+                materialsArray,
+            ],
+            "STORAGE"
+        )
+        const { bindGroup: bspTreeStorage } = createBind(
+            device,
+            pipeline,
+            [bspTreeResults.bspPlanes, bspTreeResults.bspTree, bspTreeResults.treeIds],
+            "STORAGE",
+            1
+        )
+        const {
+            bindGroup: uniformsBind,
+            buffers: [_, __, sceneDataBuffer],
+        } = createBind(
+            device,
+            pipeline,
+            [
+                bspTreeResults.aabb,
+                new Uint32Array([lightFaceIndices.length]),
+                new Uint32Array([0, canvas.width, canvas.height]),
+            ],
+            "UNIFORM",
+            2
+        )
+
+        const renderTextureBind = device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(3),
+            entries: [
+                {
+                    binding: 0,
+                    resource: renderDst.createView(),
+                },
             ],
         })
 
-        pass.setPipeline(pipeline)
-        pass.setBindGroup(0, modelStorage)
-        pass.setBindGroup(1, bspTreeStorage)
-        pass.setBindGroup(2, uniformsBind)
-        pass.setBindGroup(3, renderTextureBind)
+        let framesWhileProgressive = 0
+        const progress = () => {
+            const { pass, encoder } = createPass(device, context, Colors.black, {
+                otherColorAttachments: [
+                    { view: renderSrc.createView(), loadOp: "load", storeOp: "store" },
+                ],
+            })
 
-        pass.draw(4)
-        pass.end()
+            pass.setPipeline(pipeline)
+            pass.setBindGroup(0, modelStorage)
+            pass.setBindGroup(1, bspTreeStorage)
+            pass.setBindGroup(2, uniformsBind)
+            pass.setBindGroup(3, renderTextureBind)
 
-        if (getProgressiveEnabled()) {
-            framesWhileProgressive += 1
-            writeToBufferU32(device, sceneDataBuffer, new Uint32Array([framesWhileProgressive]), 0)
-            blitPingPong(encoder)
+            pass.draw(4)
+            pass.end()
+
+            if (getProgressiveEnabled()) {
+                framesWhileProgressive += 1
+                writeToBufferU32(
+                    device,
+                    sceneDataBuffer,
+                    new Uint32Array([framesWhileProgressive]),
+                    0
+                )
+                blitPingPong(encoder)
+            }
+
+            device.queue.submit([encoder.finish()])
+
+            requestAnimationFrame(progress)
         }
-
-        device.queue.submit([encoder.finish()])
 
         requestAnimationFrame(progress)
     }
 
-    requestAnimationFrame(progress)
+    setupPipelineAndScene(subscribeToInput<string>(SEL_SHDR, setupPipelineAndScene))
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
@@ -178,7 +198,16 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         "Progressive rendering enabled",
         false
     )
-    interactables.append(progressiveEnabled)
+    const shaderSelect = createWithLabel(
+        createSelect(
+            SEL_SHDR,
+            ["Simple progressive", "Simple progressive with soft shadows", "Complex progressive"],
+            "Simple Progressive"
+        ),
+        "Progressive shader type",
+        false
+    )
+    interactables.append(progressiveEnabled, shaderSelect)
 
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)

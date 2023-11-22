@@ -134,12 +134,15 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
     var n = cross(e0, e1);
 
     var denom = dot(r.direction, n);
+
     var from_origin = v[0] - r.origin;
 
     var intersection = dot(from_origin, n) / denom;
 
-    var beta = dot(cross(from_origin, r.direction), e1) / denom;
-    var gamma = -dot(cross(from_origin, r.direction), e0) / denom;
+    var cross_a = cross(from_origin, r.direction);
+
+    var beta = dot(cross_a, e1) / denom;
+    var gamma = -dot(cross_a, e0) / denom;
 
     var normal = n;
 
