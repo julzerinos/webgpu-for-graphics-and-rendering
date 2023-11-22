@@ -3,15 +3,20 @@ import {
     Cube,
     add,
     createTranslateMatrix,
+    dot,
     flattenMatrix,
     lookAtMatrix,
+    magnitude,
     normalize,
     perspectiveProjection,
     quatApply,
     quatFromAxisAngle,
     quatMultiply,
     scale,
+    sqrMagnitude,
+    subtract,
     toVec3,
+    vec2,
     vec3,
     vec4,
 } from "../../libs/util"
@@ -33,6 +38,7 @@ import {
     initializeWebGPU,
     setupShaderPipeline,
     writeToBufferF32,
+    writeToBufferU32,
 } from "../../libs/webgpu"
 import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
 import {
@@ -120,24 +126,13 @@ const execute: Executable = async () => {
         "UNIFORM"
     )
 
-    console.log(generateTileOpenWallsFlags({ North: true }))
-
     const models = new Float32Array(tiles.length * 16)
     const cardinalities = new Uint32Array(tiles.length)
-    for (let i = 0; i < tiles.length; i++) {
-        const position = tiles[i].position
-        const translation = scale(vec3(position[0], 0, -position[1]), TILE_SIZE)
-        models.set(flattenMatrix(createTranslateMatrix(translation)), i * 16)
-        cardinalities[i] = tiles[i].cardinality
-    }
 
-    const { bindGroup: instancesDataBind } = createBind(
-        device,
-        pipeline,
-        [models, cardinalities],
-        "STORAGE",
-        1
-    )
+    const {
+        bindGroup: instancesDataBind,
+        buffers: [modelsBuffer, cardinalitiesBuffer],
+    } = createBind(device, pipeline, [models, cardinalities], "STORAGE", 1)
 
     const updateCameraProjectionViewMatrix = () => {
         camera.extrinsics = calculatePlayerViewMatrix(player)
@@ -150,9 +145,36 @@ const execute: Executable = async () => {
         )
     }
 
+    const updateInstanceBuffers = () => {
+        const models = new Float32Array(tiles.length * 16)
+        const cardinalities = new Uint32Array(tiles.length)
+
+        const playerMapPosition = vec2(
+            player.position[0] / TILE_SIZE,
+            -player.position[2] / TILE_SIZE
+        )
+        tiles.sort(
+            (a: Tile, b: Tile) =>
+                sqrMagnitude(subtract(playerMapPosition, b.position)) -
+                sqrMagnitude(subtract(playerMapPosition, a.position))
+        )
+
+        for (let i = 0; i < tiles.length; i++) {
+            const position = tiles[i].position
+            const translation = scale(vec3(position[0], 0, -position[1]), TILE_SIZE)
+            models.set(flattenMatrix(createTranslateMatrix(translation)), i * 16)
+            cardinalities[i] = tiles[i].cardinality
+        }
+
+        writeToBufferF32(device, modelsBuffer, models, 0)
+        writeToBufferU32(device, cardinalitiesBuffer, cardinalities, 0)
+    }
+
     const frame = (time: number) => {
         updateCameraProjectionViewMatrix()
         handleKeyInput(player, keyMap)
+
+        updateInstanceBuffers()
 
         const { pass, executePass } = createPass(device, context, Colors.black, {
             depthStencilAttachmentFactory,

@@ -8,8 +8,17 @@ struct IndexMaterial {
     mat : u32
 };
 
+struct Material {
+    color : vec4f,
+    specular : vec4f,
+    emission : vec4f,
+    illum_shininess_ior : vec3f
+};
+
 @group(0) @binding(0) var<storage> vertex_normals : array<VertexNormal>;
 @group(0) @binding(1) var<storage> index_mats : array<IndexMaterial>;
+@group(0) @binding(2) var<storage> light_faces : array<u32>;
+@group(0) @binding(3) var<storage> materials : array<Material>;
 
 @group(1) @binding(0) var<storage> bspPlanes : array<f32>;
 @group(1) @binding(1) var<storage> bspTree : array<vec4u>;
@@ -20,16 +29,17 @@ struct Aabb {
     max : vec3f,
 };
 
+struct SceneData {
+    frame_num : u32,
+    canvas_width : u32,
+    canvas_height : u32
+}
+
 @group(2) @binding(0) var<uniform> aabb : Aabb;
+@group(2) @binding(1) var<uniform> light_indices_count : u32;
+@group(2) @binding(2) var<uniform> scene_data : SceneData;
 
-struct Material {
-    color : vec4f,
-    specular : vec4f,
-    emission : vec4f,
-    illum_shininess_ior : vec3f
-};
-
-@group(3) @binding(0) var<storage> materials : array<Material>;
+@group(3) @binding(0) var renderTexture : texture_2d<f32>;
 
 const MAX_LEVEL = 20u;
 const BSP_LEAF = 3u;
@@ -38,6 +48,7 @@ var<private> branch_ray : array<vec2f, MAX_LEVEL>;
 
 const light_direction : vec3f = vec3f(-1.);
 const light_intensity = 1.5;
+const visibility = 1.;
 
 const up = vec3f(0., 1., 0.);
 
@@ -45,13 +56,15 @@ const target_point = vec3f(277., 275., 0.);
 const origin_point = vec3f(277., 275., -570.);
 const camera_constant = 1;
 
+const f1en2 = 0.01;
 const f1en4 = 0.0001;
 const f1en8 = 0.00000001;
 
 struct Light {
     L_i : vec3f,
     w_i : vec3f,
-    dist : f32
+    dist : f32,
+    pos : vec3f
 };
 
 struct LightResult {
@@ -172,7 +185,7 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
 
     (*hit).has_hit = (*hit).has_hit || has_hit;
     (*hit).dist = select((*hit).dist, intersection, has_hit);
-    (*hit).color = select((*hit).color, vec3f(.8), has_hit);
+    (*hit).color = select((*hit).color, color.rgb, has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
 
@@ -273,8 +286,8 @@ fn intersect_min_max(r : ptr < function, Ray>) -> bool
     {
         return false;
     }
-    (*r).tmin = max(tmin - f1en4, (*r).tmin);
-    (*r).tmax = min(tmax + f1en4, (*r).tmax);
+    (*r).tmin = max(tmin - f1en2, (*r).tmin);
+    (*r).tmax = min(tmax + f1en2, (*r).tmax);
     return true;
 }
 
@@ -294,17 +307,71 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 
         //Lighting
 
-fn sample_directional_light(light_direction : vec3f) -> Light {
-    var light = Light(vec3f(light_intensity), -light_direction, 0.);
-    return light;
+fn get_area_light_center() -> vec3f
+{
+    var center_light_position = vec3f(0.);
+    for (var i : u32 = 0; i < light_indices_count; i++)
+    {
+        var vertex_mat_lookup = index_mats[light_faces[i]];
+        var indices = vertex_mat_lookup.indices.xyz;
+
+        var vertex_0 = vertex_normals[indices.x].vertex;
+        var vertex_1 = vertex_normals[indices.y].vertex;
+        var vertex_2 = vertex_normals[indices.z].vertex;
+
+        center_light_position += vertex_0 + vertex_1 + vertex_2;
+    }
+    center_light_position /= f32(light_indices_count * 3);
+    return center_light_position;
 }
 
-fn check_occulusion_directional(position : vec3f, direction : vec3f) -> bool
+fn calculate_area_light_intensity(direction : vec3f) -> vec3f
 {
-    const surface_offset = 0.001;
-    const max_distance = 100.;
+    var intensity = vec3f(0.);
+    for (var i : u32 = 0; i < light_indices_count; i++)
+    {
+        var vertex_mat_lookup = index_mats[light_faces[i]];
+        var indices = vertex_mat_lookup.indices.xyz;
+        var material_index = vertex_mat_lookup.mat;
+        var mat = materials[material_index];
 
-    var r = construct_ray(position + direction * surface_offset, direction, surface_offset, max_distance);
+        var vertex_0 = vertex_normals[indices.x].vertex;
+        var vertex_1 = vertex_normals[indices.y].vertex;
+        var vertex_2 = vertex_normals[indices.z].vertex;
+
+        var e0 = vertex_1 - vertex_0;
+        var e1 = vertex_2 - vertex_0;
+        var n = cross(e0, e1);
+        var area = length(n) / 2;
+
+        intensity += max(0, dot(-direction, normalize(n))) * mat.emission.rgb * area;
+    }
+
+    return intensity;
+}
+
+fn sample_area_light(pos : vec3f) -> Light
+{
+    var area_light_center = get_area_light_center();
+
+    var line = area_light_center - pos;
+    var dist = length(line);
+    var direction = line / dist;
+
+    var incident_light = calculate_area_light_intensity(direction) / (dist * dist);
+
+    return Light(vec3f(incident_light), normalize(direction), dist, area_light_center);
+}
+
+fn check_occulusion(position : vec3f, light : vec3f) -> bool
+{
+    const surface_offset = .01;
+
+    var line = light - position;
+    var direction = normalize(line);
+    var distance = length(line) - surface_offset;
+
+    var r = construct_ray(position, direction, surface_offset, distance);
     var hit = generate_default_hitinfo();
 
     return intersect_scene(&r, &hit);
@@ -312,14 +379,14 @@ fn check_occulusion_directional(position : vec3f, direction : vec3f) -> bool
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
-    var light_info = sample_directional_light(light_direction);
-    var lambertian_light = (*hit).diffuse / 3.14 * light_info.L_i * dot((*hit).normal, light_info.w_i);
+    var light_info = sample_area_light((*hit).position);
+    var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
 
-    var is_occluded = check_occulusion_directional((*hit).position, light_direction);
+    var is_occluded = check_occulusion((*hit).position, light_info.pos);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1;
-    var L_reflected = .9 * lambertian_light * 1.;
+    var L_reflected = .9 * lambertian_light * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
     return LightResult(L_observed, vec3f(0));
@@ -333,8 +400,13 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResu
 
 //Fragment shader
 
+struct FSOut {
+    @location(0) frame : vec4f,
+    @location(1) accum : vec4f
+}
+
 @fragment
-fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
+fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) -> FSOut
 {
     const backgroundColor = vec4f(0.1, 0.3, 0.6, 1.0);
     const max_depth = 10;
@@ -343,7 +415,11 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
     var r : Ray;
     var hit : HitInfo;
 
-    var uv = coords *.5;
+    let launch_idx = u32(fragcoord.y) * scene_data.canvas_width + u32(fragcoord.x);
+    var t = tea(launch_idx, scene_data.frame_num);
+    let jitter = vec2f(rnd(&t), rnd(&t)) / f32(scene_data.canvas_height);
+
+    var uv = coords *.5 + jitter;
     r = generate_ray_from_camera(uv);
     hit = generate_default_hitinfo();
     light_result = LightResult(vec3f(1), vec3f(0));
@@ -368,5 +444,41 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 
     var final_result = light_result.multiplicative * hit.color + light_result.additive;
 
-    return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
+    let curr_sum = textureLoad(renderTexture, vec2u(fragcoord.xy), 0).rgb * f32(scene_data.frame_num);
+    let accum_color = (final_result + curr_sum) / f32(scene_data.frame_num + 1u);
+
+    var fs_out : FSOut;
+    fs_out.frame = vec4f(pow(accum_color, vec3f(1.0 / 1.5)), 1.0);
+    fs_out.accum = vec4f(accum_color, 1.0);
+    return fs_out;
+}
+
+//Utility
+
+//PRNG xorshift seed generator by NVIDIA
+fn tea(val0 : u32, val1 : u32) -> u32
+{
+    const N = 16u;  //User specified number of iterations
+    var v0 = val0;
+    var v1 = val1;
+    var s0 = 0u;
+    for(var n = 0u; n < N; n++)
+    {
+        s0 += 0x9e3779b9;
+        v0 += ((v1<<4) + 0xa341316c)^(v1 + s0)^((v1>>5) + 0xc8013ea4);
+        v1 += ((v0<<4) + 0xad90777d)^(v0 + s0)^((v0>>5) + 0x7e95761e);
+    }
+    return v0;
+}
+
+fn mcg31(prev : ptr < function, u32>) -> u32
+{
+    const LCG_A = 1977654935u;
+    *prev = (LCG_A * (*prev)) & 0x7FFFFFFF;
+    return * prev;
+}
+
+fn rnd(prev : ptr < function, u32>) -> f32
+{
+    return f32(mcg31(prev)) / f32(0x80000000);
 }

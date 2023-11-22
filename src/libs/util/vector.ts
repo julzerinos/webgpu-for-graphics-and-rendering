@@ -113,7 +113,9 @@ export const absoluteMaxVectors = <T extends Vector>(v1: T, v2: T): T => {
 
 export const normalize = <T extends Vector>(v: T) => scale<T>(v, 1 / magnitude(v))
 
-export const magnitude = (v: Vector): number => Math.sqrt(dot(v, v))
+export const sqrMagnitude = (v: Vector): number => dot(v, v)
+
+export const magnitude = (v: Vector): number => Math.sqrt(sqrMagnitude(v))
 
 export const vectorsEqual = <T extends Vector>(v1: T, v2: T): boolean => {
     if (v1.length != v2.length) return false

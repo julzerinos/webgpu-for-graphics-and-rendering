@@ -100,7 +100,7 @@ export const generateMap = (): { tiles: Tile[] } => {
     for (const t of tiles)
         t.position = add(
             t.position,
-            vec2(-(DUNGEON_DIMENSION - 2.5) / 2, -(DUNGEON_DIMENSION + 2.5) / 2)
+            vec2(-(DUNGEON_DIMENSION) / 2, -(DUNGEON_DIMENSION) / 2)
         )
 
     return { tiles }

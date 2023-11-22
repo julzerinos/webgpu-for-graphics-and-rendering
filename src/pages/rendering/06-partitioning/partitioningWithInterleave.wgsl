@@ -355,27 +355,31 @@ fn sample_area_light(pos : vec3f) -> Light
     return Light(vec3f(incident_light), normalize(direction), dist, area_light_center);
 }
 
-fn check_occulusion_directional(position : vec3f, direction : vec3f) -> bool
+fn check_occulusion(position : vec3f, light : vec3f) -> bool
 {
-    const surface_offset = 0.001;
-    const max_distance = 100.;
+    const surface_offset = .01;
 
-    var r = construct_ray(position + direction * surface_offset, direction, surface_offset, max_distance);
+    var line = light - position;
+    var direction = normalize(line);
+    var distance = length(line) - surface_offset;
+
+    var r = construct_ray(position, direction, surface_offset, distance);
     var hit = generate_default_hitinfo();
 
     return intersect_scene(&r, &hit);
 }
+
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
 {
     var light_info = sample_area_light((*hit).position);
     var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
 
-    var is_occluded = check_occulusion_directional((*hit).position, light_direction);
+    var is_occluded = check_occulusion((*hit).position, light_info.pos);
     var occlusion_modifier = select(1., 0., is_occluded);
 
     var L_ambient = .1;
-    var L_reflected = .9 * lambertian_light * 1.;
+    var L_reflected = .9 * lambertian_light * occlusion_modifier;
     var L_observed = L_ambient + L_reflected;
 
     return LightResult(L_observed, vec3f(0));

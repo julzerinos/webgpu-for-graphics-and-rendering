@@ -1,5 +1,5 @@
 import { ExecutableQueue, ViewGenerator } from "../../../types"
-import { default as progressive } from "./progressive"
+import { default as progressive } from "./cornellProgressive"
 
 export { progressive }
 

@@ -5,7 +5,10 @@ import {
     createPass,
     setupShaderPipeline,
     createBind,
+    generatePingPongTextures,
+    writeToBufferF32,
     writeToBufferU32,
+    createTextureBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -16,13 +19,12 @@ import {
     createText,
     createTitle,
     createWithLabel,
-    subscribeToInput,
+    watchInput,
 } from "../../../libs/web"
 
 import {
     Colors,
     build_bsp_tree,
-    computeJitters,
     flattenVector,
     getDrawingInfo,
     interleaveF32s,
@@ -31,17 +33,38 @@ import {
     vec4,
 } from "../../../libs/util"
 
-import shaderCode from "./cornellWithGlass.wgsl?raw"
+import shaderCode from "./cornellProgressive.wgsl?raw"
 
-const CANVAS_ID = "cornell-glass"
-const JITTERING = "jittering-active-bsp-cb"
+const CANVAS_ID = "cornell-progressive"
+const PROG_ENB = "progressive-enabled-cb"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
+    const getProgressiveEnabled = watchInput<boolean>(PROG_ENB, "checked")
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBox.obj"))
+    const wgsl = device.createShaderModule({
+        code: shaderCode,
+    })
+    const pipeline = device.createRenderPipeline({
+        layout: "auto",
+        vertex: {
+            module: wgsl,
+            entryPoint: "main_vs",
+        },
+        fragment: {
+            module: wgsl,
+            entryPoint: "main_fs",
+            targets: [{ format: canvasFormat }, { format: "rgba32float" }],
+        },
+        primitive: {
+            topology: "triangle-strip",
+        },
+    })
+
+    const { renderSrc, renderDst, blitPingPong } = generatePingPongTextures(device, canvas)
+
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBoxWithBlocks.obj"))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -71,7 +94,12 @@ const execute: Executable = async () => {
     const { bindGroup: modelStorage } = createBind(
         device,
         pipeline,
-        [interleavedVerticesNormals, interleavedIndicesMatIndices, lightFaceIndices],
+        [
+            interleavedVerticesNormals,
+            interleavedIndicesMatIndices,
+            lightFaceIndices,
+            materialsArray,
+        ],
         "STORAGE"
     )
     const { bindGroup: bspTreeStorage } = createBind(
@@ -83,62 +111,74 @@ const execute: Executable = async () => {
     )
     const {
         bindGroup: uniformsBind,
-        buffers: [_, __, subdivisionCountBuffer],
+        buffers: [_, __, sceneDataBuffer],
     } = createBind(
         device,
         pipeline,
-        [bspTreeResults.aabb, new Uint32Array([lightFaceIndices.length]), new Uint32Array([36])],
+        [
+            bspTreeResults.aabb,
+            new Uint32Array([lightFaceIndices.length]),
+            new Uint32Array([0, canvas.width, canvas.height]),
+        ],
         "UNIFORM",
         2
     )
 
-    const jitters = computeJitters(canvas.height, 6)
-    const { bindGroup: materialsStorage } = createBind(
-        device,
-        pipeline,
-        [materialsArray, new Float32Array(flattenVector(jitters))],
-        "STORAGE",
-        3
-    )
+    const renderTextureBind = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(3),
+        entries: [
+            {
+                binding: 0,
+                resource: renderDst.createView(),
+            },
+        ],
+    })
 
-    const updateSubdivisions = (jitteringEnabled: boolean) => {
-        const subdivisions = jitteringEnabled ? 36 : 1
-        writeToBufferU32(device, subdivisionCountBuffer, new Uint32Array([subdivisions]), 0)
-        draw()
-    }
-
-    subscribeToInput<boolean>(JITTERING, updateSubdivisions, "checked")
-
-    const draw = () => {
-        const { pass, executePass } = createPass(device, context, Colors.black)
+    let framesWhileProgressive = 0
+    const progress = () => {
+        const { pass, encoder } = createPass(device, context, Colors.black, {
+            otherColorAttachments: [
+                { view: renderSrc.createView(), loadOp: "load", storeOp: "store" },
+            ],
+        })
 
         pass.setPipeline(pipeline)
         pass.setBindGroup(0, modelStorage)
         pass.setBindGroup(1, bspTreeStorage)
         pass.setBindGroup(2, uniformsBind)
-        pass.setBindGroup(3, materialsStorage)
+        pass.setBindGroup(3, renderTextureBind)
 
         pass.draw(4)
-        executePass()
+        pass.end()
+
+        if (getProgressiveEnabled()) {
+            framesWhileProgressive += 1
+            writeToBufferU32(device, sceneDataBuffer, new Uint32Array([framesWhileProgressive]), 0)
+            blitPingPong(encoder)
+        }
+
+        device.queue.submit([encoder.finish()])
+
+        requestAnimationFrame(progress)
     }
 
-    draw()
+    requestAnimationFrame(progress)
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Spicing things up")
+    const title = createTitle("Progressive rendering, the basics")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
     const interactables = createInteractableSection()
 
-    const jitteringActive = createWithLabel(
-        createBoolInput(JITTERING, true),
-        "Jittering enabled",
+    const progressiveEnabled = createWithLabel(
+        createBoolInput(PROG_ENB, true),
+        "Progressive rendering enabled",
         false
     )
-    interactables.append(jitteringActive)
+    interactables.append(progressiveEnabled)
 
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)

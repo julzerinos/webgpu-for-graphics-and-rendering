@@ -360,8 +360,6 @@ export const generateCubeMap = (
 }
 
 export const generatePingPongTextures = (device: GPUDevice, canvas: HTMLCanvasElement) => {
-    // textures.width = canvas.width;
-    // textures.height = canvas.height;
     const renderSrc = device.createTexture({
         size: [canvas.width, canvas.height],
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,

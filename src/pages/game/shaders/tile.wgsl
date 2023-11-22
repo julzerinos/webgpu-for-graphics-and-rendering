@@ -37,5 +37,5 @@ fn main_vs(@location(0) local : vec4f, @location(1) normal : vec4f, @builtin(ins
 @fragment
 fn main_fs(@location(0) normal : vec3f, @location(1) visible : f32) -> @location(0) vec4f
 {
-    return vec4f(normalize(normal.xyz) *.5 + .5, clamp(visible, .1, 1));
+    return vec4f(normalize(normal.xyz) *.5 + .5, visible);
 }

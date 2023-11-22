@@ -22,7 +22,7 @@ import {
 
 import { Colors, flattenVector, objToShape, parseOBJ, vec4 } from "../../../libs/util"
 
-import shaderCode from "./progressive.wgsl?raw"
+import shaderCode from "./_.wgsl?raw"
 
 const CANVAS_ID = "cornell-progressive"
 
@@ -38,10 +38,10 @@ const execute: Executable = async () => {
         { fragmentOverrides: { targets: [{ format: canvasFormat }, { format: "rgba32float" }] } }
     )
 
-    const conrellBoxObj = await parseOBJ("models/CornellBoxWithBlocks.obj")
-    const cornellBoxShape = objToShape(conrellBoxObj, {})
+    const cornellBoxObj = await parseOBJ("models/CornellBoxWithBlocks.obj")
+    const cornellBoxShape = objToShape(cornellBoxObj, {})
     const materialsArray = new Float32Array(
-        conrellBoxObj.mtls[0].materials.reduce(
+        cornellBoxObj.mtls[0].materials.reduce(
             (arr, mat) => [
                 ...arr,
                 ...flattenVector([
@@ -57,7 +57,7 @@ const execute: Executable = async () => {
 
     const lightFaceIndices = (cornellBoxShape.materialIndices as number[]).reduce(
         (illuminatedIndices, m, i) => {
-            if (conrellBoxObj.mtls[0].materials[m].illum >= 1) illuminatedIndices.push(i)
+            if (cornellBoxObj.mtls[0].materials[m].illum >= 1) illuminatedIndices.push(i)
             return illuminatedIndices
         },
         [] as number[]
@@ -117,7 +117,7 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Inside the Cornell box")
+    const title = createTitle("An upstanding and progressive Cornell box")
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()

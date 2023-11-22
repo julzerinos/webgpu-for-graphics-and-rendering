@@ -87,6 +87,8 @@ const execute: Executable = async () => {
         { depthStencil: lessDepthStencil, multisample }
     )
 
+    // TODO use separate buffer texture
+
     const shadowPipeline = device.createRenderPipeline({
         layout: "auto",
         vertex: {
@@ -96,6 +98,9 @@ const execute: Executable = async () => {
             entryPoint: "main",
             buffers: [teapotVertexBufferLayout],
         },
+        // fragment: {
+        //     targets: []
+        // },
         depthStencil: {
             depthWriteEnabled: true,
             depthCompare: "less",
@@ -340,6 +345,7 @@ const execute: Executable = async () => {
         pass.drawIndexed(teapotDrawingInfo.indices.length)
 
         pass.end()
+
         device.queue.submit([encoder.finish()])
 
         lastFrame = frame
