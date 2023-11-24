@@ -6,17 +6,21 @@ import {
     createBind,
     generatePingPongTextures,
     writeToBufferU32,
+    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import {
     createBoolInput,
+    createButton,
     createCanvas,
     createCanvasSection,
+    createColorPicker,
     createInteractableSection,
     createSelect,
     createText,
     createTitle,
     createWithLabel,
+    subscribeToButton,
     subscribeToInput,
     watchInput,
 } from "../../../libs/web"
@@ -24,8 +28,10 @@ import {
 import {
     Colors,
     build_bsp_tree,
+    colorToVec3,
     flattenVector,
     getDrawingInfo,
+    hexToColor,
     interleaveF32s,
     parseOBJ,
     shiftIntoU32InPlace,
@@ -35,8 +41,7 @@ import {
 import shaderCode from "./brdf.wgsl?raw"
 
 const CANVAS_ID = "brdfs"
-const PROG_ENB = "progressive-enabled-cb"
-const SEL_SHDR = "select-shader-cb-progressive"
+const PROG_ENB = "progressive-enabled-cb-" + CANVAS_ID
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
@@ -70,7 +75,7 @@ const execute: Executable = async () => {
         )
     )
 
-    const { renderSrc, renderDst, blitPingPong } = generatePingPongTextures(device, canvas)
+    let { renderSrc, renderDst, blitPingPong } = generatePingPongTextures(device, canvas)
 
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -170,6 +175,8 @@ const execute: Executable = async () => {
         },
         "checked"
     )
+
+    progress()
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
@@ -181,7 +188,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const interactables = createInteractableSection()
 
     const progressiveEnabled = createWithLabel(
-        createBoolInput(PROG_ENB, false),
+        createBoolInput(PROG_ENB, true),
         "Progressive rendering enabled",
         false
     )

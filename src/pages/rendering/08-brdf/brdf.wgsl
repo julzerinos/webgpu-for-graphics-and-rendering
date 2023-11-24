@@ -49,10 +49,6 @@ var<private> branch_ray : array<vec2f, MAX_LEVEL>;
 //const background_color = vec4f(0.1, 0.3, 0.6, 1.0);
 const background_color = vec4f(0, 0, 0, 1.0);
 
-const light_direction : vec3f = vec3f(-1.);
-const light_intensity = 1.5;
-const visibility = 1.;
-
 const sphere_refractive_index = 1.5;
 const air_refractive_index = 1.;
 const sphere_radius = 90;
@@ -103,11 +99,12 @@ struct HitInfo {
 
     diffuse : vec3f,
     emission : vec3f,
-    prev_refractive : f32,
-    next_refractive : f32,
+    //prev_refractive : f32,
+    //next_refractive : f32,
 
     direct : bool,
-    indirect_factor : vec3f
+    path_factor : vec3f,
+    bounce_factor : vec3f
 };
 
 struct VSOut {
@@ -145,11 +142,12 @@ fn generate_default_hitinfo() -> HitInfo
 
     hit_info.diffuse = vec3f();
     hit_info.emission = vec3f();
-    hit_info.prev_refractive = 1.;
-    hit_info.next_refractive = 1.;
+    //hit_info.prev_refractive = 1.;
+    //hit_info.next_refractive = 1.;
 
     hit_info.direct = true;
-    hit_info.indirect_factor = vec3f(1);
+    hit_info.path_factor = vec3f(1);
+    hit_info.bounce_factor = vec3f(1);
 
     return hit_info;
 }
@@ -352,10 +350,6 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, cente
     var intersection = r.origin + distance * r.direction;
     var n = normalize(intersection - center);
 
-    var is_intersection_from_inside = dot(n, r.direction) > 0;
-    var next_refr_index = select(sphere_refractive_index, air_refractive_index, is_intersection_from_inside);
-    var context_n = select(n, -n, is_intersection_from_inside);
-
     var has_hit = does_intersection_exist && distance >= r.tmin && distance <= r.tmax;
     (*hit).has_hit = (*hit).has_hit || has_hit;
 
@@ -363,10 +357,10 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, cente
     (*hit).position = select((*hit).position, intersection, has_hit);
 
     (*hit).object = select((*hit).object, object, has_hit);
-    (*hit).normal = select((*hit).normal, context_n, has_hit);
+    (*hit).normal = select((*hit).normal, n, has_hit);
 
-    (*hit).prev_refractive = select((*hit).prev_refractive, (*hit).next_refractive, has_hit && object == 2);
-    (*hit).next_refractive = select((*hit).next_refractive, next_refr_index, has_hit && object == 2);
+    //(*hit).prev_refractive = select((*hit).prev_refractive, (*hit).next_refractive, has_hit && object == 2);
+    //(*hit).next_refractive = select((*hit).next_refractive, next_refr_index, has_hit && object == 2);
 
     return has_hit;
 }
@@ -453,7 +447,7 @@ fn sample_area_light(pos : vec3f, seed : ptr < function, u32>) -> Light
     return light;
 }
 
-fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>)
+fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> bool
 {
     var p_reflect = ((*hit).diffuse.r + (*hit).diffuse.g + (*hit).diffuse.b) / 3;
     var event = rnd(seed);
@@ -464,7 +458,8 @@ fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo
 
     if (absorb)
     {
-        return;
+        (*hit).bounce_factor = vec3f(1);
+        return false;
     }
 
     var sampled_sphere_direction = sample_cosine_weighted_hemisphere((*hit).normal, seed);
@@ -474,7 +469,9 @@ fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo
     (*r).tmin = default_tmin;
     (*r).tmax = default_tmax;
 
-    (*hit).indirect_factor = (*hit).diffuse / p_reflect;
+    (*hit).bounce_factor = (*hit).diffuse / p_reflect;
+
+    return true;
 }
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
@@ -482,15 +479,15 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : p
     var light_info = sample_area_light((*hit).position, seed);
     var L = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
 
-    var indirect_modifier = select(1., 0., (*hit).direct);
+    var path_direct_modifier = select(0., 1., (*hit).direct);
+    var bounce_indirect_modifier = select(1., 0., indirect_illumination(r, hit, seed));
 
-    var emission = (*hit).emission * (1 - indirect_modifier);
-    var L_direct = (1 - indirect_modifier) * L;
-    var L_indirect = indirect_modifier * L* (*hit).indirect_factor;
+    var emission = (*hit).emission * path_direct_modifier;
+    var L_direct = (1 - bounce_indirect_modifier) * L * (*hit).bounce_factor;
+    var L_indirect = bounce_indirect_modifier * L* (*hit).path_factor;
 
     var L_observed = emission + L_direct + L_indirect;
 
-    indirect_illumination(r, hit, seed);
 
     return L_observed;
 }
@@ -521,25 +518,38 @@ fn fresnel(cos_ti : f32, cos_tt : f32, ni : f32, nt : f32) -> f32
 
 fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
-    var ni_nt = (*hit).prev_refractive / (*hit).next_refractive;
+    var is_intersection_from_inside = dot((*hit).normal, (*r).direction) > 0;
+    var next_refr_index = select(sphere_refractive_index, air_refractive_index, is_intersection_from_inside);
+    var prev_refr_index = select(sphere_refractive_index, air_refractive_index, !is_intersection_from_inside);
+    var context_n = select((*hit).normal, -(*hit).normal, is_intersection_from_inside);
+
+    var ni_nt = prev_refr_index / next_refr_index;
 
     var incident = -(*r).direction;
-    var r_n_dot = dot(incident, (*hit).normal);
+    var r_n_dot = dot(incident, context_n);
 
-    var t_sin = ni_nt * (r_n_dot * (*hit).normal - incident);
+    var t_sin = ni_nt * (r_n_dot * context_n - incident);
     var cos2 = 1 - ni_nt * ni_nt * (1 - r_n_dot * r_n_dot);
-    var direction = t_sin - (*hit).normal * sqrt(abs(cos2));
+    var direction = t_sin - context_n * sqrt(abs(cos2));
 
-    var p_reflect = fresnel(r_n_dot, dot(normalize(direction), -(*hit).normal), (*hit).prev_refractive, (*hit).next_refractive);
-    var event = rnd(seed);
-    var is_reflected = event < p_reflect;
+    var p_reflect = fresnel(r_n_dot, dot(normalize(direction), -context_n), prev_refr_index, next_refr_index);
+    var event_1 = rnd(seed);
+    var is_reflected = event_1 < p_reflect;
 
-    var reflected_direction = reflect((*r).direction, (*hit).normal);
+    var reflected_direction = reflect((*r).direction, context_n);
 
     (*r).direction = normalize(select(direction, reflected_direction, is_reflected));
-    (*r).origin = (*hit).position + (*r).direction * .01;
+    (*r).origin = (*hit).position + (*r).direction;
     (*r).tmin = default_tmin;
     (*r).tmax = default_tmax;
+
+    const sphere_extinction_coefficient = vec3f(.0, .2, .1);
+    var T = exp(-sphere_extinction_coefficient * (*hit).dist);
+    var p_transmission = select(0., (T.x + T.y + T.z) / 3, is_intersection_from_inside);
+    var event_2 = rnd(seed);
+    var transmitted_from_inside = event_2 < p_transmission;
+
+    // (*hit).bounce_factor = T / p_reflect;
 
     (*hit).continue_trace = true;
     (*hit).direct = true;
@@ -593,7 +603,6 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
     hit = generate_default_hitinfo();
 
     var light_result = vec3f();
-    var indirect_factor = vec3f(1);
 
     for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
     {
@@ -605,8 +614,7 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
 
         var light = shader(&r, &hit, &t);
         light_result += light;
-        indirect_factor *= hit.indirect_factor * light;
-        hit.indirect_factor = indirect_factor;
+        hit.path_factor *= hit.bounce_factor * light;
 
         if (hit.continue_trace || !hit.direct)
         {
