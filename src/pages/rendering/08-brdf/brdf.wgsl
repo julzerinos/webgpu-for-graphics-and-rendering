@@ -8,24 +8,6 @@ struct IndexMaterial {
     mat : u32
 };
 
-@group(0) @binding(0) var<storage> vertex_normals : array<VertexNormal>;
-@group(0) @binding(1) var<storage> index_mats : array<IndexMaterial>;
-@group(0) @binding(2) var<storage> light_faces : array<u32>;
-
-@group(1) @binding(0) var<storage> bspPlanes : array<f32>;
-@group(1) @binding(1) var<storage> bspTree : array<vec4u>;
-@group(1) @binding(2) var<storage> treeIds : array<u32>;
-
-
-struct Aabb {
-    min : vec3f,
-    max : vec3f,
-};
-
-@group(2) @binding(0) var<uniform> aabb : Aabb;
-@group(2) @binding(1) var<uniform> light_indices_count : u32;
-@group(2) @binding(2) var<uniform> subdivisions_sqr : u32;
-
 struct Material {
     color : vec4f,
     specular : vec4f,
@@ -33,13 +15,39 @@ struct Material {
     illum_shininess_ior : vec3f
 };
 
-@group(3) @binding(0) var<storage> materials : array<Material>;
-@group(3) @binding(1) var<storage> jitters : array<vec2f>;
+@group(0) @binding(0) var<storage> vertex_normals : array<VertexNormal>;
+@group(0) @binding(1) var<storage> index_mats : array<IndexMaterial>;
+@group(0) @binding(2) var<storage> light_faces : array<u32>;
+@group(0) @binding(3) var<storage> materials : array<Material>;
+
+@group(1) @binding(0) var<storage> bspPlanes : array<f32>;
+@group(1) @binding(1) var<storage> bspTree : array<vec4u>;
+@group(1) @binding(2) var<storage> treeIds : array<u32>;
+
+struct Aabb {
+    min : vec3f,
+    max : vec3f,
+};
+
+struct SceneData {
+    frame_num : u32,
+    canvas_width : u32,
+    canvas_height : u32
+}
+
+@group(2) @binding(0) var<uniform> aabb : Aabb;
+@group(2) @binding(1) var<uniform> light_indices_count : u32;
+@group(2) @binding(2) var<uniform> scene_data : SceneData;
+
+@group(3) @binding(0) var renderTexture : texture_2d<f32>;
 
 const MAX_LEVEL = 20u;
 const BSP_LEAF = 3u;
 var<private> branch_node : array<vec2u, MAX_LEVEL>;
 var<private> branch_ray : array<vec2f, MAX_LEVEL>;
+
+//const background_color = vec4f(0.1, 0.3, 0.6, 1.0);
+const background_color = vec4f(0, 0, 0, 1.0);
 
 const light_direction : vec3f = vec3f(-1.);
 const light_intensity = 1.5;
@@ -53,12 +61,15 @@ const up = vec3f(0., 1., 0.);
 const target_point = vec3f(277., 275., 0.);
 const origin_point = vec3f(277., 275., -570.);
 const camera_constant = 1;
-
-const default_tmax = 2000;
+const default_tmin = .01;
+const default_tmax = 10000;
 
 const f1en2 = 0.01;
 const f1en4 = 0.0001;
 const f1en8 = 0.00000001;
+const f1en16 = 0.0000000000000001;
+
+const PI = 3.14;
 
 struct Light {
     L_i : vec3f,
@@ -84,18 +95,19 @@ struct HitInfo {
     has_hit : bool,
     continue_trace : bool,
 
+    object : u32,
+
     dist : f32,
     position : vec3f,
     normal : vec3f,
 
-    object : u32,
-    color : vec3f,
-
-    diffuse : f32,
-    specular : f32,
-    shininess : f32,
+    diffuse : vec3f,
+    emission : vec3f,
     prev_refractive : f32,
     next_refractive : f32,
+
+    direct : bool,
+    indirect_factor : vec3f
 };
 
 struct VSOut {
@@ -119,7 +131,27 @@ fn main_vs(@builtin(vertex_index) VertexIndex : u32) -> VSOut
 
 fn generate_default_hitinfo() -> HitInfo
 {
-    return HitInfo(0, false, false, 0., vec3f(0.), vec3f(0.), 0, vec3f(0.), 1., 1., 1., 1, 1);
+    var hit_info : HitInfo;
+
+    hit_info.depth = 0;
+    hit_info.has_hit = false;
+    hit_info.continue_trace = false;
+
+    hit_info.object = 0;
+
+    hit_info.dist = 0;
+    hit_info.position = vec3f();
+    hit_info.normal = vec3f();
+
+    hit_info.diffuse = vec3f();
+    hit_info.emission = vec3f();
+    hit_info.prev_refractive = 1.;
+    hit_info.next_refractive = 1.;
+
+    hit_info.direct = true;
+    hit_info.indirect_factor = vec3f(1);
+
+    return hit_info;
 }
 
 fn generate_ray_from_camera(uv : vec2f) -> Ray
@@ -135,17 +167,17 @@ fn generate_ray_from_camera(uv : vec2f) -> Ray
 
 fn construct_ray_default(origin : vec3f, direction : vec3f) -> Ray
 {
-    return construct_ray(origin, direction, .01, default_tmax);
+    return construct_ray(origin, direction, default_tmin, default_tmax);
 }
 
 fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> Ray
 {
-    var ray : Ray;
-    ray.origin = origin;
-    ray.direction = direction;
-    ray.tmax = tmax;
-    ray.tmin = tmin;
-    return ray;
+    var ray_indirect : Ray;
+    ray_indirect.origin = origin;
+    ray_indirect.direction = direction;
+    ray_indirect.tmax = tmax;
+    ray_indirect.tmin = tmin;
+    return ray_indirect;
 }
 
 
@@ -187,16 +219,16 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
 
     var has_hit = intersection > r.tmin && intersection < r.tmax && beta >= 0 && gamma >= 0 && beta + gamma <= 1;
 
-    var color = mat.color + mat.emission;
-
     (*hit).has_hit = (*hit).has_hit || has_hit;
 
     (*hit).dist = select((*hit).dist, intersection, has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
-    (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
 
     (*hit).object = select((*hit).object, 0, has_hit);
-    (*hit).color = select((*hit).color, color.rgb, has_hit);
+
+    (*hit).diffuse = select((*hit).diffuse, mat.color.rgb, has_hit);
+    (*hit).emission = select((*hit).emission, mat.emission.rgb, has_hit);
+    (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
 
     return has_hit;
 }
@@ -300,7 +332,6 @@ fn intersect_min_max(r : ptr < function, Ray>) -> bool
     return true;
 }
 
-
 fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, center : vec3f) -> bool {
 
     var from_center = r.origin - center;
@@ -363,62 +394,6 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 
         //Lighting
 
-fn get_area_light_center() -> vec3f
-{
-    var center_light_position = vec3f(0.);
-    for (var i : u32 = 0; i < light_indices_count; i++)
-    {
-        var vertex_mat_lookup = index_mats[light_faces[i]];
-        var indices = vertex_mat_lookup.indices.xyz;
-
-        var vertex_0 = vertex_normals[indices.x].vertex;
-        var vertex_1 = vertex_normals[indices.y].vertex;
-        var vertex_2 = vertex_normals[indices.z].vertex;
-
-        center_light_position += vertex_0 + vertex_1 + vertex_2;
-    }
-    center_light_position /= f32(light_indices_count * 3);
-    return center_light_position;
-}
-
-fn calculate_area_light_intensity(direction : vec3f) -> vec3f
-{
-    var intensity = vec3f(0.);
-    for (var i : u32 = 0; i < light_indices_count; i++)
-    {
-        var vertex_mat_lookup = index_mats[light_faces[i]];
-        var indices = vertex_mat_lookup.indices.xyz;
-        var material_index = vertex_mat_lookup.mat;
-        var mat = materials[material_index];
-
-        var vertex_0 = vertex_normals[indices.x].vertex;
-        var vertex_1 = vertex_normals[indices.y].vertex;
-        var vertex_2 = vertex_normals[indices.z].vertex;
-
-        var e0 = vertex_1 - vertex_0;
-        var e1 = vertex_2 - vertex_0;
-        var n = cross(e0, e1);
-        var area = length(n) / 2;
-
-        intensity += max(0, dot(-direction, normalize(n))) * mat.emission.rgb * area;
-    }
-
-    return intensity;
-}
-
-fn sample_area_light(pos : vec3f) -> Light
-{
-    var area_light_center = get_area_light_center();
-
-    var line = area_light_center - pos;
-    var dist = length(line);
-    var direction = line / dist;
-
-    var incident_light = calculate_area_light_intensity(direction) / (dist * dist);
-
-    return Light(vec3f(incident_light), normalize(direction), dist, area_light_center);
-}
-
 fn check_occulusion(position : vec3f, light : vec3f) -> bool
 {
     const surface_offset = .01;
@@ -433,35 +408,118 @@ fn check_occulusion(position : vec3f, light : vec3f) -> bool
     return intersect_scene(&r, &hit);
 }
 
-
-fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+fn sample_area_light(pos : vec3f, seed : ptr < function, u32>) -> Light
 {
-    var light_info = sample_area_light((*hit).position);
-    var lambertian_light = ((*hit).diffuse / 3.14) * visibility * max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i;
+    var index_mat = index_mats[light_faces[u32(floor(rnd(seed) * f32(light_indices_count)))]];
+    var triangle_index = index_mat.indices;
+    var mat = materials[index_mat.mat];
 
-    var is_occluded = check_occulusion((*hit).position, light_info.pos);
-    var occlusion_modifier = select(1., 0., is_occluded);
+    var vertex_normal_0 = vertex_normals[triangle_index.x];
+    var vertex_normal_1 = vertex_normals[triangle_index.y];
+    var vertex_normal_2 = vertex_normals[triangle_index.z];
 
-    var L_ambient = .1;
-    var L_reflected = .9 * lambertian_light * occlusion_modifier;
-    var L_observed = L_ambient + L_reflected;
+    var position_sample_1 = rnd(seed);
+    var position_sample_2 = rnd(seed);
 
-    return LightResult(L_observed, vec3f(0));
+    var a = 1 - sqrt(position_sample_1);
+    var b = (1 - position_sample_2) * sqrt(position_sample_1);
+    var c = position_sample_2 * sqrt(position_sample_1);
+
+    var sampled_vertex = a * vertex_normal_0.vertex + b * vertex_normal_1.vertex + c * vertex_normal_2.vertex;
+    var sampled_normal = normalize(a * vertex_normal_0.normal + b * vertex_normal_1.normal + c * vertex_normal_2.normal);
+
+    var line = sampled_vertex - pos;
+    var dist = length(line);
+    var direction = line / dist;
+
+    var e0 = vertex_normal_1.vertex - vertex_normal_0.vertex;
+    var e1 = vertex_normal_2.vertex - vertex_normal_0.vertex;
+    var n = cross(e0, e1);
+    var area = length(n) / 2;
+
+    var Le = mat.emission.rgb;
+    var visibility = select(1., 0., check_occulusion(pos, sampled_vertex));
+    var keplers = dot(sampled_normal, direction) / (dist * dist);
+    var n_tri = f32(light_indices_count);
+
+    var L = Le * visibility * n_tri * area * keplers;
+
+    var light : Light;
+    light.pos = sampled_vertex;
+    light.w_i = direction;
+    light.L_i = L;
+    light.dist = dist;
+
+    return light;
 }
 
-fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>)
+{
+    var p_reflect = ((*hit).diffuse.r + (*hit).diffuse.g + (*hit).diffuse.b) / 3;
+    var event = rnd(seed);
+
+    var absorb = event >= p_reflect;
+
+    (*hit).direct = absorb;
+
+    if (absorb)
+    {
+        return;
+    }
+
+    var sampled_sphere_direction = sample_cosine_weighted_hemisphere((*hit).normal, seed);
+
+    (*r).origin = (*hit).position;
+    (*r).direction = sampled_sphere_direction;
+    (*r).tmin = default_tmin;
+    (*r).tmax = default_tmax;
+
+    (*hit).indirect_factor = (*hit).diffuse / p_reflect;
+}
+
+fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
+{
+    var light_info = sample_area_light((*hit).position, seed);
+    var L = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
+
+    var indirect_modifier = select(1., 0., (*hit).direct);
+
+    var emission = (*hit).emission * (1 - indirect_modifier);
+    var L_direct = (1 - indirect_modifier) * L;
+    var L_indirect = indirect_modifier * L* (*hit).indirect_factor;
+
+    var L_observed = emission + L_direct + L_indirect;
+
+    indirect_illumination(r, hit, seed);
+
+    return L_observed;
+}
+
+fn mirror(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> vec3f
 {
     (*r).direction = normalize(reflect((*r).direction, (*hit).normal));
-    (*r).origin = (*hit).position + (*r).direction * .001;
+    (*r).origin = (*hit).position + (*r).direction * .01;
+    (*r).tmin = default_tmin;
     (*r).tmax = default_tmax;
-    (*r).tmin = .01;
 
     (*hit).continue_trace = true;
+    (*hit).direct = true;
 
-    return LightResult(vec3f(1.), vec3f(0));
+    return vec3f();
 }
 
-fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+fn fresnel(cos_ti : f32, cos_tt : f32, ni : f32, nt : f32) -> f32
+{
+    var ni_nt = ni / nt;
+    var cos2 = 1 - ni_nt * ni_nt * (1 - cos_ti * cos_ti);
+
+    var r_perp = (ni * cos_ti - nt * cos_tt) / (ni * cos_ti + nt * cos_tt);
+    var r_par = (nt * cos_ti - ni * cos_tt) / (nt * cos_ti + ni * cos_tt);
+
+    return select(.5 * (r_perp * r_perp + r_par * r_par), 1., cos2 < 0);
+}
+
+fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
     var ni_nt = (*hit).prev_refractive / (*hit).next_refractive;
 
@@ -472,20 +530,24 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
     var cos2 = 1 - ni_nt * ni_nt * (1 - r_n_dot * r_n_dot);
     var direction = t_sin - (*hit).normal * sqrt(abs(cos2));
 
-    var is_reflected = cos2 < 0;
+    var p_reflect = fresnel(r_n_dot, dot(normalize(direction), -(*hit).normal), (*hit).prev_refractive, (*hit).next_refractive);
+    var event = rnd(seed);
+    var is_reflected = event < p_reflect;
+
     var reflected_direction = reflect((*r).direction, (*hit).normal);
 
     (*r).direction = normalize(select(direction, reflected_direction, is_reflected));
     (*r).origin = (*hit).position + (*r).direction * .01;
-    (*r).tmin = .01;
+    (*r).tmin = default_tmin;
     (*r).tmax = default_tmax;
 
     (*hit).continue_trace = true;
+    (*hit).direct = true;
 
-    return LightResult(vec3f(1), vec3f(0));
+    return vec3f();
 }
 
-fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResult
+fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
     (*hit).continue_trace = false;
 
@@ -500,64 +562,134 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> LightResu
         }
         case 2 :
         {
-            return refractive(r, hit);
+            return refractive(r, hit, seed);
         }
     }
 
-    return lambertian(r, hit);
+    return lambertian(r, hit, seed);
 }
 
 //Fragment shader
 
+struct FSOut {
+    @location(0) frame : vec4f,
+    @location(1) accum : vec4f
+}
+
 @fragment
-fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
+fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) -> FSOut
 {
-    const backgroundColor = vec4f(0.1, 0.3, 0.6, 1.0);
     const max_depth = 10;
 
-    var light_result : LightResult;
+    let launch_idx = u32(fragcoord.y) * scene_data.canvas_width + u32(fragcoord.x);
+    var t = tea(launch_idx, scene_data.frame_num);
+    let jitter = vec2f(rnd(&t), rnd(&t)) / f32(scene_data.canvas_height);
+
+    var uv = coords *.5 + jitter;
+
     var r : Ray;
     var hit : HitInfo;
+    r = generate_ray_from_camera(uv);
+    hit = generate_default_hitinfo();
 
-    var colors = array<vec3f, 36 > ();
-    var lights = array<LightResult, 36 > ();
+    var light_result = vec3f();
+    var indirect_factor = vec3f(1);
 
-    for (var i = 0; i < i32(subdivisions_sqr); i++)
+    for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
     {
-        var uv = vec2f(coords.x, coords.y) *.5 + jitters[i];
-        r = generate_ray_from_camera(uv);
-        hit = generate_default_hitinfo();
-        light_result = LightResult(vec3f(1), vec3f(0));
-
-        for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
+        if (!intersect_scene(&r, &hit))
         {
-            if (!intersect_scene(&r, &hit))
-            {
-                hit.color += backgroundColor.rgb;
-                break;
-            }
-
-            var next_light_result = shader(&r, &hit);
-            light_result.additive += next_light_result.additive;
-            light_result.multiplicative *= next_light_result.multiplicative;
-
-            if (!hit.continue_trace)
-            {
-                break;
-            };
+            light_result += background_color.rgb;
+            break;
         }
 
-        colors[i] = hit.color;
-        lights[i] = light_result;
+        var light = shader(&r, &hit, &t);
+        light_result += light;
+        indirect_factor *= hit.indirect_factor * light;
+        hit.indirect_factor = indirect_factor;
+
+        if (hit.continue_trace || !hit.direct)
+        {
+            continue;
+        };
+        break;
     }
 
-    var final_result = vec3f();
-    var j : i32;
-    for (j = 0; j < i32(subdivisions_sqr); j++)
+    let curr_sum = textureLoad(renderTexture, vec2u(fragcoord.xy), 0).rgb * f32(scene_data.frame_num);
+    let accum_color = (light_result + curr_sum) / f32(scene_data.frame_num + 1u);
+
+    var fs_out : FSOut;
+    fs_out.frame = vec4f(pow(accum_color, vec3f(1.0 / 1.25)), 1.0);
+    fs_out.accum = vec4f(accum_color, 1.0);
+    return fs_out;
+}
+
+//Utility
+
+//PRNG xorshift seed generator by NVIDIA
+fn tea(val0 : u32, val1 : u32) -> u32
+{
+    const N = 16u;  //User specified number of iterations
+    var v0 = val0;
+    var v1 = val1;
+    var s0 = 0u;
+    for(var n = 0u; n < N; n++)
     {
-        var substrata_result = lights[j].multiplicative * colors[j] + lights[j].additive;
-        final_result += substrata_result / f32(subdivisions_sqr);
+        s0 += 0x9e3779b9;
+        v0 += ((v1<<4) + 0xa341316c)^(v1 + s0)^((v1>>5) + 0xc8013ea4);
+        v1 += ((v0<<4) + 0xad90777d)^(v0 + s0)^((v0>>5) + 0x7e95761e);
     }
+    return v0;
+}
 
-    return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
+fn mcg31(prev : ptr < function, u32>) -> u32
+{
+    const LCG_A = 1977654935u;
+    *prev = (LCG_A * (*prev)) & 0x7FFFFFFF;
+    return * prev;
+}
+
+//Generate random float in [0, 1)
+fn rnd(prev : ptr < function, u32>) -> f32
+{
+    return f32(mcg31(prev)) / f32(0x80000000);
+}
+
+//Given a direction vector v sampled around the z-axis of a
+//local coordinate system, this function applies the same
+//rotation to v as is needed to rotate the z-axis to the
+//actual direction n that v should have been sampled around
+//[Frisvad, Journal of Graphics Tools 16, 2012;
+//Duff et al., Journal of Computer Graphics Techniques 6, 2017].
+fn rotate_to_normal(normal : vec3f, v : vec3f) -> vec3f
+{
+    let signbit = sign(normal.z + f1en16);
+    let a = -1.0f / (1.0f + abs(normal.z));
+    let b = normal.x * normal.y * a;
+    return vec3f(1.0f + normal.x * normal.x * a, b, -signbit * normal.x) * v.x
+    + vec3f(signbit * b, signbit * (1.0f + normal.y * normal.y * a), -normal.y) * v.y
+    + normal * v.z;
+}
+
+//Given spherical coordinates, where theta is the
+//polar angle and phi is the azimuthal angle, this
+//function returns the corresponding direction vector
+fn spherical_direction(sin_theta : f32, cos_theta : f32, phi : f32) -> vec3f
+{
+    let sin_phi = sin(phi);
+    let cos_phi = cos(phi);
+    return vec3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
+}
+
+fn sample_cosine_weighted_hemisphere(normal : vec3f, seed : ptr < function, u32>) -> vec3f
+{
+    var eps_1 = rnd(seed);
+    var eps_2 = rnd(seed);
+
+    var theta = acos(sqrt(1 - eps_1));
+    var phi = 2 * PI * eps_2;
+
+    var direction = spherical_direction(sin(theta), cos(theta), phi);
+
+    return rotate_to_normal(normal, direction);
 }

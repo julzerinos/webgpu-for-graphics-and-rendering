@@ -469,7 +469,7 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
 
         var light = shader(&r, &hit, &t);
         light_result += light;
-        indirect_factor *= hit.indirect_factor;
+        indirect_factor *= hit.indirect_factor * light;
         hit.indirect_factor = indirect_factor;
 
         if (hit.continue_trace || !hit.direct)

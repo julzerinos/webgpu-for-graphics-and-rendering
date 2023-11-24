@@ -6,6 +6,7 @@ import { TextureMapping } from "./03-textures"
 import { Meshes } from "./05-meshes"
 import { SpatialPartitioning } from "./06-partitioning"
 import { Progressive } from "./07-progressive"
+import { BRDF } from "./08-brdf"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     RaycastingIntroduction(container, executeQueue)
@@ -13,6 +14,7 @@ export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: E
     TextureMapping(container, executeQueue)
     Meshes(container, executeQueue)
     Progressive(container, executeQueue)
+    BRDF(container, executeQueue)
 }
 
 export const renderingRoutes: IRoute = {
@@ -40,5 +42,6 @@ export const renderingRoutes: IRoute = {
             generator: SpatialPartitioning,
         },
         { name: "07-progressive", generator: Progressive },
+        { name: "08-brdf", generator: BRDF },
     ],
 }

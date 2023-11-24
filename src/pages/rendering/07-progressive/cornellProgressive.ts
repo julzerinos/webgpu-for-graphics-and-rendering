@@ -3,12 +3,9 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 import {
     initializeWebGPU,
     createPass,
-    setupShaderPipeline,
     createBind,
     generatePingPongTextures,
-    writeToBufferF32,
     writeToBufferU32,
-    createTextureBind,
 } from "../../../libs/webgpu"
 
 import {
@@ -48,8 +45,6 @@ const execute: Executable = async () => {
 
     const getProgressiveEnabled = watchInput<boolean>(PROG_ENB, "checked")
 
-    const { renderSrc, renderDst, blitPingPong } = generatePingPongTextures(device, canvas)
-
     const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBoxWithBlocks.obj"))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
@@ -83,7 +78,11 @@ const execute: Executable = async () => {
         "Complex progressive": shaderCodeProgressiveWithIndirect,
     } as { [key: string]: string }
 
+    const startProgressive = { f: () => {} }
+
     const setupPipelineAndScene = (shaderType: string) => {
+        const { renderSrc, renderDst, blitPingPong } = generatePingPongTextures(device, canvas)
+
         const wgsl = device.createShaderModule({
             code: shaderMap[shaderType],
         })
@@ -148,6 +147,10 @@ const execute: Executable = async () => {
 
         let framesWhileProgressive = 0
         const progress = () => {
+            if (!getProgressiveEnabled()) return
+
+            framesWhileProgressive += 1
+            writeToBufferU32(device, sceneDataBuffer, new Uint32Array([framesWhileProgressive]), 0)
             const { pass, encoder } = createPass(device, context, Colors.black, {
                 otherColorAttachments: [
                     { view: renderSrc.createView(), loadOp: "load", storeOp: "store" },
@@ -163,26 +166,18 @@ const execute: Executable = async () => {
             pass.draw(4)
             pass.end()
 
-            if (getProgressiveEnabled()) {
-                framesWhileProgressive += 1
-                writeToBufferU32(
-                    device,
-                    sceneDataBuffer,
-                    new Uint32Array([framesWhileProgressive]),
-                    0
-                )
-                blitPingPong(encoder)
-            }
-
+            blitPingPong(encoder)
             device.queue.submit([encoder.finish()])
 
             requestAnimationFrame(progress)
         }
 
+        startProgressive.f = () => requestAnimationFrame(progress)
         requestAnimationFrame(progress)
     }
 
     setupPipelineAndScene(subscribeToInput<string>(SEL_SHDR, setupPipelineAndScene))
+    subscribeToInput<boolean>(PROG_ENB, () => startProgressive.f(), "checked")
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
