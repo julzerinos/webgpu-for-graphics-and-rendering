@@ -53,8 +53,6 @@ const TEAPOT_MOVEMENT = "teapot-movement-shadow-mapping"
 const LIGHT_MOVEMENT = "light-movement-shadow-mapping"
 
 const execute: Executable = async () => {
-    const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
-
     const getTeapotMovementEnabled = watchInput<boolean>(TEAPOT_MOVEMENT, "checked")
     const getLightMovementEnabled = watchInput<boolean>(LIGHT_MOVEMENT, "checked")
 
@@ -63,13 +61,21 @@ const execute: Executable = async () => {
     const teapotObj = await parseOBJ("models/teapot.obj", 0.25, false)
     const teapotDrawingInfo = getDrawingInfo(teapotObj, { indicesIn3: true })
 
+    const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
+
+    const shadowCanvas = document.getElementById(CANVAS_ID + "-shadow") as HTMLCanvasElement
+    const shadowCanvasContext = (shadowCanvas.getContext("gpupresent") ||
+        shadowCanvas.getContext("webgpu")) as GPUCanvasContext
+    shadowCanvasContext.configure({
+        device: device,
+        format: canvasFormat,
+    })
+
     const { depthStencil: lessDepthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(
         device,
         canvas,
-        4
+        1
     )
-    const { msaaTexture, multisample } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
-
     const { buffer: teapotIndexBuffer } = genreateIndexBuffer(device, teapotDrawingInfo.indices)
     const { buffer: teapotVertexBuffer, bufferLayout: teapotVertexBufferLayout } =
         genreateVertexBuffer(device, teapotDrawingInfo.vertices, "float32x4")
@@ -84,23 +90,48 @@ const execute: Executable = async () => {
         canvasFormat,
         teapotShader,
         "triangle-list",
-        { depthStencil: lessDepthStencil, multisample }
+        { depthStencil: lessDepthStencil }
     )
 
     // TODO use separate buffer texture
 
+    const shadowMapDepthTexture = device.createTexture({
+        size: {
+            width: shadowCanvas.width,
+            height: shadowCanvas.height,
+            depthOrArrayLayers: 1,
+        },
+        mipLevelCount: 1,
+        sampleCount: 1,
+        dimension: "2d",
+        format: "depth32float",
+        usage:
+            GPUTextureUsage.RENDER_ATTACHMENT |
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.COPY_SRC,
+    })
+
+    const shadowMapDepthTextureView = shadowMapDepthTexture.createView()
+
+    const shadowMapShaderModule = device.createShaderModule({
+        code: teapotShadowShader,
+    })
     const shadowPipeline = device.createRenderPipeline({
         layout: "auto",
         vertex: {
-            module: device.createShaderModule({
-                code: teapotShadowShader,
-            }),
-            entryPoint: "main",
+            module: shadowMapShaderModule,
+            entryPoint: "main_vs",
             buffers: [teapotVertexBufferLayout],
         },
-        // fragment: {
-        //     targets: []
-        // },
+        fragment: {
+            module: shadowMapShaderModule,
+            entryPoint: "main_fs",
+            targets: [
+                {
+                    format: canvasFormat,
+                },
+            ],
+        },
         depthStencil: {
             depthWriteEnabled: true,
             depthCompare: "less",
@@ -141,67 +172,34 @@ const execute: Executable = async () => {
         1
     )
 
-    // const planePipeline = setupShaderPipeline(
-    //     device,
-    //     [planeVertexBufferLayout, planeUvBufferLayout],
-    //     canvasFormat,
-    //     planeShader,
-    //     "triangle-list",
-    //     { depthStencil: lessDepthStencil, multisample }
-    // )
+    const planePipeline = setupShaderPipeline(
+        device,
+        [planeVertexBufferLayout, planeUvBufferLayout],
+        canvasFormat,
+        planeShader,
+        "triangle-list",
+        { depthStencil: lessDepthStencil }
+    )
 
-    const planePipeline = device.createRenderPipeline({
-        layout: "auto",
-        // layout: device.createPipelineLayout({
-        //     bindGroupLayouts: [bglForRender, uniformBufferBindGroupLayout],
-        // }),
-        vertex: {
-            module: device.createShaderModule({
-                code: planeShader,
-            }),
-            entryPoint: "main_vs",
-            buffers: [planeVertexBufferLayout, planeUvBufferLayout],
-        },
-        fragment: {
-            module: device.createShaderModule({
-                code: planeShader,
-            }),
-            entryPoint: "main_fs",
-            targets: [
-                {
-                    format: canvasFormat,
-                },
-            ],
-            // constants: {
-            //     shadowDepthTextureSize,
-            // },
-        },
-        depthStencil: {
-            depthWriteEnabled: true,
-            depthCompare: "less",
-            format: "depth24plus-stencil8",
-        },
-        primitive: { cullMode: "back", topology: "triangle-list" },
-    })
-
-    const shadowDepthTexture = device.createTexture({
-        size: [512, 512, 1],
-        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        format: "depth32float",
-    })
-    const shadowDepthTextureView = shadowDepthTexture.createView()
     const shadowMapTextureBind = device.createBindGroup({
         layout: planePipeline.getBindGroupLayout(2),
         entries: [
             {
                 binding: 0,
                 resource: device.createSampler({
-                    compare: "less",
+                    addressModeU: "clamp-to-edge",
+                    addressModeV: "clamp-to-edge",
+                    addressModeW: "clamp-to-edge",
+                    magFilter: "linear",
+                    minFilter: "linear",
+                    mipmapFilter: "nearest",
+                    lodMinClamp: 0,
+                    lodMaxClamp: 100,
                 }),
             },
             {
                 binding: 1,
-                resource: shadowDepthTextureView,
+                resource: shadowMapDepthTexture.createView(),
             },
         ],
     })
@@ -211,7 +209,7 @@ const execute: Executable = async () => {
     )
 
     const createLightProjectionViewMatrix = (lightPosition: Vector3): Matrix4x4 => {
-        const projection = perspectiveProjection(100, 1, 0.01, 6)
+        const projection = perspectiveProjection(100, 1, 0.01, 4)
         const view = lookAtMatrix(lightPosition, vec3(0, -1, -3), Vector3s.up)
 
         return multMatrices(projection, view)
@@ -296,29 +294,40 @@ const execute: Executable = async () => {
 
         const encoder = device.createCommandEncoder()
 
-        const shadowPass = encoder.beginRenderPass({
-            colorAttachments: [],
+        const shadowMapPass = encoder.beginRenderPass({
+            colorAttachments: [
+                {
+                    view: shadowCanvasContext.getCurrentTexture().createView(),
+                    loadOp: "clear",
+                    clearValue: {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 1,
+                    },
+                    storeOp: "store",
+                },
+            ],
             depthStencilAttachment: {
-                view: shadowDepthTextureView,
-                depthClearValue: 1.0,
+                view: shadowMapDepthTextureView,
                 depthLoadOp: "clear",
                 depthStoreOp: "store",
+                depthClearValue: 1.0,
             },
         })
 
-        shadowPass.setPipeline(shadowPipeline)
-        shadowPass.setVertexBuffer(0, teapotVertexBuffer)
-        shadowPass.setIndexBuffer(teapotIndexBuffer, "uint32")
-        shadowPass.setBindGroup(0, shadowUniformBind)
-        shadowPass.drawIndexed(teapotDrawingInfo.indices.length)
+        shadowMapPass.setPipeline(shadowPipeline)
+        shadowMapPass.setVertexBuffer(0, teapotVertexBuffer)
+        shadowMapPass.setIndexBuffer(teapotIndexBuffer, "uint32")
+        shadowMapPass.setBindGroup(0, shadowUniformBind)
+        shadowMapPass.drawIndexed(teapotDrawingInfo.indices.length)
 
-        shadowPass.end()
+        shadowMapPass.end()
 
         const pass = encoder.beginRenderPass({
             colorAttachments: [
                 {
-                    view: msaaTexture.createView(),
-                    resolveTarget: context.getCurrentTexture().createView(),
+                    view: context.getCurrentTexture().createView(),
                     loadOp: "clear",
                     clearValue: Colors.blueScreenBlue,
                     storeOp: "store",
@@ -357,7 +366,7 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("shadow mapping")
-    const description = createText("No description yet")
+    const description = createText("https://toolness.github.io/shadowmap-2d/")
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
@@ -377,7 +386,12 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
 
     interactables.append(teapotMovement, lightMovement)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+
+    const shadowCanvasSection = createCanvasSection()
+    const shadowCanvas = createCanvas(CANVAS_ID + "-shadow")
+    shadowCanvasSection.append(shadowCanvas)
+
+    div.append(title, description, canvasSection, shadowCanvasSection)
 
     executeQueue.push(execute)
 }
