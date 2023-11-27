@@ -96,7 +96,8 @@ struct HitInfo {
     emission : vec3f,
 
     direct : bool,
-    indirect_factor : vec3f
+    path_factor : vec3f,
+    bounce_factor : vec3f
 };
 
 struct VSOut {
@@ -133,7 +134,8 @@ fn generate_default_hitinfo() -> HitInfo
     hit_info.diffuse = vec3f();
 
     hit_info.direct = true;
-    hit_info.indirect_factor = vec3f(1);
+    hit_info.path_factor = vec3f(1);
+    hit_info.bounce_factor = vec3f(1);
 
     return hit_info;
 }
@@ -386,19 +388,12 @@ fn sample_area_light(pos : vec3f, seed : ptr < function, u32>) -> Light
     return light;
 }
 
-fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>)
+fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> bool
 {
     var p_reflect = ((*hit).diffuse.r + (*hit).diffuse.g + (*hit).diffuse.b) / 3;
     var event = rnd(seed);
 
     var absorb = event >= p_reflect;
-
-    (*hit).direct = absorb;
-
-    if (absorb)
-    {
-        return;
-    }
 
     var sampled_sphere_direction = sample_cosine_weighted_hemisphere((*hit).normal, seed);
 
@@ -406,24 +401,23 @@ fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo
     (*r).direction = sampled_sphere_direction;
     (*r).tmin = 0.01;
     (*r).tmax = 10000;
-    (*hit).indirect_factor = (*hit).diffuse / p_reflect;
+    (*hit).path_factor *= (*hit).diffuse / p_reflect;
+
+    return absorb;
 }
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
+    var absorb = indirect_illumination(r, hit, seed);
+    (*hit).direct = absorb && (*hit).direct;
+    (*hit).continue_trace = !absorb;
+
+    var emission = select(0., 1., (*hit).direct) * (*hit).emission;
+
     var light_info = sample_area_light((*hit).position, seed);
-    var L = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
+    var L_direct = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
 
-    var indirect_modifier = select(1., 0., (*hit).direct);
-
-    var emission = (*hit).emission * (1 - indirect_modifier);
-    var L_direct = (1 - indirect_modifier) * L;
-    var L_indirect = indirect_modifier * L * (*hit).indirect_factor;
-
-    var L_observed = emission + L_direct + L_indirect;
-
-    indirect_illumination(r, hit, seed);
-
+    var L_observed = emission + L_direct;
     return L_observed;
 }
 
@@ -457,26 +451,24 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
     hit = generate_default_hitinfo();
 
     var light_result = vec3f();
-    var indirect_factor = vec3f(1);
 
     for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
     {
         if (!intersect_scene(&r, &hit))
         {
-            light_result += background_color.rgb;
+            light_result += hit.bounce_factor * background_color.rgb;
             break;
         }
 
         var light = shader(&r, &hit, &t);
-        light_result += light;
-        indirect_factor *= hit.indirect_factor * light;
-        hit.indirect_factor = indirect_factor;
+        light_result += hit.path_factor * light;
 
-        if (hit.continue_trace || !hit.direct)
+        if (!hit.continue_trace)
         {
-            continue;
+            break;
         };
-        break;
+
+        hit.bounce_factor = hit.path_factor * light;
     }
 
     let curr_sum = textureLoad(renderTexture, vec2u(fragcoord.xy), 0).rgb * f32(scene_data.frame_num);

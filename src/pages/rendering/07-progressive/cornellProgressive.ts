@@ -197,7 +197,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         createSelect(
             SEL_SHDR,
             ["Simple progressive", "Simple progressive with soft shadows", "Complex progressive"],
-            "Simple Progressive"
+            "Complex progressive"
         ),
         "Progressive shader type",
         false
