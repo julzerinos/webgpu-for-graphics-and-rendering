@@ -51,6 +51,15 @@ import {
     elementWise,
     toVec3,
     mapRange,
+    add,
+    normalize,
+    subtract,
+    vec4,
+    scale,
+    vec2,
+    magnitude,
+    sqrMagnitude,
+    vectorsEqual,
 } from "../../../libs/util"
 
 import shaderCode from "./shading.wgsl?raw"
@@ -63,12 +72,14 @@ import {
 } from "../../../libs/util/quaternion"
 
 const CANVAS_ID = "camera-movement"
-const ROT_TYPE = "rotation-type-cam-movement"
+const MOV_TYPE = "movement-type-cam-movement"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const getRotationType = watchInput<"Euler" | "Quaternion">(ROT_TYPE)
+    const getMovementType = watchInput<
+        "Euler rotation" | "Quaternion rotation" | "Dollying" | "Panning"
+    >(MOV_TYPE)
 
     const monkeyObj = await parseOBJ("models/monkey.obj", 1, false)
     const monkeyDrawingInfo = getDrawingInfo(monkeyObj, { indicesIn3: true })
@@ -87,11 +98,7 @@ const execute: Executable = async () => {
     )
 
     const { msaaTexture, multisample } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
-    const { createDepthTexture, depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(
-        device,
-        canvas,
-        4
-    )
+    const { depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(device, canvas, 4)
 
     const pipeline = setupShaderPipeline(
         device,
@@ -106,9 +113,12 @@ const execute: Executable = async () => {
     const r = 4
     const h = 0
     const initialEye = vec3(0, 0, 5)
-    const at = vec3(0)
-    const up = vec3(0, 1, 0)
-    const view = lookAtMatrix(initialEye, at, up)
+    let eye = vec3(0, 0, 5)
+    const initialAt = vec3(0)
+    let at = vec3()
+    const initialUp = vec3(0, 1, 0)
+    let up = vec3(0, 1, 0)
+    const view = lookAtMatrix(initialEye, initialAt, initialUp)
 
     const perspective = perspectiveProjection(30, canvas.width / canvas.height, 0.1, 100)
     const projection = perspective
@@ -128,9 +138,10 @@ const execute: Executable = async () => {
         0
     )
 
-    const movementType: "rot" | "transl" = "rot"
-
     const angular = 1
+    const planar = 1e-2
+
+    let movementType = getMovementType()
 
     let lastTickX = 0
     let lastTickY = 0
@@ -142,17 +153,27 @@ const execute: Executable = async () => {
 
     const normalizeCoordinate = (c: number): number => mapRange(c, 0, 512, -1, 1)
 
+    let animatedRotateStartCoordinates = vec2()
+    let animatedRotateEndCoordinates = vec2()
+    let animatedRotateStrength = 0
+
     const onStart = (coordinates: ICanvasCoordinates) => {
+        animatedRotateStrength = 0
+        animatedRotateStartCoordinates = vec2(coordinates.x, coordinates.y)
+        spinTime = 0
+
         lastTickX = coordinates.x
         lastTickY = coordinates.y
+
+        movementType = getMovementType()
     }
 
     const onMove = (coordinates: ICanvasCoordinates) => {
-        if (movementType === "transl") {
-            translX += coordinates.x - lastTickX
-            translY += coordinates.y - lastTickY
+        if (movementType === "Dollying" || movementType === "Panning") {
+            translX = planar * (coordinates.x - lastTickX)
+            translY = -planar * (coordinates.y - lastTickY)
         }
-        if (movementType === "rot") {
+        if (movementType === "Quaternion rotation" || movementType === "Euler rotation") {
             eulerRotX += -angular * (coordinates.x - lastTickX)
             eulerRotY += -angular * (coordinates.y - lastTickY)
 
@@ -178,7 +199,47 @@ const execute: Executable = async () => {
         lastTickY = coordinates.y
     }
 
-    const onEnd = (coordinates: ICanvasCoordinates) => {}
+    const onEnd = (coordinates: ICanvasCoordinates) => {
+        translX = 0
+        translY = 0
+
+        if (movementType !== "Quaternion rotation") return
+
+        animatedRotateEndCoordinates = vec2(coordinates.x, coordinates.y)
+        if (vectorsEqual(animatedRotateStartCoordinates, animatedRotateEndCoordinates)) return
+
+        const animatedRotateDirection = subtract(
+            animatedRotateEndCoordinates,
+            animatedRotateStartCoordinates
+        )
+        animatedRotateStrength = Math.min(magnitude(animatedRotateDirection), 20)
+    }
+
+    let spinTime = 0
+
+    const updateSpin = () => {
+        if (movementType !== "Quaternion rotation") {
+            animatedRotateStrength = 0
+            return
+        }
+
+        lastTickX = animatedRotateStartCoordinates[0]
+        lastTickY = animatedRotateStartCoordinates[1]
+
+        const diminishedStrength = animatedRotateStrength * Math.exp(-spinTime / 150)
+        const coordinates = add(
+            animatedRotateStartCoordinates,
+            scale(
+                normalize(subtract(animatedRotateEndCoordinates, animatedRotateStartCoordinates)),
+                diminishedStrength
+            )
+        )
+
+        if (animatedRotateStrength < 0.2) animatedRotateStrength = 0
+
+        spinTime += 1
+        onMove({ x: coordinates[0], y: coordinates[1] })
+    }
 
     subscribeToCanvasDrag(CANVAS_ID, { onStart, onMove, onEnd })
 
@@ -188,23 +249,47 @@ const execute: Executable = async () => {
             createRotationYMatrix(eulerRotX)
         )
         const rotatedEye = vectorMatrixMult(initialEye, eulerRot)
-        const rotatedUp = vectorMatrixMult(up, eulerRot)
-        return { view: lookAtMatrix(rotatedEye, at, rotatedUp), eye: rotatedEye }
+        const rotatedUp = vectorMatrixMult(initialUp, eulerRot)
+        return { view: lookAtMatrix(rotatedEye, initialAt, rotatedUp), eye: rotatedEye }
     }
 
     const quatView = (): { view: Matrix4x4; eye: Vector3 } => {
-        const eye = toVec3(quatApply([...up, 1], quatRot))
-        const view = lookAtMatrix(toVec3(quatApply([...initialEye, 1], quatRot)), at, eye)
+        const rotatedUp = toVec3(quatApply([...up, 1], quatRot))
+        const rotatedEye = toVec3(quatApply([...eye, 1], quatRot))
+        const view = lookAtMatrix(rotatedEye, at, rotatedUp)
 
-        return { view, eye }
+        return { view, eye: rotatedEye }
+    }
+
+    const dollyingView = (): { view: Matrix4x4; eye: Vector3 } => {
+        eye[2] += translY
+
+        return quatView()
+    }
+
+    const panningView = (): { view: Matrix4x4; eye: Vector3 } => {
+        const right = scale(toVec3(quatApply(vec4(1), quatRot)), translX)
+        const upwards = scale(toVec3(quatApply(vec4(0, 1), quatRot)), translY)
+
+        at = subtract(at, add(right, upwards))
+
+        return quatView()
     }
 
     const updateView = () => {
         const viewEye = (
-            { Euler: eulerView, Quaternion: quatView } as {
-                [key in "Euler" | "Quaternion"]: () => { view: Matrix4x4; eye: Vector3 }
+            {
+                "Euler rotation": eulerView,
+                "Quaternion rotation": quatView,
+                Dollying: dollyingView,
+                Panning: panningView,
+            } as {
+                [key in "Euler rotation" | "Quaternion rotation" | "Dollying" | "Panning"]?: () => {
+                    view: Matrix4x4
+                    eye: Vector3
+                }
             }
-        )[getRotationType()]()
+        )[getMovementType()]!()
 
         const projectionView = multMatrices(projection, viewEye.view)
         const projectionModel = multMatrices(projectionView, model)
@@ -218,6 +303,7 @@ const execute: Executable = async () => {
     }
 
     const frame = (time: number) => {
+        if (animatedRotateStrength > 0) updateSpin()
         updateView()
 
         const { pass, executePass } = createPass(device, context, Colors.black, {
@@ -248,13 +334,17 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const canvas = createCanvas(CANVAS_ID, 512, 512)
     const interactableSection = createInteractableSection()
 
-    const rotationType = createWithLabel(
-        createSelect(ROT_TYPE, ["Euler", "Quaternion"], "Quaternion"),
-        "Rotation type",
+    const movementType = createWithLabel(
+        createSelect(
+            MOV_TYPE,
+            ["Euler rotation", "Quaternion rotation", "Dollying", "Panning"],
+            "Quaternion rotation"
+        ),
+        "Movement type",
         false
     )
 
-    interactableSection.append(rotationType)
+    interactableSection.append(movementType)
     canvasSection.append(canvas, interactableSection)
     div.append(title, description, canvasSection)
 

@@ -80,6 +80,8 @@ export const subscribeToCanvasDrag = (
     })
 
     canvas.addEventListener("mouseleave", (event: MouseEvent) => {
+        if (!isDragging) return
+
         isDragging = false
         onEnd?.(getCoordinates(event))
     })
