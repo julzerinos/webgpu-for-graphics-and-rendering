@@ -188,19 +188,15 @@ const execute: Executable = async () => {
             createRotationYMatrix(eulerRotX)
         )
         const rotatedEye = vectorMatrixMult(initialEye, eulerRot)
-        return { view: lookAtMatrix(rotatedEye, at, up), eye: rotatedEye }
+        const rotatedUp = vectorMatrixMult(up, eulerRot)
+        return { view: lookAtMatrix(rotatedEye, at, rotatedUp), eye: rotatedEye }
     }
 
     const quatView = (): { view: Matrix4x4; eye: Vector3 } => {
-        const rot = quatAsRotMat4x4(quatRot)
+        const eye = toVec3(quatApply([...up, 1], quatRot))
+        const view = lookAtMatrix(toVec3(quatApply([...initialEye, 1], quatRot)), at, eye)
 
-        const rotatedEye = vectorMatrixMult(initialEye, rot)
-
-        // const eye = toVec3(quatApply([...up, 1], quatRot))
-        // const view = lookAtMatrix(toVec3(quatApply([...initialEye, 1], quatRot)), at, eye)
-
-        return { view: lookAtMatrix(rotatedEye, at, vectorMatrixMult(up, rot)), eye: rotatedEye }
-        // return { view, eye }
+        return { view, eye }
     }
 
     const updateView = () => {
