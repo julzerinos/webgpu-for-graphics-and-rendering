@@ -419,7 +419,7 @@ fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : p
     var light_info = sample_area_light((*hit).position, seed);
     var L_direct = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
 
-    var L_observed = max(emission, L_direct * (*hit).path_factor);
+    var L_observed = emission + L_direct;
     return L_observed;
 }
 
@@ -463,14 +463,14 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
         }
 
         var light = shader(&r, &hit, &t);
-        light_result += light;
+        light_result += hit.bounce_factor * light;
 
         if (!hit.continue_trace)
         {
             break;
         };
 
-        hit.bounce_factor = light;
+        hit.bounce_factor = hit.path_factor;
     }
 
     let curr_sum = textureLoad(renderTexture, vec2u(fragcoord.xy), 0).rgb * f32(scene_data.frame_num);
