@@ -11,16 +11,13 @@ import {
 
 import {
     createBoolInput,
-    createButton,
     createCanvas,
     createCanvasSection,
     createColorPicker,
     createInteractableSection,
-    createSelect,
     createText,
     createTitle,
     createWithLabel,
-    subscribeToButton,
     subscribeToInput,
     watchInput,
 } from "../../../libs/web"
@@ -28,7 +25,7 @@ import {
 import {
     Colors,
     build_bsp_tree,
-    colorToVec3,
+    colorToVec4,
     flattenVector,
     getDrawingInfo,
     hexToColor,
@@ -42,11 +39,13 @@ import shaderCode from "./brdf.wgsl?raw"
 
 const CANVAS_ID = "brdfs"
 const PROG_ENB = "progressive-enabled-cb-" + CANVAS_ID
+const SPHERE_EXT = "brdf-color-picker"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
     const getProgressiveEnabled = watchInput<boolean>(PROG_ENB, "checked")
+    const getSphereExtinctionCoefficient = watchInput<string>(SPHERE_EXT)
 
     const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBox.obj"))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
@@ -116,7 +115,7 @@ const execute: Executable = async () => {
     )
     const {
         bindGroup: uniformsBind,
-        buffers: [_, __, sceneDataBuffer],
+        buffers: [_, __, sceneDataBuffer, sphereExtinctionCoefficientBuffer],
     } = createBind(
         device,
         pipeline,
@@ -124,6 +123,7 @@ const execute: Executable = async () => {
             bspTreeResults.aabb,
             new Uint32Array([lightFaceIndices.length]),
             new Uint32Array([0, canvas.width, canvas.height]),
+            new Float32Array(colorToVec4(hexToColor(getSphereExtinctionCoefficient()))),
         ],
         "UNIFORM",
         2
@@ -145,6 +145,12 @@ const execute: Executable = async () => {
 
         framesWhileProgressive += 1
         writeToBufferU32(device, sceneDataBuffer, new Uint32Array([framesWhileProgressive]), 0)
+        writeToBufferF32(
+            device,
+            sphereExtinctionCoefficientBuffer,
+            new Float32Array(colorToVec4(hexToColor(getSphereExtinctionCoefficient()))),
+            0
+        )
 
         const { pass, encoder } = createPass(device, context, Colors.black, {
             otherColorAttachments: [
@@ -192,8 +198,12 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         "Progressive rendering enabled",
         false
     )
+    const sphereExtinctionPicker = createWithLabel(
+        createColorPicker(SPHERE_EXT, "#1a3205"),
+        "Sphere extinction coefficient"
+    )
 
-    interactables.append(progressiveEnabled)
+    interactables.append(progressiveEnabled, sphereExtinctionPicker)
 
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)

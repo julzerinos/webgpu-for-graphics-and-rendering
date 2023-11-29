@@ -38,6 +38,7 @@ struct SceneData {
 @group(2) @binding(0) var<uniform> aabb : Aabb;
 @group(2) @binding(1) var<uniform> light_indices_count : u32;
 @group(2) @binding(2) var<uniform> scene_data : SceneData;
+@group(2) @binding(3) var<uniform> sphere_extinction_coefficient : vec3f;
 
 @group(3) @binding(0) var renderTexture : texture_2d<f32>;
 
@@ -454,41 +455,29 @@ fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo
 
     var absorb = event >= p_reflect;
 
-    (*hit).direct = absorb;
-
-    if (absorb)
-    {
-        (*hit).bounce_factor = vec3f(1);
-        return false;
-    }
-
     var sampled_sphere_direction = sample_cosine_weighted_hemisphere((*hit).normal, seed);
 
-    (*r).origin = (*hit).position;
+    (*r).origin = (*hit).position + .01 * sampled_sphere_direction;
     (*r).direction = sampled_sphere_direction;
-    (*r).tmin = default_tmin;
-    (*r).tmax = default_tmax;
+    (*r).tmin = 0.01;
+    (*r).tmax = 10000;
+    (*hit).path_factor *= (*hit).diffuse / p_reflect;
 
-    (*hit).bounce_factor = (*hit).diffuse / p_reflect;
-
-    return true;
+    return absorb;
 }
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
+    var emission = select(0., 1., (*hit).direct) * (*hit).emission;
+
+    var absorb = indirect_illumination(r, hit, seed);
+    (*hit).direct = absorb && (*hit).direct;
+    (*hit).continue_trace = !absorb;
+
     var light_info = sample_area_light((*hit).position, seed);
-    var L = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
+    var L_direct = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
 
-    var path_direct_modifier = select(0., 1., (*hit).direct);
-    var bounce_indirect_modifier = select(1., 0., indirect_illumination(r, hit, seed));
-
-    var emission = (*hit).emission * path_direct_modifier;
-    var L_direct = (1 - bounce_indirect_modifier) * L * (*hit).bounce_factor;
-    var L_indirect = bounce_indirect_modifier * L* (*hit).path_factor;
-
-    var L_observed = emission + L_direct + L_indirect;
-
-
+    var L_observed = emission + L_direct;
     return L_observed;
 }
 
@@ -519,11 +508,22 @@ fn fresnel(cos_ti : f32, cos_tt : f32, ni : f32, nt : f32) -> f32
 fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
     var is_intersection_from_inside = dot((*hit).normal, (*r).direction) > 0;
-    var next_refr_index = select(sphere_refractive_index, air_refractive_index, is_intersection_from_inside);
-    var prev_refr_index = select(sphere_refractive_index, air_refractive_index, !is_intersection_from_inside);
     var context_n = select((*hit).normal, -(*hit).normal, is_intersection_from_inside);
 
+    var next_refr_index = select(sphere_refractive_index, air_refractive_index, is_intersection_from_inside);
+    var prev_refr_index = select(air_refractive_index, sphere_refractive_index, is_intersection_from_inside);
     var ni_nt = prev_refr_index / next_refr_index;
+
+    //Applying Bougeur's law
+
+    var T = exp(-sphere_extinction_coefficient / 10 * (*hit).dist);
+    var p_transmission = (T.x + T.y + T.z) / 3;
+    var event_2 = rnd(seed);
+    var transmitted_from_inside = event_2 < p_transmission;
+
+    (*hit).path_factor *= select(vec3f(1), T / p_transmission, is_intersection_from_inside && transmitted_from_inside);
+
+    //Refraction or reflection
 
     var incident = -(*r).direction;
     var r_n_dot = dot(incident, context_n);
@@ -543,15 +543,9 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : p
     (*r).tmin = default_tmin;
     (*r).tmax = default_tmax;
 
-    const sphere_extinction_coefficient = vec3f(.0, .2, .1);
-    var T = exp(-sphere_extinction_coefficient * (*hit).dist);
-    var p_transmission = select(0., (T.x + T.y + T.z) / 3, is_intersection_from_inside);
-    var event_2 = rnd(seed);
-    var transmitted_from_inside = event_2 < p_transmission;
+    //Conclusion
 
-    // (*hit).bounce_factor = T / p_reflect;
-
-    (*hit).continue_trace = true;
+    (*hit).continue_trace = !is_intersection_from_inside || transmitted_from_inside;
     (*hit).direct = true;
 
     return vec3f();
@@ -608,19 +602,18 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
     {
         if (!intersect_scene(&r, &hit))
         {
-            light_result += background_color.rgb;
+            light_result += hit.bounce_factor * background_color.rgb;
             break;
         }
 
         var light = shader(&r, &hit, &t);
-        light_result += light;
-        hit.path_factor *= hit.bounce_factor * light;
+        light_result += hit.bounce_factor * light;
 
-        if (hit.continue_trace || !hit.direct)
+        if (!hit.continue_trace)
         {
-            continue;
+            break;
         };
-        break;
+        hit.bounce_factor = hit.path_factor;
     }
 
     let curr_sum = textureLoad(renderTexture, vec2u(fragcoord.xy), 0).rgb * f32(scene_data.frame_num);
