@@ -1,19 +1,5 @@
-import {
-    Colors,
-    createTranslateMatrix,
-    flattenMatrix,
-    scale,
-    sqrMagnitude,
-    subtract,
-    vec2,
-    vec3,
-} from "../../libs/util"
-import {
-    createCanvasSection,
-    createCanvas,
-    createInteractableSection,
-    pointerLockCanvas,
-} from "../../libs/web"
+import { Colors, boolToNumber, flattenMatrix, vec3 } from "../../libs/util"
+import { createCanvasSection, createCanvas, pointerLockCanvas } from "../../libs/web"
 import {
     createBind,
     createPass,
@@ -23,7 +9,6 @@ import {
     initializeWebGPU,
     setupShaderPipeline,
     writeToBufferF32,
-    writeToBufferU32,
 } from "../../libs/webgpu"
 import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
 import {
@@ -32,16 +17,16 @@ import {
     getCameraProjectionViewMatrix,
     initializeCamera,
 } from "./logic/camera"
-import { TILE_SIZE, Tile, TileMeshData } from "./logic/tile"
+import { Tile, boundPositionInTile } from "./logic/tile"
 import {
     GamePlayer,
-    handleKeyInput,
     initializePlayer,
     updatePlayerLookDirection,
+    calculatePlayerPosition,
 } from "./logic/player"
 
 import dungeonShader from "./shaders/dungeon.wgsl?raw"
-import { generateMap, generateMeshFromTiles } from "./logic/dungeon"
+import { generateMap, generateMeshFromTiles, worldToMap } from "./logic/dungeon"
 
 const CANVAS_ID = "game"
 const CANVAS_SIZE = 512
@@ -53,7 +38,9 @@ const execute: Executable = async () => {
     const camera: GameCamera = initializeCamera(player)
 
     let tiles = [] as Tile[]
-    while (tiles.length < 32) ({ tiles } = generateMap())
+    let dungeonMap = [] as (Tile | null)[][]
+    // while (tiles.length < 16)
+    ;({ tiles, dungeonMap } = generateMap())
     const dungeon = generateMeshFromTiles(tiles)
 
     let inGame = false
@@ -111,9 +98,6 @@ const execute: Executable = async () => {
         "UNIFORM"
     )
 
-    const models = new Float32Array(tiles.length * 16)
-    const cardinalities = new Uint32Array(tiles.length)
-
     const updateCameraProjectionViewMatrix = () => {
         camera.extrinsics = calculatePlayerViewMatrix(player)
 
@@ -123,6 +107,26 @@ const execute: Executable = async () => {
             new Float32Array(flattenMatrix(getCameraProjectionViewMatrix(camera))),
             0
         )
+    }
+
+    const getPlayerTile = (): Tile => {
+        const mapPosition = worldToMap(player.position)
+        mapPosition[0] = Math.round(mapPosition[0])
+        mapPosition[1] = Math.round(mapPosition[1])
+        return dungeonMap[mapPosition[1]][mapPosition[0]]!
+    }
+
+    const handleKeyInput = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
+        const forward = boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"])
+        const strafe = boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"])
+
+        if (!forward && !strafe) return
+
+        const newPosition = calculatePlayerPosition(player, forward, strafe)
+        boundPositionInTile(newPosition, getPlayerTile())
+        player.position = newPosition
+        // console.log(player.position)
+        // console.log(worldToMap(player.position))
     }
 
     const frame = (time: number) => {

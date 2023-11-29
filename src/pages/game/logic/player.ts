@@ -2,18 +2,22 @@ import {
     Vector3s,
     add,
     boolToNumber,
+    clamp,
     cross,
     normalize,
     quatApply,
     quatFromAxisAngle,
     quatMultiply,
     scale,
+    subtract,
     toVec3,
     vec2,
     vec3,
     vec4,
 } from "../../../libs/util"
 import { Vector2, Vector3 } from "../../../types"
+import { mapToWorld } from "./dungeon"
+import { Directions, TILE_SIZE, Tile } from "./tile"
 
 export interface GamePlayer {
     position: Vector3
@@ -24,7 +28,7 @@ export interface GamePlayer {
 export const initializePlayer = (): GamePlayer => {
     return {
         position: vec3(0, 0, 0),
-        lookDirection: vec3(-1, 0, 0),
+        lookDirection: vec3(0, 0, 1),
         right: vec3(1, 0, 0),
     } as GamePlayer
 }
@@ -42,25 +46,29 @@ export const updatePlayerLookDirection = (
     player.right = cross(Vector3s.up, player.lookDirection)
 }
 
-export const handleKeyInput = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
-    const moveFrameSpeed = 1e-1
+const moveFrameSpeed = 1e-1
+export const calculatePlayerPosition = (
+    player: GamePlayer,
+    forward: number,
+    strafe: number
+): Vector3 => {
+    let displacement = vec3()
 
-    const forward = moveFrameSpeed * (boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"]))
-    const strafe = moveFrameSpeed * (boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"]))
-
-    updatePlayerPosition(player, forward, strafe)
-}
-
-export const updatePlayerPosition = (player: GamePlayer, forward: number, strafe: number) => {
     if (forward) {
-        const forwardDisplacement = [...player.lookDirection] as Vector3
-        forwardDisplacement[1] = 0
-        player.position = add(player.position, scale(normalize(forwardDisplacement), forward))
+        const forwardFlatDirection = [...player.lookDirection] as Vector3
+        forwardFlatDirection[1] = 0
+
+        const forwardDisplacment = scale(normalize(forwardFlatDirection), moveFrameSpeed * forward)
+
+        displacement = add(displacement, forwardDisplacment)
     }
 
     if (strafe) {
-        const strafeDisplacement = [...player.right] as Vector3
-        strafeDisplacement[1] = 0
-        player.position = add(player.position, scale(normalize(strafeDisplacement), strafe))
+        const strafeFlatDirection = [...player.right] as Vector3
+        strafeFlatDirection[1] = 0
+        const strafeDisplacement = scale(normalize(strafeFlatDirection), moveFrameSpeed * strafe)
+        displacement = add(displacement, strafeDisplacement)
     }
+
+    return add(player.position, displacement)
 }

@@ -1,5 +1,15 @@
-import { vec4, flattenVector, boolToNumber, add } from "../../../libs/util"
+import {
+    vec4,
+    flattenVector,
+    boolToNumber,
+    add,
+    clamp,
+    subtract,
+    vec2,
+    vec3,
+} from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
+import { mapToWorld } from "./dungeon"
 
 export const TILE_SIZE = 4
 
@@ -105,4 +115,42 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
     const normals = new Float32Array(flattenVector(cubeNormals))
 
     return { vertices, normals }
+}
+
+export const boundPositionInTile = (position: Vector3, tile: Tile) => {
+    const damp = 0.99
+    const pseudoInf = 10e10
+
+    console.log(
+        "mapToWorld",
+        add(tile.position, vec2(-0.5 * damp, -0.5 * damp)),
+        add(tile.position, vec2(0.5 * damp, 0.5 * damp))
+    )
+
+    const tileWorldMin = add(
+        mapToWorld(add(tile.position, vec2(-0.5 * damp, -0.5 * damp))),
+        vec3(
+            -(tile.cardinality & Directions.EAST) * pseudoInf,
+            0,
+            -(tile.cardinality & Directions.SOUTH) * pseudoInf
+        )
+    )
+    const tileWorldMax = add(
+        mapToWorld(add(tile.position, vec2(0.5 * damp, 0.5 * damp))),
+        vec3(
+            (tile.cardinality & Directions.WEST) * pseudoInf,
+            0,
+            (tile.cardinality & Directions.NORTH) * pseudoInf
+        )
+    )
+
+    console.log([...tile.position])
+    console.log([...position])
+
+    console.log("min, max", tileWorldMin, tileWorldMax)
+
+    position[0] = clamp(position[0], tileWorldMin[0], tileWorldMax[0])
+    position[2] = clamp(position[2], tileWorldMin[2], tileWorldMax[2])
+
+    console.log("pos", [...position])
 }

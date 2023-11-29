@@ -1,5 +1,5 @@
 import { add, vec2, vec3 } from "../../../libs/util"
-import { Vector2, Vector4 } from "../../../types"
+import { Vector2, Vector3 } from "../../../types"
 import {
     Directions,
     TILE_SIZE,
@@ -10,24 +10,23 @@ import {
     reverseDirection,
 } from "./tile"
 
-const DUNGEON_DIMENSION = 24
+const DUNGEON_DIMENSION = 8
 
 const cardinalityToOffsetMap = {
-    [Directions.NORTH]: vec2(0, -1),
-    [Directions.EAST]: vec2(1, 0),
-    [Directions.SOUTH]: vec2(0, 1),
-    [Directions.WEST]: vec2(-1, 0),
+    1: vec2(0, -1),
+    2: vec2(1, 0),
+    4: vec2(0, 1),
+    8: vec2(-1, 0),
 } as { [key in Directions]: Vector2 }
 
-export const generateMap = (): { tiles: Tile[] } => {
+export const generateMap = (): { tiles: Tile[]; dungeonMap: (Tile | null)[][] } => {
     const tiles = [] as Tile[]
-
     const dungeonMap = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
-        Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
-    ) as TileType[][]
+        Array(DUNGEON_DIMENSION).fill(null)
+    ) as (Tile | null)[][]
 
     const setTile = (tile: Tile) => {
-        dungeonMap[tile.position[1]][tile.position[0]] = tile.type
+        dungeonMap[tile.position[1]][tile.position[0]] = tile
         tiles.push(tile)
     }
     const getTile = (position: Vector2): number =>
@@ -36,6 +35,8 @@ export const generateMap = (): { tiles: Tile[] } => {
         position[0] >= 0 &&
         position[0] < DUNGEON_DIMENSION
             ? dungeonMap[position[1]][position[0]]
+                ? dungeonMap[position[1]][position[0]]!.type
+                : 0
             : -1
     const isTileEmpty = (position: Vector2): boolean => !Boolean(getTile(position))
     const randomizeTileOpenWalls = (position: Vector2) => {
@@ -105,11 +106,21 @@ export const generateMap = (): { tiles: Tile[] } => {
     setTile(centerTile)
     followPath(centerTile)
 
-    for (const t of tiles)
-        t.position = add(t.position, vec2(-DUNGEON_DIMENSION / 2, -DUNGEON_DIMENSION / 2))
-
-    return { tiles }
+    return { tiles, dungeonMap }
 }
+
+export const worldToMap = (world: Vector3): Vector2 =>
+    vec2(
+        Math.round(world[0] / TILE_SIZE + DUNGEON_DIMENSION / 2),
+        Math.round(-world[2] / TILE_SIZE + DUNGEON_DIMENSION / 2)
+    )
+
+export const mapToWorld = (map: Vector2): Vector3 =>
+    vec3(
+        TILE_SIZE * (map[0] - DUNGEON_DIMENSION / 2),
+        0,
+        -TILE_SIZE * (map[1] - DUNGEON_DIMENSION / 2)
+    )
 
 export const generateMeshFromTiles = (
     tiles: Tile[]
@@ -118,10 +129,7 @@ export const generateMeshFromTiles = (
     let dunegonNormals = new Float32Array()
 
     for (const t of tiles) {
-        const mesh = TileMeshData(
-            vec3(TILE_SIZE * t.position[0], 0, -TILE_SIZE * t.position[1]),
-            t.cardinality
-        )
+        const mesh = TileMeshData(mapToWorld(t.position), t.cardinality)
         dungeonVertices = new Float32Array([...dungeonVertices, ...mesh.vertices])
         dunegonNormals = new Float32Array([...dunegonNormals, ...mesh.normals])
     }
