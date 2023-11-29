@@ -1,5 +1,5 @@
 import { vec4, flattenVector, boolToNumber } from "../../../libs/util"
-import { Vector, Vector2 } from "../../../types"
+import { Vector, Vector2, Vector3 } from "../../../types"
 
 export const TILE_SIZE = 4
 
@@ -53,7 +53,7 @@ export const getRandomCardinality = (legal: number = 15) =>
     (legal & Directions.SOUTH) * Math.round(Math.random()) +
     (legal & Directions.WEST) * Math.round(Math.random())
 
-export const TileMeshData = () => {
+export const TileMeshData = (position: Vector3, openWallDirections: number) => {
     const halfSize = TILE_SIZE / 2
 
     const cubeVertices = [
@@ -68,18 +68,19 @@ export const TileMeshData = () => {
     ]
 
     // prettier-ignore
-    const triangles = [
-        vec4(1, 0, 3), vec4(3, 2, 1),  // front
-        vec4(2, 3, 7), vec4(7, 6, 2),  // right
+    const cubeTriangles = [
         vec4(3, 0, 4), vec4(4, 7, 3),  // down
         vec4(6, 5, 1), vec4(1, 2, 6),  // up
-        vec4(4, 5, 6), vec4(6, 7, 4),  // back
-        vec4(5, 4, 0), vec4(0, 1, 5),  // left
     ]
+
+    if (!(openWallDirections & Directions.NORTH)) cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
+    if (!(openWallDirections & Directions.EAST)) cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
+    if (!(openWallDirections & Directions.SOUTH)) cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
+    if (!(openWallDirections & Directions.WEST)) cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
 
     const vertices = new Float32Array(
         flattenVector(
-            triangles.reduce((vertices, triangle) => {
+            cubeTriangles.reduce((vertices, triangle) => {
                 for (let i = 0; i < 3; i++) vertices.push(cubeVertices[triangle[i]])
                 return vertices
             }, [] as Vector[])

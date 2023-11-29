@@ -1,6 +1,6 @@
 import { add, vec2 } from "../../../libs/util"
 import { Vector2 } from "../../../types"
-import { Directions, Tile, TileType, getRandomCardinality, reverseDirection } from "./tile"
+import { Directions, Tile, TileMeshData, TileType, getRandomCardinality, reverseDirection } from "./tile"
 
 const DUNGEON_DIMENSION = 24
 
@@ -104,4 +104,11 @@ export const generateMap = (): { tiles: Tile[] } => {
         )
 
     return { tiles }
+}
+
+const generateMeshFromTiles = (tiles: Tile[]) => {
+    for (const t of tiles)
+        {
+            const mesh = TileMeshData(t.cardinality)
+        }
 }

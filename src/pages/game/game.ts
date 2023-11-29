@@ -1,28 +1,14 @@
 import {
     Colors,
-    Cube,
-    add,
     createTranslateMatrix,
-    dot,
     flattenMatrix,
-    lookAtMatrix,
-    magnitude,
-    normalize,
-    perspectiveProjection,
-    quatApply,
-    quatFromAxisAngle,
-    quatMultiply,
     scale,
     sqrMagnitude,
     subtract,
-    toVec3,
     vec2,
     vec3,
-    vec4,
 } from "../../libs/util"
 import {
-    createTitle,
-    createText,
     createCanvasSection,
     createCanvas,
     createInteractableSection,
@@ -32,8 +18,6 @@ import {
     createBind,
     createPass,
     generateDepthBuffer,
-    generateMultisampleBuffer,
-    genreateIndexBuffer,
     genreateVertexBuffer,
     initializeWebGPU,
     setupShaderPipeline,
@@ -47,7 +31,7 @@ import {
     getCameraProjectionViewMatrix,
     initializeCamera,
 } from "./logic/camera"
-import { TILE_SIZE, Tile, TileMeshData, generateTileOpenWallsFlags } from "./logic/tile"
+import { TILE_SIZE, Tile, TileMeshData } from "./logic/tile"
 import {
     GamePlayer,
     handleKeyInput,

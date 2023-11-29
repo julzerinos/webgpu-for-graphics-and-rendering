@@ -104,7 +104,7 @@ const execute: Executable = async () => {
         mipLevelCount: 1,
         sampleCount: 1,
         dimension: "2d",
-        format: "depth32float",
+        format: "rgba32float",
         usage:
             GPUTextureUsage.RENDER_ATTACHMENT |
             GPUTextureUsage.TEXTURE_BINDING |
@@ -130,14 +130,17 @@ const execute: Executable = async () => {
                 {
                     format: canvasFormat,
                 },
+                {
+                    format: "rgba32float"
+                }
             ],
         },
-        depthStencil: {
-            depthWriteEnabled: true,
-            depthCompare: "less",
-            format: "depth32float",
-        },
-        primitive: { cullMode: "back", topology: "triangle-list" },
+        // depthStencil: {
+        //     depthWriteEnabled: true,
+        //     depthCompare: "less",
+        //     format: "depth32float",
+        // },
+        primitive: { cullMode: "none", topology: "triangle-list" },
     })
 
     const {
@@ -184,21 +187,21 @@ const execute: Executable = async () => {
     const shadowMapTextureBind = device.createBindGroup({
         layout: planePipeline.getBindGroupLayout(2),
         entries: [
+            // {
+            //     binding: 0,
+            //     resource: device.createSampler({
+            //         addressModeU: "clamp-to-edge",
+            //         addressModeV: "clamp-to-edge",
+            //         addressModeW: "clamp-to-edge",
+            //         magFilter: "linear",
+            //         minFilter: "linear",
+            //         mipmapFilter: "nearest",
+            //         lodMinClamp: 0,
+            //         lodMaxClamp: 100,
+            //     }),
+            // },
             {
                 binding: 0,
-                resource: device.createSampler({
-                    addressModeU: "clamp-to-edge",
-                    addressModeV: "clamp-to-edge",
-                    addressModeW: "clamp-to-edge",
-                    magFilter: "linear",
-                    minFilter: "linear",
-                    mipmapFilter: "nearest",
-                    lodMinClamp: 0,
-                    lodMaxClamp: 100,
-                }),
-            },
-            {
-                binding: 1,
                 resource: shadowMapDepthTexture.createView(),
             },
         ],
@@ -307,13 +310,24 @@ const execute: Executable = async () => {
                     },
                     storeOp: "store",
                 },
+                {
+                    view: shadowMapDepthTextureView,
+                    loadOp: "clear",
+                    clearValue: {
+                        r: 0,
+                        g: 0,
+                        b: 0,
+                        a: 1,
+                    },
+                    storeOp: "store",
+                },
             ],
-            depthStencilAttachment: {
-                view: shadowMapDepthTextureView,
-                depthLoadOp: "clear",
-                depthStoreOp: "store",
-                depthClearValue: 1.0,
-            },
+            // depthStencilAttachment: {
+            //     view: shadowMapDepthTextureView,
+            //     depthLoadOp: "clear",
+            //     depthStoreOp: "store",
+            //     depthClearValue: 1.0,
+            // },
         })
 
         shadowMapPass.setPipeline(shadowPipeline)

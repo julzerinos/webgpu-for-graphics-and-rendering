@@ -13,9 +13,19 @@ fn main_vs(@location(0) position : vec4f) -> VertexOutput
     return VertexOutput(projected, projected);
 }
 
+struct FragmentOutput {
+    @location(0) o1 : vec4f,
+    @location(1) o2 : vec4f,
+}
+
 @fragment
-fn main_fs(input : VertexOutput) -> @location(0) vec4f
+fn main_fs(input : VertexOutput) -> FragmentOutput
 {
-    let z = input.projected.z / input.projected.w ;
-    return vec4f(z, z, z, 1.);
+    let z = input.projected.z / input.projected.w;
+
+    var fo : FragmentOutput;
+    fo.o1 = vec4f(z, z, z, 1.);
+    fo.o2 = vec4f(z, z, z, 1.);
+
+    return fo;
 }
