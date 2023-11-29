@@ -132,6 +132,7 @@ fn generate_default_hitinfo() -> HitInfo
     hit_info.normal = vec3f();
 
     hit_info.diffuse = vec3f();
+    hit_info.emission = vec3f();
 
     hit_info.direct = true;
     hit_info.path_factor = vec3f(1);
@@ -165,7 +166,6 @@ fn construct_ray(origin : vec3f, direction : vec3f, tmin : f32, tmax : f32) -> R
     ray_indirect.tmin = tmin;
     return ray_indirect;
 }
-
 
 //Intersecting objects //
 
@@ -206,11 +206,13 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
     var has_hit = intersection > r.tmin && intersection < r.tmax && beta >= 0 && gamma >= 0 && beta + gamma <= 1;
 
     (*hit).has_hit = (*hit).has_hit || has_hit;
+
     (*hit).dist = select((*hit).dist, intersection, has_hit);
-    (*hit).diffuse = select((*hit).diffuse, mat.color.rgb, has_hit);
-    (*hit).emission = select((*hit).emission, mat.emission.rgb, has_hit);
     (*hit).position = select((*hit).position, r.origin + intersection * r.direction, has_hit);
     (*hit).normal = select((*hit).normal, normalize(normal), has_hit);
+
+    (*hit).diffuse = select((*hit).diffuse, mat.color.rgb, has_hit);
+    (*hit).emission = select((*hit).emission, mat.emission.rgb, has_hit);
 
     return has_hit;
 }
@@ -408,16 +410,16 @@ fn indirect_illumination(r : ptr < function, Ray>, hit : ptr < function, HitInfo
 
 fn lambertian(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
 {
+    var emission = select(0., 1., (*hit).direct) * (*hit).emission;
+
     var absorb = indirect_illumination(r, hit, seed);
     (*hit).direct = absorb && (*hit).direct;
     (*hit).continue_trace = !absorb;
 
-    var emission = select(0., 1., (*hit).direct) * (*hit).emission;
-
     var light_info = sample_area_light((*hit).position, seed);
     var L_direct = max(0, dot((*hit).normal, light_info.w_i)) * light_info.L_i * (*hit).diffuse / PI;
 
-    var L_observed = emission + L_direct;
+    var L_observed = max(emission, L_direct * (*hit).path_factor);
     return L_observed;
 }
 
@@ -461,14 +463,14 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
         }
 
         var light = shader(&r, &hit, &t);
-        light_result += hit.path_factor * light;
+        light_result += light;
 
         if (!hit.continue_trace)
         {
             break;
         };
 
-        hit.bounce_factor = hit.path_factor * light;
+        hit.bounce_factor = light;
     }
 
     let curr_sum = textureLoad(renderTexture, vec2u(fragcoord.xy), 0).rgb * f32(scene_data.frame_num);
