@@ -1,6 +1,14 @@
-import { add, vec2 } from "../../../libs/util"
-import { Vector2 } from "../../../types"
-import { Directions, Tile, TileMeshData, TileType, getRandomCardinality, reverseDirection } from "./tile"
+import { add, vec2, vec3 } from "../../../libs/util"
+import { Vector2, Vector4 } from "../../../types"
+import {
+    Directions,
+    TILE_SIZE,
+    Tile,
+    TileMeshData,
+    TileType,
+    getRandomCardinality,
+    reverseDirection,
+} from "./tile"
 
 const DUNGEON_DIMENSION = 24
 
@@ -98,17 +106,25 @@ export const generateMap = (): { tiles: Tile[] } => {
     followPath(centerTile)
 
     for (const t of tiles)
-        t.position = add(
-            t.position,
-            vec2(-(DUNGEON_DIMENSION) / 2, -(DUNGEON_DIMENSION) / 2)
-        )
+        t.position = add(t.position, vec2(-DUNGEON_DIMENSION / 2, -DUNGEON_DIMENSION / 2))
 
     return { tiles }
 }
 
-const generateMeshFromTiles = (tiles: Tile[]) => {
-    for (const t of tiles)
-        {
-            const mesh = TileMeshData(t.cardinality)
-        }
+export const generateMeshFromTiles = (
+    tiles: Tile[]
+): { vertices: Float32Array; normals: Float32Array } => {
+    let dungeonVertices = new Float32Array()
+    let dunegonNormals = new Float32Array()
+
+    for (const t of tiles) {
+        const mesh = TileMeshData(
+            vec3(TILE_SIZE * t.position[0], 0, -TILE_SIZE * t.position[1]),
+            t.cardinality
+        )
+        dungeonVertices = new Float32Array([...dungeonVertices, ...mesh.vertices])
+        dunegonNormals = new Float32Array([...dunegonNormals, ...mesh.normals])
+    }
+
+    return { vertices: dungeonVertices, normals: dunegonNormals }
 }

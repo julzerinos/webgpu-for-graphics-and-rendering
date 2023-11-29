@@ -1,4 +1,4 @@
-import { vec4, flattenVector, boolToNumber } from "../../../libs/util"
+import { vec4, flattenVector, boolToNumber, add } from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
 
 export const TILE_SIZE = 4
@@ -73,30 +73,36 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
         vec4(6, 5, 1), vec4(1, 2, 6),  // up
     ]
 
-    if (!(openWallDirections & Directions.NORTH)) cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
-    if (!(openWallDirections & Directions.EAST)) cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
-    if (!(openWallDirections & Directions.SOUTH)) cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
-    if (!(openWallDirections & Directions.WEST)) cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
+    const cubeNormals = [...Array(6).fill(vec4(0, -1, 0, 0)), ...Array(6).fill(vec4(0, 1, 0, 0))]
+
+    if (!(openWallDirections & Directions.NORTH)) {
+        cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
+        cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
+    }
+    if (!(openWallDirections & Directions.EAST)) {
+        cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
+        cubeNormals.push(...Array(6).fill(vec4(-1, 0, 0, 0)))
+    }
+    if (!(openWallDirections & Directions.SOUTH)) {
+        cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
+        cubeNormals.push(...Array(6).fill(vec4(0, 0, 1, 0)))
+    }
+    if (!(openWallDirections & Directions.WEST)) {
+        cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
+        cubeNormals.push(...Array(6).fill(vec4(1, 0, 0, 0)))
+    }
 
     const vertices = new Float32Array(
         flattenVector(
             cubeTriangles.reduce((vertices, triangle) => {
-                for (let i = 0; i < 3; i++) vertices.push(cubeVertices[triangle[i]])
+                for (let i = 0; i < 3; i++)
+                    vertices.push(add(cubeVertices[triangle[i]], vec4(...position, 0)))
                 return vertices
             }, [] as Vector[])
         )
     )
 
-    const normals = new Float32Array(
-        flattenVector([
-            ...Array(6).fill(vec4(0, 0, -1, 0)),
-            ...Array(6).fill(vec4(-1, 0, 0, 0)),
-            ...Array(6).fill(vec4(0, 1, 0, 0)),
-            ...Array(6).fill(vec4(0, -1, 0, 0)),
-            ...Array(6).fill(vec4(0, 0, 1, 0)),
-            ...Array(6).fill(vec4(1, 0, 0, 0)),
-        ])
-    )
+    const normals = new Float32Array(flattenVector(cubeNormals))
 
     return { vertices, normals }
 }
