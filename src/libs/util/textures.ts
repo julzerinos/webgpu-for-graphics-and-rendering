@@ -158,3 +158,35 @@ export const generateMips = (src: Uint8Array, srcWidth: number, debug: boolean =
     }
     return mips
 }
+
+export const loadTexture = async (
+    device: GPUDevice,
+    filename: string
+): Promise<{
+    texture: GPUTexture
+    sampler: GPUSampler
+}> => {
+    const response = await fetch(filename)
+    const blob = await response.blob()
+    const img = await createImageBitmap(blob, { colorSpaceConversion: "none" })
+    const texture = device.createTexture({
+        size: [img.width, img.height, 1],
+        format: "rgba8unorm",
+        usage:
+            GPUTextureUsage.COPY_DST |
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.RENDER_ATTACHMENT,
+    })
+    device.queue.copyExternalImageToTexture(
+        { source: img, flipY: true },
+        { texture: texture },
+        { width: img.width, height: img.height }
+    )
+    const sampler = device.createSampler({
+        addressModeU: "clamp-to-edge",
+        addressModeV: "clamp-to-edge",
+        minFilter: "nearest",
+        magFilter: "nearest",
+    })
+    return { texture, sampler }
+}

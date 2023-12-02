@@ -7,6 +7,7 @@ import { Meshes } from "./05-meshes"
 import { SpatialPartitioning } from "./06-partitioning"
 import { Progressive } from "./07-progressive"
 import { BRDF } from "./08-brdf"
+import { Environmental } from "./09-environmental"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     RaycastingIntroduction(container, executeQueue)
@@ -15,6 +16,7 @@ export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: E
     Meshes(container, executeQueue)
     Progressive(container, executeQueue)
     BRDF(container, executeQueue)
+    Environmental(container, executeQueue)
 }
 
 export const renderingRoutes: IRoute = {
@@ -43,5 +45,6 @@ export const renderingRoutes: IRoute = {
         },
         { name: "07-progressive", generator: Progressive },
         { name: "08-brdf", generator: BRDF },
+        { name: "09-environmental", generator: Environmental },
     ],
 }

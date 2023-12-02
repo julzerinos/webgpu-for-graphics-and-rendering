@@ -379,3 +379,20 @@ export const generatePingPongTextures = (device: GPUDevice, canvas: HTMLCanvasEl
 
     return { renderDst, renderSrc, blitPingPong }
 }
+
+export const clearTexture = (
+    device: GPUDevice,
+    encoder: GPUCommandEncoder,
+    texture: GPUTexture
+) => {
+    const blackTexture = device.createTexture({
+        size: [texture.width, texture.height],
+        usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        format: "rgba32float",
+    })
+
+    encoder.copyTextureToTexture({ texture: blackTexture }, { texture }, [
+        texture.width,
+        texture.height,
+    ])
+}

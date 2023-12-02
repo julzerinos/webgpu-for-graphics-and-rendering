@@ -376,7 +376,7 @@ fn sample_area_light(pos : vec3f, seed : ptr < function, u32>) -> Light
 
     var Le = mat.emission.rgb;
     var visibility = select(1., 0., check_occulusion(pos, sampled_vertex));
-    var keplers = dot(sampled_normal, direction) / (dist * dist);
+    var keplers = max(0, dot(sampled_normal, direction)) / (dist * dist);
     var n_tri = f32(light_indices_count);
 
     var L = Le * visibility * n_tri * area * keplers;

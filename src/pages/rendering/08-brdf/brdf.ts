@@ -11,6 +11,7 @@ import {
 
 import {
     createBoolInput,
+    createButton,
     createCanvas,
     createCanvasSection,
     createColorPicker,
@@ -18,6 +19,7 @@ import {
     createText,
     createTitle,
     createWithLabel,
+    subscribeToButton,
     subscribeToInput,
     watchInput,
 } from "../../../libs/web"
@@ -143,6 +145,11 @@ const execute: Executable = async () => {
     const progress = () => {
         if (!getProgressiveEnabled()) return
 
+        if (restart === true) {
+            restart = false
+            framesWhileProgressive = 0
+        }
+
         framesWhileProgressive += 1
         writeToBufferU32(device, sceneDataBuffer, new Uint32Array([framesWhileProgressive]), 0)
         writeToBufferF32(
@@ -182,6 +189,9 @@ const execute: Executable = async () => {
         "checked"
     )
 
+    let restart = false
+    subscribeToButton("restart-progressive-brdf", () => (restart = true))
+
     progress()
 }
 
@@ -202,8 +212,9 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         createColorPicker(SPHERE_EXT, "#1a3205"),
         "Sphere extinction coefficient"
     )
+    const restart = createButton("restart-progressive-brdf", "Restart progressive")
 
-    interactables.append(progressiveEnabled, sphereExtinctionPicker)
+    interactables.append(progressiveEnabled, sphereExtinctionPicker, restart)
 
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)

@@ -207,6 +207,9 @@ fn intersect_triangle(r : Ray, hit : ptr < function, HitInfo>, face : u32) -> bo
     var n = cross(e0, e1);
 
     var denom = dot(r.direction, n);
+
+    //if (denom<.0000001) return false;
+
     var from_origin = v[0] - r.origin;
 
     var intersection = dot(from_origin, n) / denom;
@@ -434,7 +437,7 @@ fn sample_area_light(pos : vec3f, seed : ptr < function, u32>) -> Light
 
     var Le = mat.emission.rgb;
     var visibility = select(1., 0., check_occulusion(pos, sampled_vertex));
-    var keplers = dot(sampled_normal, direction) / (dist * dist);
+    var keplers = max(0, dot(sampled_normal, direction)) / (dist * dist);
     var n_tri = f32(light_indices_count);
 
     var L = Le * visibility * n_tri * area * keplers;
