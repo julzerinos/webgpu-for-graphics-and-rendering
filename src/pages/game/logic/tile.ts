@@ -9,11 +9,12 @@ import {
     vec3,
 } from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
-import { mapToWorld } from "./dungeon"
+import { mapToWorld, worldToMap } from "./dungeon"
 
 export const TILE_SIZE = 4
 
 export enum TileType {
+    OUT_OF_BOUNDS = -1,
     EMPTY = 0,
     NORMAL = 1,
     PICKUP = 2,
@@ -27,7 +28,7 @@ export interface Tile {
     type: TileType
 }
 
-export enum Directions {
+export enum Direction {
     NORTH = 1,
     EAST = 2,
     SOUTH = 4,
@@ -35,10 +36,10 @@ export enum Directions {
 }
 
 export const reverseDirection = {
-    [Directions.NORTH]: Directions.SOUTH,
-    [Directions.EAST]: Directions.WEST,
-    [Directions.SOUTH]: Directions.NORTH,
-    [Directions.WEST]: Directions.EAST,
+    [Direction.NORTH]: Direction.SOUTH,
+    [Direction.EAST]: Direction.WEST,
+    [Direction.SOUTH]: Direction.NORTH,
+    [Direction.WEST]: Direction.EAST,
 }
 
 export const generateTileOpenWallsFlags = ({
@@ -52,16 +53,16 @@ export const generateTileOpenWallsFlags = ({
     South?: boolean
     West?: boolean
 }): number =>
-    Directions.NORTH * boolToNumber(North) +
-    Directions.EAST * boolToNumber(East) +
-    Directions.SOUTH * boolToNumber(South) +
-    Directions.WEST * boolToNumber(West)
+    Direction.NORTH * boolToNumber(North) +
+    Direction.EAST * boolToNumber(East) +
+    Direction.SOUTH * boolToNumber(South) +
+    Direction.WEST * boolToNumber(West)
 
 export const getRandomCardinality = (legal: number = 15) =>
-    (legal & Directions.NORTH) * Math.round(Math.random()) +
-    (legal & Directions.EAST) * Math.round(Math.random()) +
-    (legal & Directions.SOUTH) * Math.round(Math.random()) +
-    (legal & Directions.WEST) * Math.round(Math.random())
+    (legal & Direction.NORTH) * Math.round(Math.random()) +
+    (legal & Direction.EAST) * Math.round(Math.random()) +
+    (legal & Direction.SOUTH) * Math.round(Math.random()) +
+    (legal & Direction.WEST) * Math.round(Math.random())
 
 export const TileMeshData = (position: Vector3, openWallDirections: number) => {
     const halfSize = TILE_SIZE / 2
@@ -85,19 +86,19 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
 
     const cubeNormals = [...Array(6).fill(vec4(0, -1, 0, 0)), ...Array(6).fill(vec4(0, 1, 0, 0))]
 
-    if (!(openWallDirections & Directions.NORTH)) {
+    if (!(openWallDirections & Direction.NORTH)) {
         cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
     }
-    if (!(openWallDirections & Directions.EAST)) {
+    if (!(openWallDirections & Direction.EAST)) {
         cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
         cubeNormals.push(...Array(6).fill(vec4(-1, 0, 0, 0)))
     }
-    if (!(openWallDirections & Directions.SOUTH)) {
+    if (!(openWallDirections & Direction.SOUTH)) {
         cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, 1, 0)))
     }
-    if (!(openWallDirections & Directions.WEST)) {
+    if (!(openWallDirections & Direction.WEST)) {
         cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
         cubeNormals.push(...Array(6).fill(vec4(1, 0, 0, 0)))
     }
@@ -118,39 +119,22 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
 }
 
 export const boundPositionInTile = (position: Vector3, tile: Tile) => {
-    const damp = 0.99
-    const pseudoInf = 10e10
-
-    console.log(
-        "mapToWorld",
-        add(tile.position, vec2(-0.5 * damp, -0.5 * damp)),
-        add(tile.position, vec2(0.5 * damp, 0.5 * damp))
-    )
+    const damp = 0.96
 
     const tileWorldMin = add(
-        mapToWorld(add(tile.position, vec2(-0.5 * damp, -0.5 * damp))),
-        vec3(
-            -(tile.cardinality & Directions.EAST) * pseudoInf,
-            0,
-            -(tile.cardinality & Directions.SOUTH) * pseudoInf
-        )
+        mapToWorld(tile.position),
+        vec3((-TILE_SIZE / 2) * damp, 0, (-TILE_SIZE / 2) * damp)
     )
     const tileWorldMax = add(
-        mapToWorld(add(tile.position, vec2(0.5 * damp, 0.5 * damp))),
-        vec3(
-            (tile.cardinality & Directions.WEST) * pseudoInf,
-            0,
-            (tile.cardinality & Directions.NORTH) * pseudoInf
-        )
+        mapToWorld(tile.position),
+        vec3((+TILE_SIZE / 2) * damp, 0, (+TILE_SIZE / 2) * damp)
     )
 
-    console.log([...tile.position])
-    console.log([...position])
-
-    console.log("min, max", tileWorldMin, tileWorldMax)
+    if (tile.cardinality & Direction.WEST) tileWorldMin[0] = -Infinity
+    if (tile.cardinality & Direction.SOUTH) tileWorldMin[2] = -Infinity
+    if (tile.cardinality & Direction.EAST) tileWorldMax[0] = Infinity
+    if (tile.cardinality & Direction.NORTH) tileWorldMax[2] = Infinity
 
     position[0] = clamp(position[0], tileWorldMin[0], tileWorldMax[0])
     position[2] = clamp(position[2], tileWorldMin[2], tileWorldMax[2])
-
-    console.log("pos", [...position])
 }

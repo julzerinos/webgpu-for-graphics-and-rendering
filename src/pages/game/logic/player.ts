@@ -17,7 +17,7 @@ import {
 } from "../../../libs/util"
 import { Vector2, Vector3 } from "../../../types"
 import { mapToWorld } from "./dungeon"
-import { Directions, TILE_SIZE, Tile } from "./tile"
+import { Direction, TILE_SIZE, Tile } from "./tile"
 
 export interface GamePlayer {
     position: Vector3
@@ -50,15 +50,17 @@ const moveFrameSpeed = 1e-1
 export const calculatePlayerPosition = (
     player: GamePlayer,
     forward: number,
-    strafe: number
+    strafe: number,
+    moveSpeedModifier: boolean
 ): Vector3 => {
     let displacement = vec3()
+    const moveSpeed = (moveSpeedModifier ? 2 : 1) * moveFrameSpeed
 
     if (forward) {
         const forwardFlatDirection = [...player.lookDirection] as Vector3
         forwardFlatDirection[1] = 0
 
-        const forwardDisplacment = scale(normalize(forwardFlatDirection), moveFrameSpeed * forward)
+        const forwardDisplacment = scale(normalize(forwardFlatDirection), moveSpeed * forward)
 
         displacement = add(displacement, forwardDisplacment)
     }
@@ -66,7 +68,7 @@ export const calculatePlayerPosition = (
     if (strafe) {
         const strafeFlatDirection = [...player.right] as Vector3
         strafeFlatDirection[1] = 0
-        const strafeDisplacement = scale(normalize(strafeFlatDirection), moveFrameSpeed * strafe)
+        const strafeDisplacement = scale(normalize(strafeFlatDirection), moveSpeed * strafe)
         displacement = add(displacement, strafeDisplacement)
     }
 

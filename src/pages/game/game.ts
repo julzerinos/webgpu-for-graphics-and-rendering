@@ -1,4 +1,4 @@
-import { Colors, boolToNumber, flattenMatrix, vec3 } from "../../libs/util"
+import { Colors, boolToNumber, flattenMatrix, vec3, vectorsEqual } from "../../libs/util"
 import { createCanvasSection, createCanvas, pointerLockCanvas } from "../../libs/web"
 import {
     createBind,
@@ -10,14 +10,14 @@ import {
     setupShaderPipeline,
     writeToBufferF32,
 } from "../../libs/webgpu"
-import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
+import { Executable, ViewGenerator, ExecutableQueue, Vector3 } from "../../types"
 import {
     GameCamera,
     calculatePlayerViewMatrix,
     getCameraProjectionViewMatrix,
     initializeCamera,
 } from "./logic/camera"
-import { Tile, boundPositionInTile } from "./logic/tile"
+import { Tile, TileType, boundPositionInTile } from "./logic/tile"
 import {
     GamePlayer,
     initializePlayer,
@@ -26,7 +26,7 @@ import {
 } from "./logic/player"
 
 import dungeonShader from "./shaders/dungeon.wgsl?raw"
-import { generateMap, generateMeshFromTiles, worldToMap } from "./logic/dungeon"
+import { generateDungeonMap, generateMap, generateMeshFromTiles, worldToMap } from "./logic/dungeon"
 
 const CANVAS_ID = "game"
 const CANVAS_SIZE = 512
@@ -37,12 +37,10 @@ const execute: Executable = async () => {
     const player: GamePlayer = initializePlayer()
     const camera: GameCamera = initializeCamera(player)
 
-    let tiles = [] as Tile[]
-    let dungeonMap = [] as (Tile | null)[][]
-    // while (tiles.length < 16)
-    ;({ tiles, dungeonMap } = generateMap())
+    const { tiles, tileMap, center } = generateDungeonMap()
     const dungeon = generateMeshFromTiles(tiles)
 
+    let currentTile: Tile = tileMap[center[0]][center[1]]!
     let inGame = false
 
     const onMouseMove = (dx: number, dy: number) => {
@@ -109,24 +107,30 @@ const execute: Executable = async () => {
         )
     }
 
-    const getPlayerTile = (): Tile => {
+    const updateTile = () => {
         const mapPosition = worldToMap(player.position)
-        mapPosition[0] = Math.round(mapPosition[0])
-        mapPosition[1] = Math.round(mapPosition[1])
-        return dungeonMap[mapPosition[1]][mapPosition[0]]!
+
+        const nextTile = tileMap[mapPosition[0]][mapPosition[1]]
+        if (nextTile === null) {
+            console.error("next does not exist")
+            // TODO return player to tile
+            return
+        }
+
+        currentTile = nextTile
     }
 
     const handleKeyInput = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
         const forward = boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"])
         const strafe = boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"])
+        const moveSpeedModifier = keyMap["v"]
 
         if (!forward && !strafe) return
 
-        const newPosition = calculatePlayerPosition(player, forward, strafe)
-        boundPositionInTile(newPosition, getPlayerTile())
+        const newPosition = calculatePlayerPosition(player, forward, strafe, moveSpeedModifier)
+        updateTile()
+        boundPositionInTile(newPosition, currentTile)
         player.position = newPosition
-        // console.log(player.position)
-        // console.log(worldToMap(player.position))
     }
 
     const frame = (time: number) => {
