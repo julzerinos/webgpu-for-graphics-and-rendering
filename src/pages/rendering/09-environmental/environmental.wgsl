@@ -412,6 +412,9 @@ fn sample_environment_light(position : vec3f, direction : vec3f, seed : ptr < fu
     let environment = get_environment(sampled_sphere_direction);
     let env_visibility = select(1., 0.4, check_occulusion_directional(position, sampled_sphere_direction));
 
+    //let uv = angular_map(sampled_sphere_direction);
+    //let environment = textureSampleLevel(environment_texture, environment_sampler, uv, 0.).rgb;
+
     var light : Light;
     light.L_i = environment * env_visibility;
     light.w_i = direction;
@@ -648,6 +651,15 @@ fn panoramic_to_uv(spherical : vec3f) -> vec2f
 {
     var u = .5 + atan2(spherical.x, -spherical.z) / (2 * PI);
     var v = acos(-spherical.y) / PI;
+
+    return vec2f(u, v);
+}
+
+fn angular_map(spherical : vec3f) -> vec2f
+{
+    let r = acos(-spherical.z) / (2 * PI * length(spherical.xy));
+    var u = .5 + r * spherical.x;
+    var v = .5 + r * spherical.y;
 
     return vec2f(u, v);
 }

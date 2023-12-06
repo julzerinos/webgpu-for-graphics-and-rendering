@@ -53,8 +53,8 @@ const sphere_radius = 90;
 
 const up = vec3f(0., 1., 0.);
 const target_point = vec3f(0, 0, 0.);
-const origin_point = vec3f(0, 5, 10);
-const camera_constant =.5;
+const origin_point = vec3f(0, 0, -1);
+const camera_constant =.4;
 
 const sun_direction = normalize(vec3f(5, -.5, -.5));
 const sun_intensity = vec3f(.8, .8, .8);
@@ -467,11 +467,11 @@ fn holdout_shadow(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed
 {
     let sampled_sphere_direction = sample_cosine_weighted_hemisphere((*hit).normal, seed);
     let env_visibility = select(1., 0., check_occulusion_directional((*hit).position, sampled_sphere_direction));
-    let sun_visiblity = select(1., .4, check_occulusion_directional((*hit).position, -sun_direction));
+    //let sun_visiblity = select(1., .4, check_occulusion_directional((*hit).position, -sun_direction));
 
     let environment = get_environment((*r).direction);
 
-    return environment * env_visibility * sun_visiblity;
+    return environment * env_visibility;
 }
 
 fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr < function, u32>) -> vec3f
@@ -503,16 +503,15 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr <
 
 fn get_environment(direction : vec3f) -> vec3f
 {
-    let uv = panoramic_to_uv(direction);
+    let uv = angular_map(direction);
 
     let background = textureSampleLevel(environment_texture, environment_sampler, uv, 0.);
 
     let hdr_range = background * 256;
     let hdr_exponent = hdr_range.a;
-    let hdr_mapped = (hdr_range.rgb + .5) / 256 * pow(2, hdr_exponent - 128);
-    let hdr = pow(hdr_mapped, vec3f(1./2.2));
+    let hdr = (hdr_range.rgb + .5) / 256 * pow(2, hdr_exponent - 128);
 
-    return hdr;
+    return background.rgb;
 }
 
 //Fragment shader
@@ -531,7 +530,7 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
     var t = tea(launch_idx, scene_data.frame_num);
     let jitter = vec2f(rnd(&t), rnd(&t)) / f32(scene_data.canvas_height);
 
-    var uv = coords *.5 + jitter;
+    var uv = coords * vec2f(2, .5) + jitter;
 
     var r : Ray;
     var hit : HitInfo;
@@ -637,10 +636,11 @@ fn sample_cosine_weighted_hemisphere(normal : vec3f, seed : ptr < function, u32>
     return rotate_to_normal(normal, direction);
 }
 
-fn panoramic_to_uv(spherical : vec3f) -> vec2f
+fn angular_map(spherical : vec3f) -> vec2f
 {
-    var u = .5 + atan2(spherical.x, -spherical.z) / (2 * PI);
-    var v = acos(-spherical.y) / PI;
+    let r = acos(-spherical.z) / (2 * PI * length(spherical.xy));
+    var u = .5 + r * spherical.x;
+    var v = .5 + r * spherical.y;
 
     return vec2f(u, v);
 }

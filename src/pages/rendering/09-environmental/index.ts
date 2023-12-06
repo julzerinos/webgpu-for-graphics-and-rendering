@@ -9,6 +9,6 @@ export const Environmental: ViewGenerator = (
     container: HTMLElement,
     executeQueue: ExecutableQueue
 ) => {
-    // environmental(container, executeQueue)
-    lightProbes(container, executeQueue)
+    environmental(container, executeQueue)
+    // lightProbes(container, executeQueue)
 }

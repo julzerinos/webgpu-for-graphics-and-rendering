@@ -53,7 +53,7 @@ const execute: Executable = async () => {
         "textures/burnt_warehouse.hdr.png"
     )
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/teapot.obj", 1))
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/teapot.obj", .01))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -216,7 +216,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("https://polyhaven.com/a/burnt_warehouse")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID)
+    const canvas = createCanvas(CANVAS_ID, 1028)
     const interactables = createInteractableSection()
 
     const progressiveEnabled = createWithLabel(
@@ -235,30 +235,9 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
         false
     )
 
-    const includeSunlight = createWithLabel(
-        createBoolInput("include-sunlight", true),
-        "Sun light on",
-        false
-    )
-    const environemntalType = createWithLabel(
-        createSelect(
-            "environmental-texture-type",
-            ["Low dynamic range", "High dynamic range"],
-            "Low dynamic range"
-        ),
-        "Environmental texture type",
-        false
-    )
-
     const restart = createButton("restart-progressive-env", "Restart progressive")
 
-    interactables.append(
-        progressiveEnabled,
-        modelShaderSelect,
-        includeSunlight,
-        environemntalType,
-        restart
-    )
+    interactables.append(progressiveEnabled, modelShaderSelect, restart)
 
     canvasSection.append(canvas, interactables)
     div.append(title, description, canvasSection)
