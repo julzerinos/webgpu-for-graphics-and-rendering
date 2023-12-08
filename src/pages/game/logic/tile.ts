@@ -86,21 +86,69 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
 
     const cubeNormals = [...Array(6).fill(vec4(0, -1, 0, 0)), ...Array(6).fill(vec4(0, 1, 0, 0))]
 
+    const cubeUvs = [
+        vec2(1, 0),
+        vec2(0.5, 0),
+        vec2(0.5, 0.5),
+        vec2(0.5, 0.5),
+        vec2(1, 0.5),
+        vec2(1, 0),
+
+        vec2(0.5, 0.5),
+        vec2(0, 0.5),
+        vec2(0, 0),
+        vec2(0, 0),
+        vec2(0.5, 0),
+        vec2(.5, 0.5),
+    ]
+
     if (!(openWallDirections & Direction.NORTH)) {
         cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
+        cubeUvs.push(
+            vec2(0.5, 1),
+            vec2(0.5, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 1),
+            vec2(0.5, 1)
+        )
     }
     if (!(openWallDirections & Direction.EAST)) {
         cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
         cubeNormals.push(...Array(6).fill(vec4(-1, 0, 0, 0)))
+        cubeUvs.push(
+            vec2(0.5, 1),
+            vec2(0.5, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 1),
+            vec2(0.5, 1)
+        )
     }
     if (!(openWallDirections & Direction.SOUTH)) {
         cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, 1, 0)))
+        cubeUvs.push(
+            vec2(0.5, 1),
+            vec2(0.5, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 1),
+            vec2(0.5, 1)
+        )
     }
     if (!(openWallDirections & Direction.WEST)) {
         cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
         cubeNormals.push(...Array(6).fill(vec4(1, 0, 0, 0)))
+        cubeUvs.push(
+            vec2(0.5, 1),
+            vec2(0.5, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 0.5),
+            vec2(0, 1),
+            vec2(0.5, 1)
+        )
     }
 
     const vertices = new Float32Array(
@@ -114,8 +162,9 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
     )
 
     const normals = new Float32Array(flattenVector(cubeNormals))
+    const uvs = new Float32Array(flattenVector(cubeUvs))
 
-    return { vertices, normals }
+    return { vertices, normals, uvs }
 }
 
 export const boundPositionInTile = (position: Vector3, tile: Tile) => {

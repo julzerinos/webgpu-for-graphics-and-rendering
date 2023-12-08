@@ -1,8 +1,16 @@
-import { Colors, boolToNumber, flattenMatrix, vec3, vectorsEqual } from "../../libs/util"
+import {
+    Colors,
+    boolToNumber,
+    flattenMatrix,
+    loadTexture,
+    vec3,
+    vectorsEqual,
+} from "../../libs/util"
 import { createCanvasSection, createCanvas, pointerLockCanvas } from "../../libs/web"
 import {
     createBind,
     createPass,
+    createTextureBind,
     generateDepthBuffer,
     generateMultisampleBuffer,
     genreateVertexBuffer,
@@ -34,6 +42,8 @@ const CANVAS_SIZE = 512
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
+    const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
+
     const player: GamePlayer = initializePlayer()
     const camera: GameCamera = initializeCamera(player)
 
@@ -63,13 +73,19 @@ const execute: Executable = async () => {
         "float32x4",
         1
     )
+    const { buffer: uvBuffer, bufferLayout: uvBufferLayout } = genreateVertexBuffer(
+        device,
+        dungeon.uvs,
+        "float32x2",
+        2
+    )
 
     const { multisample, msaaTexture } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
     const { depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(device, canvas, 4)
 
     const pipeline = setupShaderPipeline(
         device,
-        [vertexBufferLayout, normalBufferLayout],
+        [vertexBufferLayout, normalBufferLayout, uvBufferLayout],
         canvasFormat,
         dungeonShader,
         "triangle-list",
@@ -85,6 +101,8 @@ const execute: Executable = async () => {
             },
         }
     )
+
+    const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
 
     const {
         bindGroup,
@@ -145,7 +163,9 @@ const execute: Executable = async () => {
         pass.setPipeline(pipeline)
         pass.setVertexBuffer(0, vertexBuffer)
         pass.setVertexBuffer(1, normalBuffer)
+        pass.setVertexBuffer(2, uvBuffer)
         pass.setBindGroup(0, bindGroup)
+        pass.setBindGroup(1, textureBind)
         pass.draw(dungeon.vertices.length / 4)
 
         executePass()

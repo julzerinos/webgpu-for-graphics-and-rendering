@@ -1,4 +1,4 @@
-import { add, boolToNumber, vec2, vec3 } from "../../../libs/util"
+import { add, vec2, vec3 } from "../../../libs/util"
 import { Vector2, Vector3 } from "../../../types"
 import {
     Direction,
@@ -6,8 +6,6 @@ import {
     Tile,
     TileMeshData,
     TileType,
-    getRandomCardinality,
-    reverseDirection,
 } from "./tile"
 
 const DUNGEON_DIMENSION = 8
@@ -168,16 +166,18 @@ export const mapToWorld = (map: Vector2): Vector3 =>
 
 export const generateMeshFromTiles = (
     tiles: Tile[]
-): { vertices: Float32Array; normals: Float32Array } => {
+): { vertices: Float32Array; normals: Float32Array; uvs: Float32Array } => {
     let dungeonVertices = new Float32Array()
     let dunegonNormals = new Float32Array()
+    let dungeonUvs = new Float32Array()
 
     for (const t of tiles) {
         const worldPosition = mapToWorld(t.position)
         const mesh = TileMeshData(worldPosition, t.cardinality)
         dungeonVertices = new Float32Array([...dungeonVertices, ...mesh.vertices])
         dunegonNormals = new Float32Array([...dunegonNormals, ...mesh.normals])
+        dungeonUvs = new Float32Array([...dungeonUvs, ...mesh.uvs])
     }
 
-    return { vertices: dungeonVertices, normals: dunegonNormals }
+    return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs }
 }
