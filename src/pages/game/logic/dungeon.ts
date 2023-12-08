@@ -1,14 +1,31 @@
-import { add, vec2, vec3 } from "../../../libs/util"
-import { Vector2, Vector3 } from "../../../types"
 import {
-    Direction,
-    TILE_SIZE,
-    Tile,
-    TileMeshData,
-    TileType,
-} from "./tile"
+    Colors,
+    add,
+    flattenMatrix,
+    flattenVector,
+    identity4x4,
+    loadTexture,
+    vec2,
+    vec3,
+} from "../../../libs/util"
+import {
+    generateMultisampleBuffer,
+    generateDepthBuffer,
+    setupShaderPipeline,
+    genreateVertexBuffer,
+    createBind,
+    createTextureBind,
+    createPass,
+    writeToBufferF32,
+} from "../../../libs/webgpu"
+import { Matrix4x4, Vector2, Vector3 } from "../../../types"
+import { Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
+import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
-const DUNGEON_DIMENSION = 8
+import dungeonShader from "../shaders/dungeon.wgsl?raw"
+import { createLightProjectionMatrix } from "./lights"
+
+const DUNGEON_DIMENSION = 6
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -63,6 +80,14 @@ const isDirectionEmpty = (map: TileType[][], position: Vector2, direction: Direc
     return false
 }
 
+const sampleTileType = (): TileType => {
+    const event = Math.random()
+
+    if (event < 0.2) return TileType.LIGHT
+
+    return TileType.NORMAL
+}
+
 export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
     const map = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
         Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
@@ -71,7 +96,9 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
 
     const followPath = (position: Vector2) => {
         // TODO randomize tiletype
-        const tileType = TileType.NORMAL
+        const tileType = sampleTileType()
+        if (tileType === TileType.EMPTY) return
+
         setTile(map, position, tileType)
 
         for (let i = 0; i < 4; i++) {
@@ -98,7 +125,17 @@ const generateDebugMap = (): { map: TileType[][]; center: Vector2 } => {
 
     for (let col = 0; col < map.length; col++)
         for (let row = 0; row < map[col].length; row++) {
-            if (col === center[1] || row === center[0]) map[row][col] = TileType.NORMAL
+            if (col !== center[1] && row !== center[0]) continue
+
+            map[row][col] = TileType.NORMAL
+
+            if (
+                col === 0 ||
+                col === DUNGEON_DIMENSION - 1 ||
+                row === 0 ||
+                row === DUNGEON_DIMENSION - 1
+            )
+                map[row][col] = TileType.LIGHT
         }
 
     return { map, center }
@@ -116,7 +153,7 @@ export const populateTiles = (
         for (let row = 0; row < dungeonMap[col].length; row++) {
             const position = vec2(row, col)
             const tileType = getTile(dungeonMap, position)
-            if (tileType !== TileType.NORMAL) continue
+            if (tileType === TileType.EMPTY) continue
 
             let cardinality = 0
             for (let i = 0; i < 4; i++) {
@@ -144,7 +181,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateMap()
+    const { map, center } = generateDebugMap() // generateMap()
 
     const { tiles, tileMap } = populateTiles(map)
 
@@ -164,20 +201,135 @@ export const mapToWorld = (map: Vector2): Vector3 =>
         TILE_SIZE * (map[1] - DUNGEON_DIMENSION / 2)
     )
 
-export const generateMeshFromTiles = (
-    tiles: Tile[]
-): { vertices: Float32Array; normals: Float32Array; uvs: Float32Array } => {
+export const generateMeshFromTiles = (tiles: Tile[]): Mesh => {
     let dungeonVertices = new Float32Array()
     let dunegonNormals = new Float32Array()
     let dungeonUvs = new Float32Array()
 
     for (const t of tiles) {
-        const worldPosition = mapToWorld(t.position)
-        const mesh = TileMeshData(worldPosition, t.cardinality)
+        const mesh = TileMeshData(t)
         dungeonVertices = new Float32Array([...dungeonVertices, ...mesh.vertices])
         dunegonNormals = new Float32Array([...dunegonNormals, ...mesh.normals])
         dungeonUvs = new Float32Array([...dungeonUvs, ...mesh.uvs])
     }
 
     return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs }
+}
+
+export const createDungeonRender = async (
+    dungeon: Mesh,
+    device: GPUDevice,
+    canvas: HTMLCanvasElement,
+    canvasFormat: GPUTextureFormat,
+    context: GPUCanvasContext,
+    lightShadowMaps: ShadowMapPass[] = []
+): Promise<Renderable> => {
+    const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
+
+    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
+        device,
+        dungeon.vertices,
+        "float32x4"
+    )
+    const { buffer: normalBuffer, bufferLayout: normalBufferLayout } = genreateVertexBuffer(
+        device,
+        dungeon.normals,
+        "float32x4",
+        1
+    )
+    const { buffer: uvBuffer, bufferLayout: uvBufferLayout } = genreateVertexBuffer(
+        device,
+        dungeon.uvs,
+        "float32x2",
+        2
+    )
+
+    const { multisample, msaaTexture } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
+    const { depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(device, canvas, 4)
+
+    const pipeline = setupShaderPipeline(
+        device,
+        [vertexBufferLayout, normalBufferLayout, uvBufferLayout],
+        canvasFormat,
+        dungeonShader,
+        "triangle-list",
+        { primitive: { frontFace: "ccw", cullMode: "front" }, depthStencil, multisample },
+        {
+            blend: {
+                color: {
+                    operation: "add",
+                    srcFactor: "src-alpha",
+                    dstFactor: "one-minus-src-alpha",
+                },
+                alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
+            },
+        }
+    )
+
+    const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
+
+    const {
+        bindGroup: playerDataBindGroup,
+        buffers: [cameraBuffer],
+    } = createBind(device, pipeline, [new Float32Array(flattenMatrix(identity4x4()))], "UNIFORM")
+
+    const lightShadowMapsTemp = lightShadowMaps.slice(0, 6)
+
+    const lightSources = new Float32Array(
+        lightShadowMapsTemp.flatMap(lsm =>
+            [
+                flattenVector([lsm.light.position, lsm.light.direction]),
+                flattenMatrix(createLightProjectionMatrix(lsm.light)),
+            ].flat()
+        )
+    )
+    const lightSourcesBuffer = device.createBuffer({
+        size: lightSources.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    })
+    device.queue.writeBuffer(lightSourcesBuffer, 0, lightSources)
+
+    const shadowMapBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(2),
+        entries: [
+            {
+                binding: 0,
+                resource: { buffer: lightSourcesBuffer },
+            },
+            ...lightShadowMapsTemp.map((lsm, i) => ({ binding: i + 1, resource: lsm.textureView })),
+        ],
+    })
+
+    const onPlayerView = (cameraMatrix: Matrix4x4) => {
+        writeToBufferF32(device, cameraBuffer, new Float32Array(flattenMatrix(cameraMatrix)), 0)
+    }
+
+    if (lightShadowMaps.length < 6) console.warn("Less lights than 6")
+
+    const dungeonRenderPass = (encoder: GPUCommandEncoder) => {
+        const colorAttachment: GPURenderPassColorAttachment = {
+            view: msaaTexture.createView(),
+            resolveTarget: context.getCurrentTexture().createView(),
+            loadOp: "clear",
+            clearValue: Colors.black,
+            storeOp: "store",
+        }
+        const pass = encoder.beginRenderPass({
+            colorAttachments: [colorAttachment],
+            depthStencilAttachment: (depthStencilAttachmentFactory ?? (() => undefined))(),
+        })
+
+        pass.setPipeline(pipeline)
+        pass.setVertexBuffer(0, vertexBuffer)
+        pass.setVertexBuffer(1, normalBuffer)
+        pass.setVertexBuffer(2, uvBuffer)
+        pass.setBindGroup(0, playerDataBindGroup)
+        pass.setBindGroup(1, textureBind)
+        pass.setBindGroup(2, shadowMapBindGroup)
+        pass.draw(dungeon.vertices.length / 4)
+
+        pass.end()
+    }
+
+    return { pass: dungeonRenderPass, onPlayerView }
 }

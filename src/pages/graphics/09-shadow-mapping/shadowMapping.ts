@@ -93,8 +93,6 @@ const execute: Executable = async () => {
         { depthStencil: lessDepthStencil }
     )
 
-    // TODO use separate buffer texture
-
     const shadowMapDepthTexture = device.createTexture({
         size: {
             width: shadowCanvas.width,

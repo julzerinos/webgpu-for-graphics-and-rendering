@@ -8,7 +8,7 @@ export interface GameCamera {
 }
 
 export const initializeCamera = (player: GamePlayer): GameCamera => ({
-    intrinsics: perspectiveProjection(85, 1, 0.00001, 100),
+    intrinsics: perspectiveProjection(85, 1, 0.001, 100),
     extrinsics: calculatePlayerViewMatrix(player),
 })
 

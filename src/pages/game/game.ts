@@ -33,16 +33,20 @@ import {
     calculatePlayerPosition,
 } from "./logic/player"
 
-import dungeonShader from "./shaders/dungeon.wgsl?raw"
-import { generateDungeonMap, generateMap, generateMeshFromTiles, worldToMap } from "./logic/dungeon"
+import {
+    createDungeonRender,
+    generateDungeonMap,
+    generateMap,
+    generateMeshFromTiles,
+    worldToMap,
+} from "./logic/dungeon"
+import { shadowMapGenerationAllLights } from "./logic/lights"
 
 const CANVAS_ID = "game"
 const CANVAS_SIZE = 512
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
-
-    const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
 
     const player: GamePlayer = initializePlayer()
     const camera: GameCamera = initializeCamera(player)
@@ -62,67 +66,15 @@ const execute: Executable = async () => {
         onEnd: () => (inGame = false),
     })
 
-    const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
-        device,
-        dungeon.vertices,
-        "float32x4"
-    )
-    const { buffer: normalBuffer, bufferLayout: normalBufferLayout } = genreateVertexBuffer(
-        device,
-        dungeon.normals,
-        "float32x4",
-        1
-    )
-    const { buffer: uvBuffer, bufferLayout: uvBufferLayout } = genreateVertexBuffer(
-        device,
-        dungeon.uvs,
-        "float32x2",
-        2
-    )
+    const shadowMapRenders = shadowMapGenerationAllLights(device, tiles, dungeon)
 
-    const { multisample, msaaTexture } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
-    const { depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(device, canvas, 4)
-
-    const pipeline = setupShaderPipeline(
-        device,
-        [vertexBufferLayout, normalBufferLayout, uvBufferLayout],
-        canvasFormat,
-        dungeonShader,
-        "triangle-list",
-        { primitive: { frontFace: "ccw", cullMode: "front" }, depthStencil, multisample },
-        {
-            blend: {
-                color: {
-                    operation: "add",
-                    srcFactor: "src-alpha",
-                    dstFactor: "one-minus-src-alpha",
-                },
-                alpha: { operation: "add", srcFactor: "one", dstFactor: "zero" },
-            },
-        }
-    )
-
-    const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
-
-    const {
-        bindGroup,
-        buffers: [proj],
-    } = createBind(
-        device,
-        pipeline,
-        [new Float32Array(flattenMatrix(getCameraProjectionViewMatrix(camera)))],
-        "UNIFORM"
-    )
+    const { pass: dungeonRenderPass, onPlayerView: dungeonOnPlayerView } =
+        await createDungeonRender(dungeon, device, canvas, canvasFormat, context, shadowMapRenders)
 
     const updateCameraProjectionViewMatrix = () => {
         camera.extrinsics = calculatePlayerViewMatrix(player)
-
-        writeToBufferF32(
-            device,
-            proj,
-            new Float32Array(flattenMatrix(getCameraProjectionViewMatrix(camera))),
-            0
-        )
+        const cameraMatrix = getCameraProjectionViewMatrix(camera)
+        dungeonOnPlayerView?.(cameraMatrix)
     }
 
     const updateTile = () => {
@@ -155,20 +107,13 @@ const execute: Executable = async () => {
         updateCameraProjectionViewMatrix()
         handleKeyInput(player, keyMap)
 
-        const { pass, executePass } = createPass(device, context, Colors.black, {
-            depthStencilAttachmentFactory,
-            msaaTexture,
-        })
+        const encoder = device.createCommandEncoder()
 
-        pass.setPipeline(pipeline)
-        pass.setVertexBuffer(0, vertexBuffer)
-        pass.setVertexBuffer(1, normalBuffer)
-        pass.setVertexBuffer(2, uvBuffer)
-        pass.setBindGroup(0, bindGroup)
-        pass.setBindGroup(1, textureBind)
-        pass.draw(dungeon.vertices.length / 4)
+        for (const r of shadowMapRenders) r.pass(encoder)
 
-        executePass()
+        dungeonRenderPass(encoder)
+
+        device.queue.submit([encoder.finish()])
 
         requestAnimationFrame(frame)
     }

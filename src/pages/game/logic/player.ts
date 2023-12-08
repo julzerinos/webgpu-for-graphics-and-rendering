@@ -1,23 +1,17 @@
 import {
     Vector3s,
     add,
-    boolToNumber,
-    clamp,
     cross,
     normalize,
     quatApply,
     quatFromAxisAngle,
     quatMultiply,
     scale,
-    subtract,
     toVec3,
-    vec2,
     vec3,
     vec4,
 } from "../../../libs/util"
-import { Vector2, Vector3 } from "../../../types"
-import { mapToWorld } from "./dungeon"
-import { Direction, TILE_SIZE, Tile } from "./tile"
+import { Vector3 } from "../../../types"
 
 export interface GamePlayer {
     position: Vector3
@@ -44,6 +38,8 @@ export const updatePlayerLookDirection = (
 
     player.lookDirection = normalize(toVec3(quatApply(vec4(...player.lookDirection, 1), quat)))
     player.right = cross(Vector3s.up, player.lookDirection)
+
+    // TODO bug with bumps in rotation
 }
 
 const moveFrameSpeed = 1e-1

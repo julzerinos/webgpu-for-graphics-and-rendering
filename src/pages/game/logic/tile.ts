@@ -9,6 +9,7 @@ import {
     vec3,
 } from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
+import { Light } from "../interfaces"
 import { mapToWorld, worldToMap } from "./dungeon"
 
 export const TILE_SIZE = 4
@@ -16,10 +17,11 @@ export const TILE_SIZE = 4
 export enum TileType {
     OUT_OF_BOUNDS = -1,
     EMPTY = 0,
-    NORMAL = 1,
-    PICKUP = 2,
-    SPAWN = 4,
-    END = 8,
+    NORMAL,
+    PICKUP,
+    SPAWN,
+    END,
+    LIGHT,
 }
 
 export interface Tile {
@@ -64,8 +66,9 @@ export const getRandomCardinality = (legal: number = 15) =>
     (legal & Direction.SOUTH) * Math.round(Math.random()) +
     (legal & Direction.WEST) * Math.round(Math.random())
 
-export const TileMeshData = (position: Vector3, openWallDirections: number) => {
+export const TileMeshData = (tile: Tile) => {
     const halfSize = TILE_SIZE / 2
+    const worldPosition = mapToWorld(tile.position)
 
     const cubeVertices = [
         vec4(-halfSize, -halfSize, halfSize, 1),
@@ -84,7 +87,7 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
         vec4(6, 5, 1), vec4(1, 2, 6),  // up
     ]
 
-    const cubeNormals = [...Array(6).fill(vec4(0, -1, 0, 0)), ...Array(6).fill(vec4(0, 1, 0, 0))]
+    const cubeNormals = [...Array(6).fill(vec4(0, 1, 0, 0)), ...Array(6).fill(vec4(0, -1, 0, 0))]
 
     const cubeUvs = [
         vec2(1, 0),
@@ -99,63 +102,53 @@ export const TileMeshData = (position: Vector3, openWallDirections: number) => {
         vec2(0, 0),
         vec2(0, 0),
         vec2(0.5, 0),
-        vec2(.5, 0.5),
+        vec2(0.5, 0.5),
     ]
 
-    if (!(openWallDirections & Direction.NORTH)) {
+    const normalWallUvs = [
+        vec2(0.5, 1),
+        vec2(0.5, 0.5),
+        vec2(0, 0.5),
+        vec2(0, 0.5),
+        vec2(0, 1),
+        vec2(0.5, 1),
+    ]
+    const lightWallUvs = [
+        vec2(0.5, 1),
+        vec2(0.5, 0.5),
+        vec2(1, 0.5),
+        vec2(1, 0.5),
+        vec2(1, 1),
+        vec2(0.5, 1),
+    ]
+    const wallUvs = tile.type === TileType.LIGHT ? lightWallUvs : normalWallUvs
+
+    if (!(tile.cardinality & Direction.NORTH)) {
         cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
-        cubeUvs.push(
-            vec2(0.5, 1),
-            vec2(0.5, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 1),
-            vec2(0.5, 1)
-        )
+        cubeUvs.push(...wallUvs)
     }
-    if (!(openWallDirections & Direction.EAST)) {
+    if (!(tile.cardinality & Direction.EAST)) {
         cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
         cubeNormals.push(...Array(6).fill(vec4(-1, 0, 0, 0)))
-        cubeUvs.push(
-            vec2(0.5, 1),
-            vec2(0.5, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 1),
-            vec2(0.5, 1)
-        )
+        cubeUvs.push(...wallUvs)
     }
-    if (!(openWallDirections & Direction.SOUTH)) {
+    if (!(tile.cardinality & Direction.SOUTH)) {
         cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, 1, 0)))
-        cubeUvs.push(
-            vec2(0.5, 1),
-            vec2(0.5, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 1),
-            vec2(0.5, 1)
-        )
+        cubeUvs.push(...wallUvs)
     }
-    if (!(openWallDirections & Direction.WEST)) {
+    if (!(tile.cardinality & Direction.WEST)) {
         cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
         cubeNormals.push(...Array(6).fill(vec4(1, 0, 0, 0)))
-        cubeUvs.push(
-            vec2(0.5, 1),
-            vec2(0.5, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 0.5),
-            vec2(0, 1),
-            vec2(0.5, 1)
-        )
+        cubeUvs.push(...wallUvs)
     }
 
     const vertices = new Float32Array(
         flattenVector(
             cubeTriangles.reduce((vertices, triangle) => {
                 for (let i = 0; i < 3; i++)
-                    vertices.push(add(cubeVertices[triangle[i]], vec4(...position, 0)))
+                    vertices.push(add(cubeVertices[triangle[i]], vec4(...worldPosition, 0)))
                 return vertices
             }, [] as Vector[])
         )
