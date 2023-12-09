@@ -4,6 +4,7 @@ struct LightingOptions {
 
 @group(0) @binding(0) var<uniform> projection_view : mat4x4f;
 @group(0) @binding(1) var<uniform> light_intensity : f32;
+@group(0) @binding(2) var<uniform> player_position : vec3f;
 
 @group(1) @binding(0) var texture_sampler : sampler;
 @group(1) @binding(1) var texture : texture_2d<f32>;
@@ -18,7 +19,8 @@ struct LightSource {
 @group(2) @binding(1) var shadow_maps : texture_2d_array<f32>;
 
 const light_emission_tint = vec3f(.9, .4, 0.);
-const ambient_light = vec3f(.025);
+const ambient_light = vec3f(.05);
+const fog_tint = vec3f(.025, .025, .1);
 
 struct VertexOutput {
     @builtin(position) position : vec4f,
@@ -54,6 +56,9 @@ fn calculate_visibility(light_index : u32, world_position : vec4f) -> f32
     let out_of_frustrum = t.x > 1 || t.x < 0 || t.y > 1 || t.y < 0 || shadow_lookup.z < 0.001;
     visibility = select(visibility, .9, out_of_frustrum);
 
+    let behind_wall = shadow_lookup.z < -.16;
+    visibility = select(visibility, 0., behind_wall);
+
     return visibility;
 }
 
@@ -79,12 +84,24 @@ fn lambertian(normal : vec3f, world_position : vec4f) -> vec3f
     return lambertian + ambient_light;
 }
 
+fn distance_fog(world_position : vec4f) -> f32
+{
+    const fog_steps = 10;
+
+    let distance_sqr = (world_position.x - player_position.x) * (world_position.x - player_position.x) + (world_position.z - player_position.z) * (world_position.z - player_position.z);
+    let thresholded = round(fog_steps * (-smoothstep(16, 512, distance_sqr) + 1.)) / fog_steps;
+
+    return 1 - thresholded;
+}
+
 @fragment
 fn main_fs(input : VertexOutput) -> @location(0) vec4f
 {
     let color = textureSample(texture, texture_sampler, input.uv);
     let shading = lambertian(input.normal, input.world_position);
+    let fog_modifier = distance_fog(input.world_position);
 
-    //return vec4f(vec3f(1) * shading, color.a);
-    return vec4f(color.rgb * shading, color.a);
+    let result = (1 - fog_modifier) * color.rgb * shading + fog_modifier * fog_tint;
+
+    return vec4f(result, color.a);
 }

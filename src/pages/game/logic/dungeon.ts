@@ -29,7 +29,7 @@ import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
 import { createLightProjectionMatrix } from "./lights"
 
-const DUNGEON_DIMENSION = 6
+const DUNGEON_DIMENSION = 10
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -122,25 +122,34 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
 }
 
 const generateDebugMap = (): { map: TileType[][]; center: Vector2 } => {
-    const map = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
-        Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
-    ) as TileType[][]
+    // const map = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
+    //     Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
+    // ) as TileType[][]
     const center = vec2(DUNGEON_DIMENSION / 2, DUNGEON_DIMENSION / 2)
 
-    for (let col = 0; col < map.length; col++)
-        for (let row = 0; row < map[col].length; row++) {
-            if (col !== center[1] && row !== center[0]) continue
+    // for (let col = 0; col < map.length; col++)
+    //     for (let row = 0; row < map[col].length; row++) {
+    //         if (col !== center[1] && row !== center[0]) continue
 
-            map[row][col] = TileType.NORMAL
+    //         map[row][col] = TileType.NORMAL
 
-            if (
-                col === 0 ||
-                col === DUNGEON_DIMENSION - 1 ||
-                row === 0 ||
-                row === DUNGEON_DIMENSION - 1
-            )
-                map[row][col] = TileType.LIGHT
-        }
+    //         if (
+    //             col === 0 ||
+    //             col === DUNGEON_DIMENSION - 1 ||
+    //             row === 0 ||
+    //             row === DUNGEON_DIMENSION - 1
+    //         )
+    //             map[row][col] = TileType.LIGHT
+    //     }
+
+    if (DUNGEON_DIMENSION !== 4) console.warn("Debug dungeon dimension is not 4.")
+
+    const map = [
+        [TileType.EMPTY, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY],
+        [TileType.EMPTY, TileType.EMPTY, TileType.LIGHT, TileType.EMPTY],
+        [TileType.NORMAL, TileType.NORMAL, TileType.NORMAL, TileType.NORMAL],
+        [TileType.EMPTY, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY],
+    ]
 
     return { map, center }
 }
@@ -185,7 +194,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateMap()
+    const { map, center } = generateDebugMap() // generateMap()
 
     const { tiles, tileMap } = populateTiles(map)
 
@@ -274,11 +283,15 @@ export const createDungeonRender = async (
 
     const {
         bindGroup: uniformBindGroup,
-        buffers: [playerCameraBuffer, lightingOptionsBuffer],
+        buffers: [playerCameraBuffer, lightingOptionsBuffer, playerPositionBuffer],
     } = createBind(
         device,
         pipeline,
-        [new Float32Array(flattenMatrix(identity4x4())), new Float32Array([7])],
+        [
+            new Float32Array(flattenMatrix(identity4x4())),
+            new Float32Array([7, 0, 0, 0]),
+            new Float32Array(vec3(0, 0, 0)),
+        ],
         "UNIFORM"
     )
 
@@ -359,6 +372,8 @@ export const createDungeonRender = async (
         )
 
         updateActiveLights(lightShadowMaps.slice(0, 3))
+
+        writeToBufferF32(device, playerPositionBuffer, new Float32Array(position), 0)
     }
     onPlayerMove(vec3(0, 0, 0))
 
