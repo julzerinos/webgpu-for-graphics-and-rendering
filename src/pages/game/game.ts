@@ -48,6 +48,11 @@ const CANVAS_SIZE = 512
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
+    const shadowCanvas = document.getElementById("shadow") as HTMLCanvasElement
+    const shadowContext = shadowCanvas.getContext("webgpu")
+
+    shadowContext?.configure({ device, format: canvasFormat })
+
     const player: GamePlayer = initializePlayer()
     const camera: GameCamera = initializeCamera(player)
 
@@ -66,10 +71,13 @@ const execute: Executable = async () => {
         onEnd: () => (inGame = false),
     })
 
-    const shadowMapRenders = shadowMapGenerationAllLights(device, tiles, dungeon)
+    const shadowMapRenders = shadowMapGenerationAllLights(device, tiles, dungeon, shadowContext)
 
-    const { pass: dungeonRenderPass, onPlayerView: dungeonOnPlayerView } =
-        await createDungeonRender(dungeon, device, canvas, canvasFormat, context, shadowMapRenders)
+    const {
+        pass: dungeonRenderPass,
+        onPlayerView: dungeonOnPlayerView,
+        onPlayerMove: dungeonOnPlayerMove,
+    } = await createDungeonRender(dungeon, device, canvas, canvasFormat, context, shadowMapRenders)
 
     const updateCameraProjectionViewMatrix = () => {
         camera.extrinsics = calculatePlayerViewMatrix(player)
@@ -101,6 +109,8 @@ const execute: Executable = async () => {
         updateTile()
         boundPositionInTile(newPosition, currentTile)
         player.position = newPosition
+        for (const r of shadowMapRenders) r.onPlayerMove?.(player.position)
+        dungeonOnPlayerMove?.(player.position)
     }
 
     const frame = (time: number) => {
@@ -109,9 +119,9 @@ const execute: Executable = async () => {
 
         const encoder = device.createCommandEncoder()
 
-        for (const r of shadowMapRenders) r.pass(encoder)
+        for (const r of shadowMapRenders) r.pass(encoder, time)
 
-        dungeonRenderPass(encoder)
+        dungeonRenderPass(encoder, time)
 
         device.queue.submit([encoder.finish()])
 
@@ -124,9 +134,9 @@ const execute: Executable = async () => {
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
+    const shadowCanvas = createCanvas("shadow", 2048)
     canvasSection.append(canvas)
-    div.append(canvasSection)
-
+    div.append(canvasSection, shadowCanvas)
     executeQueue.push(execute)
 }
 

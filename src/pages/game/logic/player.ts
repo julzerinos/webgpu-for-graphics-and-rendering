@@ -22,7 +22,7 @@ export interface GamePlayer {
 export const initializePlayer = (): GamePlayer => {
     return {
         position: vec3(0, 0, 0),
-        lookDirection: vec3(0, 0, 1),
+        lookDirection: vec3(0, 0, -1),
         right: vec3(1, 0, 0),
     } as GamePlayer
 }

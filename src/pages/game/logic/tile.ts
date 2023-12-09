@@ -121,27 +121,27 @@ export const TileMeshData = (tile: Tile) => {
         vec2(1, 1),
         vec2(0.5, 1),
     ]
-    const wallUvs = tile.type === TileType.LIGHT ? lightWallUvs : normalWallUvs
-
+    
     if (!(tile.cardinality & Direction.NORTH)) {
         cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
+        const wallUvs = tile.type === TileType.LIGHT ? lightWallUvs : normalWallUvs
         cubeUvs.push(...wallUvs)
     }
     if (!(tile.cardinality & Direction.EAST)) {
         cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
         cubeNormals.push(...Array(6).fill(vec4(-1, 0, 0, 0)))
-        cubeUvs.push(...wallUvs)
+        cubeUvs.push(...normalWallUvs)
     }
     if (!(tile.cardinality & Direction.SOUTH)) {
         cubeTriangles.push(vec4(4, 5, 6), vec4(6, 7, 4))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, 1, 0)))
-        cubeUvs.push(...wallUvs)
+        cubeUvs.push(...normalWallUvs)
     }
     if (!(tile.cardinality & Direction.WEST)) {
         cubeTriangles.push(vec4(5, 4, 0), vec4(0, 1, 5))
         cubeNormals.push(...Array(6).fill(vec4(1, 0, 0, 0)))
-        cubeUvs.push(...wallUvs)
+        cubeUvs.push(...normalWallUvs)
     }
 
     const vertices = new Float32Array(

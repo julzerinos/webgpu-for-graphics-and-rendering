@@ -5,6 +5,9 @@ import {
     flattenVector,
     identity4x4,
     loadTexture,
+    sqrMagnitude,
+    subtract,
+    toVec3,
     vec2,
     vec3,
 } from "../../../libs/util"
@@ -17,6 +20,7 @@ import {
     createTextureBind,
     createPass,
     writeToBufferF32,
+    writeToBufferU32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
 import { Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
@@ -181,7 +185,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateDebugMap() // generateMap()
+    const { map, center } = generateMap()
 
     const { tiles, tileMap } = populateTiles(map)
 
@@ -269,25 +273,60 @@ export const createDungeonRender = async (
     const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
 
     const {
-        bindGroup: playerDataBindGroup,
-        buffers: [cameraBuffer],
-    } = createBind(device, pipeline, [new Float32Array(flattenMatrix(identity4x4()))], "UNIFORM")
-
-    const lightShadowMapsTemp = lightShadowMaps.slice(0, 6)
-
-    const lightSources = new Float32Array(
-        lightShadowMapsTemp.flatMap(lsm =>
-            [
-                flattenVector([lsm.light.position, lsm.light.direction]),
-                flattenMatrix(createLightProjectionMatrix(lsm.light)),
-            ].flat()
-        )
+        bindGroup: uniformBindGroup,
+        buffers: [playerCameraBuffer, lightingOptionsBuffer],
+    } = createBind(
+        device,
+        pipeline,
+        [new Float32Array(flattenMatrix(identity4x4())), new Float32Array([7])],
+        "UNIFORM"
     )
+
+    const updateLightOptions = (time: number) => {
+        const flickerIntensity = Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
+        writeToBufferF32(device, lightingOptionsBuffer, new Float32Array([flickerIntensity]), 0)
+    }
+
     const lightSourcesBuffer = device.createBuffer({
-        size: lightSources.byteLength,
+        size: new Float32Array(32).byteLength * 3,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
-    device.queue.writeBuffer(lightSourcesBuffer, 0, lightSources)
+
+    const updateActiveLights = (shadowMaps: ShadowMapPass[]) => {
+        const lightSources = new Float32Array(
+            shadowMaps.flatMap(lsm =>
+                [
+                    flattenVector([lsm.light.position, lsm.light.direction]),
+                    flattenMatrix(createLightProjectionMatrix(lsm.light)),
+                ].flat()
+            )
+        )
+
+        device.queue.writeBuffer(lightSourcesBuffer, 0, lightSources)
+    }
+
+    const shadowMapTextureArray = device.createTexture({
+        format: "rgba32float",
+        size: { width: 2048, height: 512, depthOrArrayLayers: 3 },
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
+        dimension: "2d",
+    })
+
+    const updateShadowMapTextureArray = (
+        encoder: GPUCommandEncoder,
+        shadowMaps: ShadowMapPass[]
+    ) => {
+        let i = 0
+        for (const smp of shadowMaps) {
+            encoder.copyTextureToTexture(
+                {
+                    texture: smp.texture,
+                },
+                { texture: shadowMapTextureArray, origin: { z: i++ } },
+                { width: 2048, height: 512, depthOrArrayLayers: 1 }
+            )
+        }
+    }
 
     const shadowMapBindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(2),
@@ -296,17 +335,37 @@ export const createDungeonRender = async (
                 binding: 0,
                 resource: { buffer: lightSourcesBuffer },
             },
-            ...lightShadowMapsTemp.map((lsm, i) => ({ binding: i + 1, resource: lsm.textureView })),
+            {
+                binding: 1,
+                resource: shadowMapTextureArray.createView(),
+            },
         ],
     })
 
     const onPlayerView = (cameraMatrix: Matrix4x4) => {
-        writeToBufferF32(device, cameraBuffer, new Float32Array(flattenMatrix(cameraMatrix)), 0)
+        writeToBufferF32(
+            device,
+            playerCameraBuffer,
+            new Float32Array(flattenMatrix(cameraMatrix)),
+            0
+        )
     }
 
-    if (lightShadowMaps.length < 6) console.warn("Less lights than 6")
+    const onPlayerMove = (position: Vector3) => {
+        lightShadowMaps.sort(
+            (a, b) =>
+                sqrMagnitude(subtract(toVec3(a.light.position), position)) -
+                sqrMagnitude(subtract(toVec3(b.light.position), position))
+        )
 
-    const dungeonRenderPass = (encoder: GPUCommandEncoder) => {
+        updateActiveLights(lightShadowMaps.slice(0, 3))
+    }
+    onPlayerMove(vec3(0, 0, 0))
+
+    const dungeonRenderPass = (encoder: GPUCommandEncoder, time: number) => {
+        updateLightOptions(time)
+        updateShadowMapTextureArray(encoder, lightShadowMaps.slice(0, 3))
+
         const colorAttachment: GPURenderPassColorAttachment = {
             view: msaaTexture.createView(),
             resolveTarget: context.getCurrentTexture().createView(),
@@ -323,7 +382,7 @@ export const createDungeonRender = async (
         pass.setVertexBuffer(0, vertexBuffer)
         pass.setVertexBuffer(1, normalBuffer)
         pass.setVertexBuffer(2, uvBuffer)
-        pass.setBindGroup(0, playerDataBindGroup)
+        pass.setBindGroup(0, uniformBindGroup)
         pass.setBindGroup(1, textureBind)
         pass.setBindGroup(2, shadowMapBindGroup)
         pass.draw(dungeon.vertices.length / 4)
@@ -331,5 +390,5 @@ export const createDungeonRender = async (
         pass.end()
     }
 
-    return { pass: dungeonRenderPass, onPlayerView }
+    return { pass: dungeonRenderPass, onPlayerView, onPlayerMove }
 }

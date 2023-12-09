@@ -7,13 +7,13 @@ export interface Mesh {
 }
 
 export interface Renderable {
-    pass: (encoder: GPUCommandEncoder) => void
+    pass: (encoder: GPUCommandEncoder, time: number) => void
     onPlayerMove?: (position: Vector3) => void
     onPlayerView?: (cameraMatrix: Matrix4x4) => void
 }
 
 export interface ShadowMapPass extends Renderable {
-    textureView: GPUTextureView
+    texture: GPUTexture
     light: Light
 }
 
