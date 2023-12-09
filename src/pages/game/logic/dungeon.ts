@@ -18,12 +18,10 @@ import {
     genreateVertexBuffer,
     createBind,
     createTextureBind,
-    createPass,
     writeToBufferF32,
-    writeToBufferU32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
+import { Mesh, Renderable, ShadowMapPass } from "../interfaces"
 import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
@@ -194,7 +192,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateDebugMap() // generateMap()
+    const { map, center } = generateMap()
 
     const { tiles, tileMap } = populateTiles(map)
 

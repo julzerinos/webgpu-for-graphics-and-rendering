@@ -19,8 +19,8 @@ struct LightSource {
 @group(2) @binding(1) var shadow_maps : texture_2d_array<f32>;
 
 const light_emission_tint = vec3f(.9, .4, 0.);
-const ambient_light = vec3f(.05);
-const fog_tint = vec3f(.025, .025, .1);
+const ambient_light = vec3f(.0);
+const fog_tint = vec3f(.025, .025, .125);
 
 struct VertexOutput {
     @builtin(position) position : vec4f,

@@ -48,11 +48,6 @@ const CANVAS_SIZE = 512
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const shadowCanvas = document.getElementById("shadow") as HTMLCanvasElement
-    const shadowContext = shadowCanvas.getContext("webgpu")
-
-    shadowContext?.configure({ device, format: canvasFormat })
-
     const player: GamePlayer = initializePlayer()
     const camera: GameCamera = initializeCamera(player)
 
@@ -71,7 +66,7 @@ const execute: Executable = async () => {
         onEnd: () => (inGame = false),
     })
 
-    const shadowMapRenders = shadowMapGenerationAllLights(device, tiles, dungeon, shadowContext)
+    const shadowMapRenders = shadowMapGenerationAllLights(device, tiles, dungeon)
 
     const {
         pass: dungeonRenderPass,
@@ -134,9 +129,8 @@ const execute: Executable = async () => {
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
-    const shadowCanvas = createCanvas("shadow", 2048)
     canvasSection.append(canvas)
-    div.append(canvasSection, shadowCanvas)
+    div.append(canvasSection)
     executeQueue.push(execute)
 }
 

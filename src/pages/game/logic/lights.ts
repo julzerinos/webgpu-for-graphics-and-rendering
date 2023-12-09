@@ -1,7 +1,9 @@
 import {
     Colors,
     Cube,
+    TetrahedronSphere,
     add,
+    createScaleMatrix,
     createTranslateMatrix,
     flattenMatrix,
     flattenVector,
@@ -77,8 +79,7 @@ export const createLightProjectionMatrix = (light: Light): Matrix4x4 => {
 export const shadowMapGenerationAllLights = (
     device: GPUDevice,
     tiles: Tile[],
-    dungeon: Mesh,
-    context: GPUCanvasContext
+    dungeon: Mesh
 ): ShadowMapPass[] => {
     const { buffer, bufferLayout } = genreateVertexBuffer(device, dungeon.vertices, "float32x4", 0)
     const lights = defineLightsFromTiles(tiles)
@@ -89,8 +90,7 @@ export const shadowMapGenerationAllLights = (
             device,
             buffer,
             bufferLayout,
-            dungeon.vertices.length / 4,
-            context
+            dungeon.vertices.length / 4
         )
     )
 }
@@ -100,10 +100,9 @@ export const shadowMapGenerationPassForLight = (
     device: GPUDevice,
     vertexBuffer: GPUBuffer,
     vertexBufferLayout: GPUVertexBufferLayout,
-    drawCount: number,
-    context: GPUCanvasContext // TODO remove debug canvas
+    drawCount: number
 ): ShadowMapPass => {
-    const playerPlaceholder = Cube(vec3(), 1)
+    const playerPlaceholder = Cube(vec3(0, 0, 0), 1)
 
     const { buffer: playerVertexBuffer } = genreateVertexBuffer(
         device,
@@ -117,12 +116,14 @@ export const shadowMapGenerationPassForLight = (
     )
 
     const onPlayerMove = (position: Vector3) => {
-        const translation = createTranslateMatrix(position)
+        const translation = createTranslateMatrix(add(position, vec3(0, -0.5, 0)))
+        const scale = createScaleMatrix(1, 2, 1)
+        const model = multMatrices(translation, scale)
         writeToBufferF32(
             device,
             playerVertexBuffer,
             new Float32Array(
-                flattenVector(playerPlaceholder.vertices.map(v => vectorMatrixMult(v, translation)))
+                flattenVector(playerPlaceholder.vertices.map(v => vectorMatrixMult(v, model)))
             ),
             0
         )
@@ -143,14 +144,11 @@ export const shadowMapGenerationPassForLight = (
             entryPoint: "main_fs",
             targets: [
                 {
-                    format: "bgra8unorm",
-                },
-                {
                     format: "rgba32float",
                 },
             ],
         },
-        primitive: { frontFace: "ccw", topology: "triangle-list" },
+        primitive: { frontFace: "ccw", cullMode: "none", topology: "triangle-list" },
         depthStencil: {
             depthWriteEnabled: true,
             depthCompare: "less",
@@ -195,17 +193,6 @@ export const shadowMapGenerationPassForLight = (
     const executeShadowPass = (encoder: GPUCommandEncoder) => {
         const shadowMapPass = encoder.beginRenderPass({
             colorAttachments: [
-                {
-                    view: context.getCurrentTexture().createView(),
-                    loadOp: "clear",
-                    clearValue: {
-                        r: 0,
-                        g: 0,
-                        b: 0,
-                        a: 1,
-                    },
-                    storeOp: "store",
-                },
                 {
                     view: shadowMapTextureView,
                     loadOp: "clear",
