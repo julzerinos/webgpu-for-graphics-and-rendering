@@ -24,4 +24,4 @@ export type Matrix4x4 = [
 export type MatrixNxM = [[number, ...number[]], ...[number, ...number[]][]]
 
 export type Matrix = Matrix2x2 | Matrix3x3 | Matrix4x4
-export type MatrixFormat = "float32x2" | "float32x3" | "float32x4"
+export type MatrixFormat = "float32x4x4"

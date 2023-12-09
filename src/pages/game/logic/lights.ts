@@ -1,15 +1,12 @@
 import {
     Colors,
     Cube,
-    TetrahedronSphere,
     add,
     createScaleMatrix,
     createTranslateMatrix,
     flattenMatrix,
     flattenVector,
-    identity4x4,
     lookAtMatrix,
-    mat4,
     multMatrices,
     perspectiveProjection,
     toVec3,
@@ -17,15 +14,14 @@ import {
     vec4,
     vectorMatrixMult,
 } from "../../../libs/util"
-import { Matrix4x4, Vector3, Vector4 } from "../../../types"
-import { Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
+import { Matrix4x4, Vector3 } from "../../../types"
+import { Light, Mesh, ShadowMapPass } from "../interfaces"
 import { mapToWorld } from "./dungeon"
 import { Direction, TILE_SIZE, Tile, TileType } from "./tile"
 
 import shaderCode from "../shaders/shadowMap.wgsl?raw"
 import {
     createBind,
-    generateMultisampleBuffer,
     genreateIndexBuffer,
     genreateVertexBuffer,
     writeToBufferF32,
@@ -42,6 +38,7 @@ export const defineLightsFromTiles = (tiles: Tile[]): Light[] =>
                 ls.push({
                     direction: vec4(0, 0, -1, 0),
                     position: vec4(...add(vec3(0, 0.3, halfSize), worldPosition), 1),
+                    intensity: 0,
                 })
             }
             // if (!(lt.cardinality & Direction.EAST)) {

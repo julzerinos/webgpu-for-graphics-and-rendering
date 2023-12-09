@@ -20,4 +20,5 @@ export interface ShadowMapPass extends Renderable {
 export interface Light {
     position: Vector4
     direction: Vector4
+    intensity: number
 }

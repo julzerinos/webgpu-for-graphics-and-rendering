@@ -1,10 +1,5 @@
-struct LightingOptions {
-    light_intensity : f32
-}
-
 @group(0) @binding(0) var<uniform> projection_view : mat4x4f;
-@group(0) @binding(1) var<uniform> light_intensity : f32;
-@group(0) @binding(2) var<uniform> player_position : vec3f;
+@group(0) @binding(1) var<uniform> player_position : vec3f;
 
 @group(1) @binding(0) var texture_sampler : sampler;
 @group(1) @binding(1) var texture : texture_2d<f32>;
@@ -12,7 +7,8 @@ struct LightingOptions {
 struct LightSource {
     position : vec3f,
     direction : vec3f,
-    projection : mat4x4f
+    projection : mat4x4f,
+    light_intensity: f32
 };
 
 @group(2) @binding(0) var<uniform> light_sources : array<LightSource, 3>;
@@ -64,7 +60,6 @@ fn calculate_visibility(light_index : u32, world_position : vec4f) -> f32
 
 fn lambertian(normal : vec3f, world_position : vec4f) -> vec3f
 {
-    let light_emission = light_emission_tint * light_intensity;
     var lambertian = vec3f(0);
 
     for (var i : u32 = 0; i < 3; i++)
@@ -76,6 +71,8 @@ fn lambertian(normal : vec3f, world_position : vec4f) -> vec3f
 
         let light_wall_direction = light_sources[i].direction;
         let wall_light_boost = max(1, dot(normal, light_wall_direction) * 4.5);
+    
+        let light_emission = light_emission_tint * light_sources[i].light_intensity;
 
         let visibility = calculate_visibility(i, world_position);
         lambertian += visibility * light_emission * parallelity_to_light * wall_light_boost / (distance_to_light * distance_to_light);

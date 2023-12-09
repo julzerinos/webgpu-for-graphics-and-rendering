@@ -21,11 +21,12 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { Mesh, Renderable, ShadowMapPass } from "../interfaces"
+import { Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
 import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
 import { createLightProjectionMatrix } from "./lights"
+import { byteLength } from "../../../libs/util/byteLengths"
 
 const DUNGEON_DIMENSION = 10
 
@@ -281,27 +282,43 @@ export const createDungeonRender = async (
 
     const {
         bindGroup: uniformBindGroup,
-        buffers: [playerCameraBuffer, lightingOptionsBuffer, playerPositionBuffer],
+        buffers: [playerCameraBuffer, playerPositionBuffer],
     } = createBind(
         device,
         pipeline,
-        [
-            new Float32Array(flattenMatrix(identity4x4())),
-            new Float32Array([7, 0, 0, 0]),
-            new Float32Array(vec3(0, 0, 0)),
-        ],
+        [new Float32Array(flattenMatrix(identity4x4())), new Float32Array(vec3(0, 0, 0))],
         "UNIFORM"
     )
-
-    const updateLightOptions = (time: number) => {
-        const flickerIntensity = Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
-        writeToBufferF32(device, lightingOptionsBuffer, new Float32Array([flickerIntensity]), 0)
-    }
 
     const lightSourcesBuffer = device.createBuffer({
         size: new Float32Array(32).byteLength * 3,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
+
+    const updateLightIntensities = (time: number, lights: Light[]) => {
+        const slowerTime = time / 6e3
+
+        const nextFlickerIntensity = (previousIntensity: number): number => {
+            if (previousIntensity < 5) return (previousIntensity += 0.03)
+
+            return Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
+        }
+
+        const byteOffset = byteLength.float32x4 * 2 + byteLength.float32x4x4
+        let currentOffset = byteOffset
+        for (const l of lights) {
+            const flickerIntensity = nextFlickerIntensity(l.intensity)
+            writeToBufferF32(
+                device,
+                lightSourcesBuffer,
+                new Float32Array([flickerIntensity]),
+                currentOffset
+            )
+
+            currentOffset += byteOffset + byteLength.float32x4
+            l.intensity = flickerIntensity
+        }
+    }
 
     const updateActiveLights = (shadowMaps: ShadowMapPass[]) => {
         const lightSources = new Float32Array(
@@ -309,11 +326,18 @@ export const createDungeonRender = async (
                 [
                     flattenVector([lsm.light.position, lsm.light.direction]),
                     flattenMatrix(createLightProjectionMatrix(lsm.light)),
+                    [lsm.light.intensity, 0, 0, 0],
                 ].flat()
             )
         )
 
         device.queue.writeBuffer(lightSourcesBuffer, 0, lightSources)
+    }
+
+    const updateInactiveLights = (shadowMaps: ShadowMapPass[]) => {
+        for (const smp of shadowMaps) {
+            smp.light.intensity = 0
+        }
     }
 
     const shadowMapTextureArray = device.createTexture({
@@ -370,14 +394,19 @@ export const createDungeonRender = async (
         )
 
         updateActiveLights(lightShadowMaps.slice(0, 3))
+        updateInactiveLights(lightShadowMaps.slice(3))
 
         writeToBufferF32(device, playerPositionBuffer, new Float32Array(position), 0)
     }
     onPlayerMove(vec3(0, 0, 0))
 
     const dungeonRenderPass = (encoder: GPUCommandEncoder, time: number) => {
-        updateLightOptions(time)
-        updateShadowMapTextureArray(encoder, lightShadowMaps.slice(0, 3))
+        const currentActiveLights = lightShadowMaps.slice(0, 3)
+        updateLightIntensities(
+            time,
+            currentActiveLights.map(lsm => lsm.light)
+        )
+        updateShadowMapTextureArray(encoder, currentActiveLights)
 
         const colorAttachment: GPURenderPassColorAttachment = {
             view: msaaTexture.createView(),
