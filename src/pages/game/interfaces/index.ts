@@ -84,6 +84,7 @@ export interface TileSet {
 }
 
 export interface InputState {
+    inGame: boolean
     keyMap: { [key: string]: boolean }
     mouseMoveListeners: ((dx: number, dy: number) => void)[]
 }
@@ -97,4 +98,7 @@ export interface GameState {
     map: (Tile | null)[][]
     currentTile: Tile | null
     tileChangeListeners: ((world: Vector3, map: Vector2) => void)[]
+    cheats: {
+        noClip: boolean
+    }
 }

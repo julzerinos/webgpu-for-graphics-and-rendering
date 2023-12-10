@@ -20,12 +20,13 @@ import {
 } from "../../../libs/util"
 import { genreateIndexBuffer, genreateVertexBuffer, writeToBufferF32 } from "../../../libs/webgpu"
 import { Vector3 } from "../../../types"
-import { BufferedMesh, GameEngine, GamePlayer } from "../interfaces"
+import { BufferedMesh, GameEngine, GamePlayer, GameState } from "../interfaces"
 import {
     calculatePlayerViewMatrix,
     getCameraProjectionViewMatrix,
     initializeCamera,
 } from "./camera"
+import { boundPositionInTile } from "./tile"
 
 const createPlayerBufferedMesh = (
     device: GPUDevice
@@ -115,7 +116,11 @@ export const refreshPlayerCamera = (player: GamePlayer) => {
     for (const l of player.playerViewListeners) l(cameraMatrix)
 }
 
-export const updatePlayerPosition = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
+export const updatePlayerPosition = (
+    player: GamePlayer,
+    gameState: GameState,
+    keyMap: { [key: string]: boolean }
+) => {
     const forward = boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"])
     const strafe = boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"])
     const moveSpeedModifier = keyMap["v"]
@@ -123,7 +128,7 @@ export const updatePlayerPosition = (player: GamePlayer, keyMap: { [key: string]
     if (!forward && !strafe) return
 
     const newPosition = calculatePlayerPosition(player, forward, strafe, moveSpeedModifier)
-    // boundPositionInTile(newPosition, currentTile)
+    if (!gameState.cheats.noClip) boundPositionInTile(newPosition, gameState.currentTile!)
     player.position = newPosition
 
     for (const l of player.playerMoveListeners) l(player.position)

@@ -50,6 +50,7 @@ export const setupEngine = async (): Promise<GameEngine> => {
         input: {
             keyMap,
             mouseMoveListeners: onMouseMoveListeners,
+            inGame,
         },
     }
 }

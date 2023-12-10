@@ -1,11 +1,7 @@
 import { createCanvasSection, createCanvas } from "../../libs/web"
 import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
 import { initializePlayer, updatePlayerLookDirection, updatePlayerPosition } from "./logic/player"
-import {
-    createDungeonRender,
-    generateDungeonMap,
-    generateMeshFromTiles,
-} from "./logic/dungeon"
+import { createDungeonRender, generateDungeonMap, generateMeshFromTiles } from "./logic/dungeon"
 import { createShadowMapPass } from "./logic/lights"
 import { createPortalRender, generatePortalMesh } from "./logic/portal"
 import { setupEngine } from "./engine/engine"
@@ -26,6 +22,9 @@ const execute: Executable = async () => {
         map: tileMap,
         currentTile: null,
         tileChangeListeners: [],
+        cheats: {
+            noClip: false,
+        },
     }
 
     const { buffer, bufferLayout } = genreateVertexBuffer(
@@ -64,7 +63,13 @@ const execute: Executable = async () => {
     player.playerViewListeners.push(portalOnPlayerView!)
 
     const handleKeys = () => {
-        updatePlayerPosition(player, gameEngine.input.keyMap)
+        updatePlayerPosition(player, gameState, gameEngine.input.keyMap)
+
+        if (gameEngine.input.keyMap["p"]) {
+            gameState.cheats.noClip = !gameState.cheats.noClip
+            gameEngine.input.keyMap["p"] = false
+            console.info("[cheats]: no clip toggled to", gameState.cheats.noClip)
+        }
     }
 
     const frame = (time: number) => {
