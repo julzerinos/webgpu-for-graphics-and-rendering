@@ -1,6 +1,7 @@
 import {
     Vector3s,
     add,
+    boolToNumber,
     cross,
     normalize,
     quatAdd,
@@ -15,26 +16,36 @@ import {
     vec4,
 } from "../../../libs/util"
 import { Vector3 } from "../../../types"
-
-export interface GamePlayer {
-    position: Vector3
-    lookDirection: Vector3
-    right: Vector3
-}
+import { GamePlayer } from "../interfaces"
+import {
+    calculatePlayerViewMatrix,
+    getCameraProjectionViewMatrix,
+    initializeCamera,
+} from "./camera"
 
 export const initializePlayer = (): GamePlayer => {
+    const startPosition = vec3(0, 0, 0)
+    const startLookDirection = vec3(0, 0, -1)
+
+    const camera = initializeCamera(startPosition, startLookDirection)
+
     return {
-        position: vec3(0, 0, 0),
-        lookDirection: vec3(0, 0, -1),
-        right: vec3(1, 0, 0),
+        camera,
+        position: startPosition,
+        lookDirection: startLookDirection,
+        right: cross(vec3(0, 1, 0), startLookDirection),
+        playerMoveListeners: [],
+        playerViewListeners: [],
     } as GamePlayer
 }
 
-export const updatePlayerLookDirection = (
-    player: GamePlayer,
-    normalizedHorizontalMovement: number,
-    normalizedVerticalMovement: number
-) => {
+export const updatePlayerLookDirection = (player: GamePlayer, dx: number, dy: number) => {
+    const maxFrameDisplacement = 24
+    if (Math.abs(dx) > maxFrameDisplacement || Math.abs(dy) > maxFrameDisplacement) return
+
+    let normalizedHorizontalMovement = -dx / 512
+    let normalizedVerticalMovement = dy / 512
+
     if (player.lookDirection[1] > 0.97)
         normalizedVerticalMovement = Math.max(0, normalizedVerticalMovement)
     if (player.lookDirection[1] < -0.97)
@@ -46,6 +57,30 @@ export const updatePlayerLookDirection = (
 
     player.lookDirection = normalize(toVec3(quatApply(vec4(...player.lookDirection, 1), quat)))
     player.right = normalize(cross(Vector3s.up, player.lookDirection))
+
+    refreshPlayerCamera(player)
+}
+
+export const refreshPlayerCamera = (player: GamePlayer) => {
+    player.camera.extrinsics = calculatePlayerViewMatrix(player.position, player.lookDirection)
+    const cameraMatrix = getCameraProjectionViewMatrix(player.camera)
+    for (const l of player.playerViewListeners) l(cameraMatrix)
+}
+
+export const updatePlayerPosition = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
+    const forward = boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"])
+    const strafe = boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"])
+    const moveSpeedModifier = keyMap["v"]
+
+    if (!forward && !strafe) return
+
+    const newPosition = calculatePlayerPosition(player, forward, strafe, moveSpeedModifier)
+    // boundPositionInTile(newPosition, currentTile)
+    player.position = newPosition
+
+    for (const l of player.playerMoveListeners) l(player.position)
+
+    refreshPlayerCamera(player)
 }
 
 const moveFrameSpeed = 1e-1

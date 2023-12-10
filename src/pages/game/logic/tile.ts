@@ -180,3 +180,4 @@ export const boundPositionInTile = (position: Vector3, tile: Tile) => {
     position[0] = clamp(position[0], tileWorldMin[0], tileWorldMax[0])
     position[2] = clamp(position[2], tileWorldMin[2], tileWorldMax[2])
 }
+

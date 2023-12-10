@@ -13,7 +13,6 @@ import {
 } from "../../../libs/util"
 import {
     generateMultisampleBuffer,
-    generateDepthBuffer,
     setupShaderPipeline,
     genreateVertexBuffer,
     createBind,
@@ -21,14 +20,14 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { GameEngine, Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
+import { GameEngine, Light, Mesh, Renderable, ShadowMapPass, TileSet } from "../interfaces"
 import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
 import { createLightProjectionMatrix } from "./lights"
 import { byteLength } from "../../../libs/util/byteLengths"
 
-const DUNGEON_DIMENSION = 14
+const DUNGEON_DIMENSION = 8
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -96,6 +95,7 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
         Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
     ) as TileType[][]
     const center = vec2(DUNGEON_DIMENSION / 2, DUNGEON_DIMENSION / 2)
+    let endSet = false
 
     const followPath = (position: Vector2) => {
         // TODO randomize tiletype
@@ -104,6 +104,7 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
 
         setTile(map, position, tileType)
 
+        let followedPath = false
         for (let i = 0; i < 4; i++) {
             const direction = (1 << i) as Direction
             if (!isDirectionEmpty(map, position, direction)) continue
@@ -112,6 +113,13 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
 
             const nextTilePosition = add(position, directionToMapOffset[direction])
             followPath(nextTilePosition)
+
+            followedPath = true
+        }
+
+        if (!followedPath && !endSet) {
+            setTile(map, position, TileType.END)
+            endSet = true
         }
     }
 
@@ -155,8 +163,10 @@ const generateDebugMap = (): { map: TileType[][]; center: Vector2 } => {
 
 export const populateTiles = (
     dungeonMap: TileType[][]
-): { tiles: Tile[]; tileMap: (Tile | null)[][] } => {
-    const tiles = [] as Tile[]
+): { tileSet: TileSet; tileMap: (Tile | null)[][] } => {
+    const allTiles = [] as Tile[]
+    const lightTiles = [] as Tile[]
+    let endTile = null
     const tileMap = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
         Array(DUNGEON_DIMENSION).fill(null)
     ) as (Tile | null)[][]
@@ -181,23 +191,34 @@ export const populateTiles = (
                 cardinality,
                 type: tileType,
             }
-            tiles.push(tile)
+
+            allTiles.push(tile)
             tileMap[row][col] = tile
+
+            if (tileType === TileType.LIGHT) lightTiles.push(tile)
+            if (tileType === TileType.END) endTile = tile
         }
 
-    return { tiles, tileMap }
+    return {
+        tileSet: {
+            allTiles,
+            lightTiles,
+            endTile,
+        },
+        tileMap,
+    }
 }
 
 export const generateDungeonMap = (): {
-    tiles: Tile[]
+    tileSet: TileSet
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
     const { map, center } = generateMap()
 
-    const { tiles, tileMap } = populateTiles(map)
+    const { tileSet, tileMap } = populateTiles(map)
 
-    return { tiles, tileMap, center }
+    return { tileSet, tileMap, center }
 }
 
 export const worldToMap = (world: Vector3): Vector2 =>
@@ -226,6 +247,18 @@ export const generateMeshFromTiles = (tiles: Tile[]): Mesh => {
     }
 
     return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs }
+}
+
+export const getTileFromMap = (map: (Tile | null)[][], worldPosition: Vector3): Tile | null => {
+    const mapPosition = worldToMap(worldPosition)
+
+    const tile = map[mapPosition[0]][mapPosition[1]]
+    if (tile === null) {
+        console.error("next does not exist")
+        return null
+    }
+
+    return tile
 }
 
 export const createDungeonRender = async (

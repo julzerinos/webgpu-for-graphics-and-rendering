@@ -1,7 +1,10 @@
+import { pointerLockCanvas } from "../../../libs/web"
+import { initializeWebGPU, generateMultisampleBuffer } from "../../../libs/webgpu"
 import { GameEngine } from "../interfaces"
+import { updatePlayerLookDirection } from "../logic/player"
 
 export const setupEngine = async (): Promise<GameEngine> => {
-    const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
+    const { device, context, canvasFormat, canvas } = await initializeWebGPU("game")
 
     const msaaSamples = 4
     const { multisample, msaaTexture } = generateMultisampleBuffer(
@@ -22,6 +25,18 @@ export const setupEngine = async (): Promise<GameEngine> => {
         format: "depth24plus",
     }
 
+    const onMouseMoveListeners = [] as ((dx: number, dy: number) => void)[]
+
+    const onMouseMove = (dx: number, dy: number) => {
+        for (const l of onMouseMoveListeners) l(dx, dy)
+    }
+
+    let inGame = false
+    const { keyMap } = pointerLockCanvas("game", onMouseMove, {
+        onStart: () => (inGame = true),
+        onEnd: () => (inGame = false),
+    })
+
     return {
         device,
         mainCanvas: {
@@ -32,6 +47,10 @@ export const setupEngine = async (): Promise<GameEngine> => {
                 multisample,
                 msaaTextureView: msaaTexture.createView(),
             },
+        },
+        input: {
+            keyMap,
+            onMouseMoveListeners,
         },
     }
 }

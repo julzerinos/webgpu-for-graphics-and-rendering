@@ -1,4 +1,16 @@
-import { Matrix4x4, Vector3, Vector4 } from "../../../types"
+import { Matrix4x4, Vector2, Vector3, Vector4 } from "../../../types"
+import { Tile } from "../logic/tile"
+
+export interface GamePlayer {
+    camera: GameCamera
+
+    position: Vector3
+    lookDirection: Vector3
+    right: Vector3
+
+    playerMoveListeners: ((position: Vector3) => void)[]
+    playerViewListeners: ((cameraMatrix: Matrix4x4) => void)[]
+}
 
 export interface Mesh {
     vertices: Float32Array
@@ -22,11 +34,13 @@ export interface Light {
     position: Vector4
     direction: Vector4
     intensity: number
+    tint: Vector3
 }
 
 export interface GameEngine {
     device: GPUDevice
     mainCanvas: GameCanvas
+    input: InputState
 }
 
 export interface GameCanvas {
@@ -42,6 +56,28 @@ export interface CanvasDepthData {
 }
 
 export interface MultisampleData {
-    multisample: GPUMultisampleState,
+    multisample: GPUMultisampleState
     msaaTextureView: GPUTextureView
+}
+
+export interface TileSet {
+    allTiles: Tile[]
+    lightTiles: Tile[]
+    endTile: Tile | null
+}
+
+export interface InputState {
+    keyMap: { [key: string]: boolean }
+    onMouseMoveListeners: ((dx: number, dy: number) => void)[]
+}
+
+export interface GameCamera {
+    intrinsics: Matrix4x4
+    extrinsics: Matrix4x4
+}
+
+export interface GameState {
+    map: (Tile | null)[][]
+    currentTile: Tile | null
+    tileChangeListeners: ((world: Vector3, map: Vector2) => void)[]
 }

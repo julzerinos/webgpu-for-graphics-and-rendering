@@ -7,22 +7,17 @@ import {
     sqrMagnitude,
     subtract,
 } from "../../../libs/util"
-import { Matrix4x4 } from "../../../types"
-import { GamePlayer } from "./player"
+import { Matrix4x4, Vector3 } from "../../../types"
+import { GameCamera, GamePlayer } from "../interfaces"
 
-export interface GameCamera {
-    intrinsics: Matrix4x4
-    extrinsics: Matrix4x4
-}
-
-export const initializeCamera = (player: GamePlayer): GameCamera => ({
+export const initializeCamera = (position: Vector3, direction: Vector3): GameCamera => ({
     intrinsics: perspectiveProjection(85, 1, 0.001, 100),
-    extrinsics: calculatePlayerViewMatrix(player),
+    extrinsics: calculatePlayerViewMatrix(position, direction),
 })
 
-export const calculatePlayerViewMatrix = (player: GamePlayer): Matrix4x4 => {
-    const at = add(player.position, player.lookDirection)
-    const view = lookAtMatrix(player.position, at, vec3(0, 1, 0))
+export const calculatePlayerViewMatrix = (position: Vector3, direction: Vector3): Matrix4x4 => {
+    const at = add(position, direction)
+    const view = lookAtMatrix(position, at, vec3(0, 1, 0))
 
     return view
 }
