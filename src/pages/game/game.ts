@@ -18,7 +18,7 @@ import { genreateVertexBuffer, genreateIndexBuffer } from "../../libs/webgpu"
 const execute: Executable = async () => {
     const gameEngine = await setupEngine()
 
-    const player: GamePlayer = initializePlayer()
+    const player: GamePlayer = initializePlayer(gameEngine)
     gameEngine.input.mouseMoveListeners.push((dx, dy) => updatePlayerLookDirection(player, dx, dy))
 
     const { tileSet, tileMap } = generateDungeonMap()
@@ -26,7 +26,7 @@ const execute: Executable = async () => {
 
     const gameState: GameState = {
         map: tileMap,
-        currentTile: null, // getTileFromMap(tileMap, player.position),
+        currentTile: null,
         tileChangeListeners: [],
     }
 
@@ -42,31 +42,10 @@ const execute: Executable = async () => {
         vertexCount: dungeon.vertices.length / 4,
     }
 
-    const playerPlaceholder = Cube(vec3(0, 0, 0), 1)
-    const { buffer: playerVertexBuffer, bufferLayout: playerLayout } = genreateVertexBuffer(
-        gameEngine.device,
-        new Float32Array(flattenVector(playerPlaceholder.vertices)),
-        "float32x4",
-        0
-    )
-    const { buffer: playerIndexBuffer } = genreateIndexBuffer(
-        gameEngine.device,
-        new Uint32Array(flattenVector(playerPlaceholder.triangleIndices.map(f => toVec3(f))))
-    )
-
-    const playerBufferedMesh: BufferedMesh = {
-        vertexBuffer: playerVertexBuffer,
-        vertexBufferLayout: playerLayout,
-        indexBuffer: playerIndexBuffer,
-        vertexCount: playerPlaceholder.vertices.length,
-
-        triangleCount: playerPlaceholder.triangleCount,
-    }
-
     const { renderable: shadowMapPass, lightData } = createShadowMapPass(
         gameEngine,
         defineLightsFromTiles(tileSet.lightTiles),
-        [dungeonBufferedMesh, playerBufferedMesh]
+        [dungeonBufferedMesh, player.shadowBufferedMesh]
     )
     gameState.tileChangeListeners.push(shadowMapPass.onTileChange!)
 

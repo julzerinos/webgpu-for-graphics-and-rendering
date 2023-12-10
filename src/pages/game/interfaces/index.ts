@@ -10,6 +10,8 @@ export interface GamePlayer {
 
     playerMoveListeners: ((position: Vector3) => void)[]
     playerViewListeners: ((cameraMatrix: Matrix4x4) => void)[]
+
+    shadowBufferedMesh: BufferedMesh
 }
 
 export interface Mesh {

@@ -20,7 +20,7 @@ import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
 
-const DUNGEON_DIMENSION = 4
+const DUNGEON_DIMENSION = 10
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -207,7 +207,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateDebugMap() // generateMap()
+    const { map, center } =  generateMap()
 
     const { tileSet, tileMap } = populateTiles(map)
 

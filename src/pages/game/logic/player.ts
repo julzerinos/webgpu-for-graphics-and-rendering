@@ -1,8 +1,13 @@
 import {
+    Cube,
     Vector3s,
     add,
     boolToNumber,
+    createScaleMatrix,
+    createTranslateMatrix,
     cross,
+    flattenVector,
+    multMatrices,
     normalize,
     quatApply,
     quatFromAxisAngle,
@@ -11,28 +16,75 @@ import {
     toVec3,
     vec3,
     vec4,
+    vectorMatrixMult,
 } from "../../../libs/util"
+import { genreateIndexBuffer, genreateVertexBuffer, writeToBufferF32 } from "../../../libs/webgpu"
 import { Vector3 } from "../../../types"
-import { GamePlayer } from "../interfaces"
+import { BufferedMesh, GameEngine, GamePlayer } from "../interfaces"
 import {
     calculatePlayerViewMatrix,
     getCameraProjectionViewMatrix,
     initializeCamera,
 } from "./camera"
 
-export const initializePlayer = (): GamePlayer => {
+const createPlayerBufferedMesh = (
+    device: GPUDevice
+): { bufferedMesh: BufferedMesh; updateMesh: (pos: Vector3) => void } => {
+    const playerShadowMesh = Cube(vec3(0, 0, 0), 1)
+    const { buffer: playerVertexBuffer, bufferLayout: playerLayout } = genreateVertexBuffer(
+        device,
+        new Float32Array(flattenVector(playerShadowMesh.vertices)),
+        "float32x4",
+        0
+    )
+    const { buffer: playerIndexBuffer } = genreateIndexBuffer(
+        device,
+        new Uint32Array(flattenVector(playerShadowMesh.triangleIndices.map(f => toVec3(f))))
+    )
+
+    // TODO
+    const updateMesh = (position: Vector3) => {
+        const translation = createTranslateMatrix(add(position, vec3(0, -0.5, 0)))
+        const scale = createScaleMatrix(1, 2, 1)
+        const model = multMatrices(translation, scale)
+        writeToBufferF32(
+            device,
+            playerVertexBuffer,
+            new Float32Array(
+                flattenVector(playerShadowMesh.vertices.map(v => vectorMatrixMult(v, model)))
+            ), // TODO Change to model matrix uniform
+            0
+        )
+    }
+
+    return {
+        bufferedMesh: {
+            vertexBuffer: playerVertexBuffer,
+            vertexBufferLayout: playerLayout,
+            indexBuffer: playerIndexBuffer,
+            vertexCount: playerShadowMesh.vertices.length,
+            triangleCount: playerShadowMesh.triangleCount,
+        },
+        updateMesh,
+    }
+}
+
+export const initializePlayer = ({ device }: GameEngine): GamePlayer => {
     const startPosition = vec3(0, 0, 0)
     const startLookDirection = vec3(0, 0, -1)
 
     const camera = initializeCamera(startPosition, startLookDirection)
+
+    const { bufferedMesh, updateMesh } = createPlayerBufferedMesh(device)
 
     return {
         camera,
         position: startPosition,
         lookDirection: startLookDirection,
         right: cross(vec3(0, 1, 0), startLookDirection),
-        playerMoveListeners: [],
+        playerMoveListeners: [updateMesh],
         playerViewListeners: [],
+        shadowBufferedMesh: bufferedMesh,
     } as GamePlayer
 }
 
@@ -107,20 +159,4 @@ export const calculatePlayerPosition = (
     }
 
     return add(player.position, displacement)
-}
-
-
-// TODO
-const onPlayerMove = (position: Vector3) => {
-    const translation = createTranslateMatrix(add(position, vec3(0, -0.5, 0)))
-    const scale = createScaleMatrix(1, 2, 1)
-    const model = multMatrices(translation, scale)
-    writeToBufferF32(
-        device,
-        playerVertexBuffer,
-        new Float32Array(
-            flattenVector(playerPlaceholder.vertices.map(v => vectorMatrixMult(v, model)))
-        ),
-        0
-    )
 }
