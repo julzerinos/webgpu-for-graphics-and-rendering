@@ -103,32 +103,3 @@ fn main_fs(input : VertexOutput) -> @location(0) vec4f
 
     return vec4f(result, color.a);
 }
-
-//PRNG xorshift seed generator by NVIDIA
-fn tea(val0 : u32, val1 : u32) -> u32
-{
-    const N = 16u;  //User specified number of iterations
-    var v0 = val0;
-    var v1 = val1;
-    var s0 = 0u;
-    for(var n = 0u; n < N; n++)
-    {
-        s0 += 0x9e3779b9;
-        v0 += ((v1<<4) + 0xa341316c)^(v1 + s0)^((v1>>5) + 0xc8013ea4);
-        v1 += ((v0<<4) + 0xad90777d)^(v0 + s0)^((v0>>5) + 0x7e95761e);
-    }
-    return v0;
-}
-
-fn mcg31(prev : ptr < function, u32>) -> u32
-{
-    const LCG_A = 1977654935u;
-    *prev = (LCG_A * (*prev)) & 0x7FFFFFFF;
-    return * prev;
-}
-
-//Generate random float in [0, 1)
-fn rnd(prev : ptr < function, u32>) -> f32
-{
-    return f32(mcg31(prev)) / f32(0x80000000);
-}

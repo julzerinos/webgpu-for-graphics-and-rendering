@@ -1,6 +1,6 @@
 import { boolToNumber } from "../../libs/util"
 import { createCanvasSection, createCanvas, pointerLockCanvas } from "../../libs/web"
-import { initializeWebGPU } from "../../libs/webgpu"
+import { generateDepthBuffer, generateMultisampleBuffer, initializeWebGPU } from "../../libs/webgpu"
 import { Executable, ViewGenerator, ExecutableQueue, Vector3 } from "../../types"
 import {
     GameCamera,
@@ -23,12 +23,15 @@ import {
     worldToMap,
 } from "./logic/dungeon"
 import { shadowMapGenerationAllLights } from "./logic/lights"
+import { createPortalRender } from "./logic/portal"
+import { GameEngine } from "./interfaces"
+import { setupEngine } from "./engine/engine"
 
 const CANVAS_ID = "game"
 const CANVAS_SIZE = 512
 
 const execute: Executable = async () => {
-    const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
+    const gameEngine = await setupEngine()
 
     const player: GamePlayer = initializePlayer()
     const camera: GameCamera = initializeCamera(player)
@@ -51,18 +54,23 @@ const execute: Executable = async () => {
         onEnd: () => (inGame = false),
     })
 
-    const shadowMapRenders = shadowMapGenerationAllLights(device, tiles, dungeon)
+    const shadowMapRenders = shadowMapGenerationAllLights(gameEngine.device, tiles, dungeon)
 
     const {
         pass: dungeonRenderPass,
         onPlayerView: dungeonOnPlayerView,
         onPlayerMove: dungeonOnPlayerMove,
-    } = await createDungeonRender(dungeon, device, canvas, canvasFormat, context, shadowMapRenders)
+    } = await createDungeonRender(gameEngine, dungeon, shadowMapRenders)
+
+    const { pass: portalRenderPass, onPlayerView: portalOnPlayerView } = await createPortalRender(
+        gameEngine
+    )
 
     const updateCameraProjectionViewMatrix = () => {
         camera.extrinsics = calculatePlayerViewMatrix(player)
         const cameraMatrix = getCameraProjectionViewMatrix(camera)
         dungeonOnPlayerView?.(cameraMatrix)
+        portalOnPlayerView?.(cameraMatrix)
     }
 
     const updateTile = (position: Vector3) => {
@@ -71,7 +79,6 @@ const execute: Executable = async () => {
         const nextTile = tileMap[mapPosition[0]][mapPosition[1]]
         if (nextTile === null) {
             console.error("next does not exist")
-            // TODO return player to tile
             return
         }
 
@@ -86,7 +93,7 @@ const execute: Executable = async () => {
         if (!forward && !strafe) return
 
         const newPosition = calculatePlayerPosition(player, forward, strafe, moveSpeedModifier)
-        boundPositionInTile(newPosition, currentTile)
+        // boundPositionInTile(newPosition, currentTile)
         player.position = newPosition
         updateTile(newPosition)
 
@@ -98,13 +105,14 @@ const execute: Executable = async () => {
         updatePosition(keyMap)
         updateCameraProjectionViewMatrix()
 
-        const encoder = device.createCommandEncoder()
+        const encoder = gameEngine.device.createCommandEncoder()
 
         for (const r of shadowMapRenders) r.pass(encoder, time)
 
         dungeonRenderPass(encoder, time)
+        portalRenderPass(encoder, time)
 
-        device.queue.submit([encoder.finish()])
+        gameEngine.device.queue.submit([encoder.finish()])
 
         requestAnimationFrame(frame)
     }

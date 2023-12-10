@@ -21,14 +21,14 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
+import { GameEngine, Light, Mesh, Renderable, ShadowMapPass } from "../interfaces"
 import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
 import { createLightProjectionMatrix } from "./lights"
 import { byteLength } from "../../../libs/util/byteLengths"
 
-const DUNGEON_DIMENSION = 4
+const DUNGEON_DIMENSION = 14
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -121,34 +121,34 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
 }
 
 const generateDebugMap = (): { map: TileType[][]; center: Vector2 } => {
-    // const map = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
-    //     Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
-    // ) as TileType[][]
+    const map = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
+        Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
+    ) as TileType[][]
     const center = vec2(DUNGEON_DIMENSION / 2, DUNGEON_DIMENSION / 2)
 
-    // for (let col = 0; col < map.length; col++)
-    //     for (let row = 0; row < map[col].length; row++) {
-    //         if (col !== center[1] && row !== center[0]) continue
+    for (let col = 0; col < map.length; col++)
+        for (let row = 0; row < map[col].length; row++) {
+            if (col !== center[1] && row !== center[0]) continue
 
-    //         map[row][col] = TileType.NORMAL
+            map[row][col] = TileType.NORMAL
 
-    //         if (
-    //             col === 0 ||
-    //             col === DUNGEON_DIMENSION - 1 ||
-    //             row === 0 ||
-    //             row === DUNGEON_DIMENSION - 1
-    //         )
-    //             map[row][col] = TileType.LIGHT
-    //     }
+            if (
+                col === 0 ||
+                col === DUNGEON_DIMENSION - 1 ||
+                row === 0 ||
+                row === DUNGEON_DIMENSION - 1
+            )
+                map[row][col] = TileType.LIGHT
+        }
 
-    if (DUNGEON_DIMENSION !== 4) console.warn("Debug dungeon dimension is not 4.")
+    // if (DUNGEON_DIMENSION !== 4) console.warn("Debug dungeon dimension is not 4.")
 
-    const map = [
-        [TileType.EMPTY, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY],
-        [TileType.EMPTY, TileType.EMPTY, TileType.LIGHT, TileType.EMPTY],
-        [TileType.NORMAL, TileType.NORMAL, TileType.NORMAL, TileType.NORMAL],
-        [TileType.EMPTY, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY],
-    ]
+    // const map = [
+    //     [TileType.EMPTY, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY],
+    //     [TileType.EMPTY, TileType.EMPTY, TileType.LIGHT, TileType.EMPTY],
+    //     [TileType.NORMAL, TileType.NORMAL, TileType.NORMAL, TileType.NORMAL],
+    //     [TileType.EMPTY, TileType.EMPTY, TileType.EMPTY, TileType.EMPTY],
+    // ]
 
     return { map, center }
 }
@@ -193,7 +193,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateDebugMap() //generateMap()
+    const { map, center } = generateMap()
 
     const { tiles, tileMap } = populateTiles(map)
 
@@ -229,11 +229,16 @@ export const generateMeshFromTiles = (tiles: Tile[]): Mesh => {
 }
 
 export const createDungeonRender = async (
+    {
+        device,
+        mainCanvas: {
+            context,
+            canvasFormat,
+            depthData: { depthStencil, depthStencilTextureView },
+            multisampleData: { msaaTextureView, multisample },
+        },
+    }: GameEngine,
     dungeon: Mesh,
-    device: GPUDevice,
-    canvas: HTMLCanvasElement,
-    canvasFormat: GPUTextureFormat,
-    context: GPUCanvasContext,
     lightShadowMaps: ShadowMapPass[] = []
 ): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
@@ -256,9 +261,6 @@ export const createDungeonRender = async (
         2
     )
 
-    const { multisample, msaaTexture } = generateMultisampleBuffer(device, canvas, canvasFormat, 4)
-    const { depthStencil, depthStencilAttachmentFactory } = generateDepthBuffer(device, canvas, 4)
-
     const pipeline = setupShaderPipeline(
         device,
         [vertexBufferLayout, normalBufferLayout, uvBufferLayout],
@@ -278,8 +280,6 @@ export const createDungeonRender = async (
         }
     )
 
-    const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
-
     const {
         bindGroup: uniformBindGroup,
         buffers: [playerCameraBuffer, playerPositionBuffer],
@@ -289,6 +289,8 @@ export const createDungeonRender = async (
         [new Float32Array(flattenMatrix(identity4x4())), new Float32Array(vec3(0, 0, 0))],
         "UNIFORM"
     )
+
+    const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
 
     const lightSourcesBuffer = device.createBuffer({
         size: new Float32Array(32).byteLength * 3,
@@ -407,7 +409,7 @@ export const createDungeonRender = async (
         updateShadowMapTextureArray(encoder, currentActiveLights)
 
         const colorAttachment: GPURenderPassColorAttachment = {
-            view: msaaTexture.createView(),
+            view: msaaTextureView,
             resolveTarget: context.getCurrentTexture().createView(),
             loadOp: "clear",
             clearValue: Colors.black,
@@ -415,7 +417,12 @@ export const createDungeonRender = async (
         }
         const pass = encoder.beginRenderPass({
             colorAttachments: [colorAttachment],
-            depthStencilAttachment: (depthStencilAttachmentFactory ?? (() => undefined))(),
+            depthStencilAttachment: {
+                view: depthStencilTextureView,
+                depthLoadOp: "clear",
+                depthClearValue: 1.0,
+                depthStoreOp: "store",
+            },
         })
 
         pass.setPipeline(pipeline)
