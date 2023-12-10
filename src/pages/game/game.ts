@@ -1,49 +1,80 @@
 import { createCanvasSection, createCanvas } from "../../libs/web"
-import { Executable, ViewGenerator, ExecutableQueue, Vector3 } from "../../types"
-import { Tile } from "./logic/tile"
+import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
 import { initializePlayer, updatePlayerLookDirection, updatePlayerPosition } from "./logic/player"
 import {
     createDungeonRender,
     generateDungeonMap,
     generateMeshFromTiles,
     getTileFromMap,
-    worldToMap,
 } from "./logic/dungeon"
-import { shadowMapGenerationAllLights } from "./logic/lights"
+import { defineLightsFromTiles, createShadowMapPass } from "./logic/lights"
 import { createPortalRender } from "./logic/portal"
 import { setupEngine } from "./engine/engine"
-import { GamePlayer, GameState } from "./interfaces"
+import { BufferedMesh, GamePlayer, GameState } from "./interfaces"
 import { updateGameState } from "./logic/gameState"
+import { Cube, vec3, flattenVector, toVec3, nSmallestElementsIndices } from "../../libs/util"
+import { genreateVertexBuffer, genreateIndexBuffer } from "../../libs/webgpu"
 
 const execute: Executable = async () => {
     const gameEngine = await setupEngine()
 
     const player: GamePlayer = initializePlayer()
-    gameEngine.input.onMouseMoveListeners.push((dx, dy) =>
-        updatePlayerLookDirection(player, dx, dy)
-    )
+    gameEngine.input.mouseMoveListeners.push((dx, dy) => updatePlayerLookDirection(player, dx, dy))
 
-    const { tileSet, tileMap, center } = generateDungeonMap()
+    const { tileSet, tileMap } = generateDungeonMap()
     const dungeon = generateMeshFromTiles(tileSet.allTiles)
 
     const gameState: GameState = {
         map: tileMap,
-        currentTile: getTileFromMap(tileMap, player.position),
+        currentTile: null, // getTileFromMap(tileMap, player.position),
         tileChangeListeners: [],
     }
 
-    const shadowMapRenders = shadowMapGenerationAllLights(
+    const { buffer, bufferLayout } = genreateVertexBuffer(
         gameEngine.device,
-        tileSet.lightTiles,
-        dungeon
+        dungeon.vertices,
+        "float32x4",
+        0
     )
-    player.playerMoveListeners.push(...shadowMapRenders.map(smr => smr.onPlayerMove!))
+    const dungeonBufferedMesh: BufferedMesh = {
+        vertexBuffer: buffer,
+        vertexBufferLayout: bufferLayout,
+        vertexCount: dungeon.vertices.length / 4,
+    }
+
+    const playerPlaceholder = Cube(vec3(0, 0, 0), 1)
+    const { buffer: playerVertexBuffer, bufferLayout: playerLayout } = genreateVertexBuffer(
+        gameEngine.device,
+        new Float32Array(flattenVector(playerPlaceholder.vertices)),
+        "float32x4",
+        0
+    )
+    const { buffer: playerIndexBuffer } = genreateIndexBuffer(
+        gameEngine.device,
+        new Uint32Array(flattenVector(playerPlaceholder.triangleIndices.map(f => toVec3(f))))
+    )
+
+    const playerBufferedMesh: BufferedMesh = {
+        vertexBuffer: playerVertexBuffer,
+        vertexBufferLayout: playerLayout,
+        indexBuffer: playerIndexBuffer,
+        vertexCount: playerPlaceholder.vertices.length,
+
+        triangleCount: playerPlaceholder.triangleCount,
+    }
+
+    const { renderable: shadowMapPass, lightData } = createShadowMapPass(
+        gameEngine,
+        defineLightsFromTiles(tileSet.lightTiles),
+        [dungeonBufferedMesh, playerBufferedMesh]
+    )
+    gameState.tileChangeListeners.push(shadowMapPass.onTileChange!)
 
     const {
         pass: dungeonRenderPass,
         onPlayerView: dungeonOnPlayerView,
         onPlayerMove: dungeonOnPlayerMove,
-    } = await createDungeonRender(gameEngine, dungeon, shadowMapRenders)
+    } = await createDungeonRender(gameEngine, dungeon, lightData)
     player.playerViewListeners.push(dungeonOnPlayerView!)
     player.playerMoveListeners.push(dungeonOnPlayerMove!)
 
@@ -62,10 +93,10 @@ const execute: Executable = async () => {
 
         const encoder = gameEngine.device.createCommandEncoder()
 
-        for (const r of shadowMapRenders) r.pass(encoder, time)
+        shadowMapPass.pass(encoder, time)
 
         dungeonRenderPass(encoder, time)
-        portalRenderPass(encoder, time)
+        // portalRenderPass(encoder, time)
 
         gameEngine.device.queue.submit([encoder.finish()])
 

@@ -4,11 +4,9 @@ import {
     lookAtMatrix,
     add,
     multMatrices,
-    sqrMagnitude,
-    subtract,
 } from "../../../libs/util"
 import { Matrix4x4, Vector3 } from "../../../types"
-import { GameCamera, GamePlayer } from "../interfaces"
+import { GameCamera } from "../interfaces"
 
 export const initializeCamera = (position: Vector3, direction: Vector3): GameCamera => ({
     intrinsics: perspectiveProjection(85, 1, 0.001, 100),

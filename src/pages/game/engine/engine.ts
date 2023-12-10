@@ -1,7 +1,6 @@
 import { pointerLockCanvas } from "../../../libs/web"
 import { initializeWebGPU, generateMultisampleBuffer } from "../../../libs/webgpu"
 import { GameEngine } from "../interfaces"
-import { updatePlayerLookDirection } from "../logic/player"
 
 export const setupEngine = async (): Promise<GameEngine> => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU("game")
@@ -50,7 +49,7 @@ export const setupEngine = async (): Promise<GameEngine> => {
         },
         input: {
             keyMap,
-            onMouseMoveListeners,
+            mouseMoveListeners: onMouseMoveListeners,
         },
     }
 }

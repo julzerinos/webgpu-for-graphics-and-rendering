@@ -4,13 +4,10 @@ import {
     boolToNumber,
     cross,
     normalize,
-    quatAdd,
     quatApply,
     quatFromAxisAngle,
     quatMultiply,
     scale,
-    sqrMagnitude,
-    subtract,
     toVec3,
     vec3,
     vec4,
@@ -110,4 +107,20 @@ export const calculatePlayerPosition = (
     }
 
     return add(player.position, displacement)
+}
+
+
+// TODO
+const onPlayerMove = (position: Vector3) => {
+    const translation = createTranslateMatrix(add(position, vec3(0, -0.5, 0)))
+    const scale = createScaleMatrix(1, 2, 1)
+    const model = multMatrices(translation, scale)
+    writeToBufferF32(
+        device,
+        playerVertexBuffer,
+        new Float32Array(
+            flattenVector(playerPlaceholder.vertices.map(v => vectorMatrixMult(v, model)))
+        ),
+        0
+    )
 }

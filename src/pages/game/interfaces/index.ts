@@ -19,15 +19,20 @@ export interface Mesh {
     triangles?: Uint32Array
 }
 
+export interface BufferedMesh {
+    vertexBuffer: GPUBuffer
+    vertexBufferLayout: GPUVertexBufferLayout
+    vertexCount: number
+
+    indexBuffer?: GPUBuffer
+    triangleCount?: number
+}
+
 export interface Renderable {
     pass: (encoder: GPUCommandEncoder, time: number) => void
     onPlayerMove?: (position: Vector3) => void
     onPlayerView?: (cameraMatrix: Matrix4x4) => void
-}
-
-export interface ShadowMapPass extends Renderable {
-    texture: GPUTexture
-    light: Light
+    onTileChange?: (world: Vector3, map: Vector2) => void
 }
 
 export interface Light {
@@ -35,6 +40,15 @@ export interface Light {
     direction: Vector4
     intensity: number
     tint: Vector3
+    active: boolean
+}
+
+export interface GameLightData {
+    lights: Light[]
+    shadowMapTexture: GPUTexture
+    activeLightsChangeListeners: ((activeIndices: number[]) => void)[]
+    activeLightSourcesBuffer: GPUBuffer
+    activeLightIndicesBuffer: GPUBuffer
 }
 
 export interface GameEngine {
@@ -68,7 +82,7 @@ export interface TileSet {
 
 export interface InputState {
     keyMap: { [key: string]: boolean }
-    onMouseMoveListeners: ((dx: number, dy: number) => void)[]
+    mouseMoveListeners: ((dx: number, dy: number) => void)[]
 }
 
 export interface GameCamera {

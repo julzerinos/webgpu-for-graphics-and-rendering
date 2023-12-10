@@ -13,6 +13,7 @@ struct LightSource {
 
 @group(2) @binding(0) var<uniform> light_sources : array<LightSource, 3>;
 @group(2) @binding(1) var shadow_maps : texture_2d_array<f32>;
+@group(2) @binding(2) var<uniform> active_light_indices: vec3u;
 
 const light_emission_tint = vec3f(.9, .4, 0.);
 const ambient_light = vec3f(.0);
@@ -42,8 +43,10 @@ fn calculate_visibility(light_index : u32, world_position : vec4f) -> f32
     let shadow_lookup = light_sources[light_index].projection * world_position;
     let t = (shadow_lookup.xyz / shadow_lookup.w) * vec3f(.5, -.5, 1) + vec3f(.5, .5, 0);
 
+    var a = active_light_indices;
+
     let lookup = t.xy;
-    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x * 2048), i32(lookup.y * 512)), light_index, 0).r;
+    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x * 2048), i32(lookup.y * 512)), active_light_indices[light_index], 0).r;
 
     let covered = abs(t.z - visibility) > 0.0003;
     visibility = select(visibility, 0., covered);

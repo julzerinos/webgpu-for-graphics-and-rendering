@@ -2,17 +2,12 @@ import {
     Colors,
     add,
     flattenMatrix,
-    flattenVector,
     identity4x4,
     loadTexture,
-    sqrMagnitude,
-    subtract,
-    toVec3,
     vec2,
     vec3,
 } from "../../../libs/util"
 import {
-    generateMultisampleBuffer,
     setupShaderPipeline,
     genreateVertexBuffer,
     createBind,
@@ -20,14 +15,12 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { GameEngine, Light, Mesh, Renderable, ShadowMapPass, TileSet } from "../interfaces"
+import { GameEngine, GameLightData, Mesh, Renderable, TileSet } from "../interfaces"
 import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
-import { createLightProjectionMatrix } from "./lights"
-import { byteLength } from "../../../libs/util/byteLengths"
 
-const DUNGEON_DIMENSION = 8
+const DUNGEON_DIMENSION = 4
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -214,7 +207,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateMap()
+    const { map, center } = generateDebugMap() // generateMap()
 
     const { tileSet, tileMap } = populateTiles(map)
 
@@ -272,7 +265,7 @@ export const createDungeonRender = async (
         },
     }: GameEngine,
     dungeon: Mesh,
-    lightShadowMaps: ShadowMapPass[] = []
+    { shadowMapTexture, activeLightSourcesBuffer, activeLightIndicesBuffer }: GameLightData
 ): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
 
@@ -325,87 +318,20 @@ export const createDungeonRender = async (
 
     const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
 
-    const lightSourcesBuffer = device.createBuffer({
-        size: new Float32Array(32).byteLength * 3,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    })
-
-    const updateLightIntensities = (time: number, lights: Light[]) => {
-        const nextFlickerIntensity = (previousIntensity: number): number => {
-            if (previousIntensity < 6) return (previousIntensity += 0.1 * Math.random())
-
-            return Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
-        }
-
-        const byteOffset = byteLength.float32x4 * 2 + byteLength.float32x4x4
-        let currentOffset = byteOffset
-        for (const l of lights) {
-            const flickerIntensity = nextFlickerIntensity(l.intensity)
-            writeToBufferF32(
-                device,
-                lightSourcesBuffer,
-                new Float32Array([flickerIntensity]),
-                currentOffset
-            )
-
-            currentOffset += byteOffset + byteLength.float32x4
-            l.intensity = flickerIntensity
-        }
-    }
-
-    const updateActiveLights = (shadowMaps: ShadowMapPass[]) => {
-        const lightSources = new Float32Array(
-            shadowMaps.flatMap(lsm =>
-                [
-                    flattenVector([lsm.light.position, lsm.light.direction]),
-                    flattenMatrix(createLightProjectionMatrix(lsm.light)),
-                    [lsm.light.intensity, 0, 0, 0],
-                ].flat()
-            )
-        )
-
-        device.queue.writeBuffer(lightSourcesBuffer, 0, lightSources)
-    }
-
-    const updateInactiveLights = (shadowMaps: ShadowMapPass[]) => {
-        for (const smp of shadowMaps) {
-            smp.light.intensity = 0
-        }
-    }
-
-    const shadowMapTextureArray = device.createTexture({
-        format: "rgba32float",
-        size: { width: 2048, height: 512, depthOrArrayLayers: 3 },
-        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
-        dimension: "2d",
-    })
-
-    const updateShadowMapTextureArray = (
-        encoder: GPUCommandEncoder,
-        shadowMaps: ShadowMapPass[]
-    ) => {
-        let i = 0
-        for (const smp of shadowMaps) {
-            encoder.copyTextureToTexture(
-                {
-                    texture: smp.texture,
-                },
-                { texture: shadowMapTextureArray, origin: { z: i++ } },
-                { width: 2048, height: 512, depthOrArrayLayers: 1 }
-            )
-        }
-    }
-
     const shadowMapBindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(2),
         entries: [
             {
                 binding: 0,
-                resource: { buffer: lightSourcesBuffer },
+                resource: { buffer: activeLightSourcesBuffer },
             },
             {
                 binding: 1,
-                resource: shadowMapTextureArray.createView(),
+                resource: shadowMapTexture.createView(),
+            },
+            {
+                binding: 2,
+                resource: { buffer: activeLightIndicesBuffer },
             },
         ],
     })
@@ -420,27 +346,12 @@ export const createDungeonRender = async (
     }
 
     const onPlayerMove = (position: Vector3) => {
-        lightShadowMaps.sort(
-            (a, b) =>
-                sqrMagnitude(subtract(toVec3(a.light.position), position)) -
-                sqrMagnitude(subtract(toVec3(b.light.position), position))
-        )
-
-        updateActiveLights(lightShadowMaps.slice(0, 3))
-        updateInactiveLights(lightShadowMaps.slice(3))
-
         writeToBufferF32(device, playerPositionBuffer, new Float32Array(position), 0)
     }
-    onPlayerMove(vec3(0, 0, 0))
+
+    const onActiveLightsChange = (activeLightIndices: number[]) => {}
 
     const dungeonRenderPass = (encoder: GPUCommandEncoder, time: number) => {
-        const currentActiveLights = lightShadowMaps.slice(0, 3)
-        updateLightIntensities(
-            time,
-            currentActiveLights.map(lsm => lsm.light)
-        )
-        updateShadowMapTextureArray(encoder, currentActiveLights)
-
         const colorAttachment: GPURenderPassColorAttachment = {
             view: msaaTextureView,
             resolveTarget: context.getCurrentTexture().createView(),

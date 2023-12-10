@@ -1,5 +1,4 @@
 import {
-    Colors,
     flattenMatrix,
     flattenVector,
     identity4x4,

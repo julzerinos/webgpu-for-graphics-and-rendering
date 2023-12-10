@@ -4,13 +4,11 @@ import {
     boolToNumber,
     add,
     clamp,
-    subtract,
     vec2,
     vec3,
 } from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
-import { Light } from "../interfaces"
-import { mapToWorld, worldToMap } from "./dungeon"
+import { mapToWorld } from "./dungeon"
 
 export const TILE_SIZE = 4
 
