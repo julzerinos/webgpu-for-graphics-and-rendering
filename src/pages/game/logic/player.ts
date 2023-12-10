@@ -3,10 +3,13 @@ import {
     add,
     cross,
     normalize,
+    quatAdd,
     quatApply,
     quatFromAxisAngle,
     quatMultiply,
     scale,
+    sqrMagnitude,
+    subtract,
     toVec3,
     vec3,
     vec4,
@@ -32,14 +35,17 @@ export const updatePlayerLookDirection = (
     normalizedHorizontalMovement: number,
     normalizedVerticalMovement: number
 ) => {
+    if (player.lookDirection[1] > 0.97)
+        normalizedVerticalMovement = Math.max(0, normalizedVerticalMovement)
+    if (player.lookDirection[1] < -0.97)
+        normalizedVerticalMovement = Math.min(0, normalizedVerticalMovement)
+
     const quatY = quatFromAxisAngle(vec3(0, 1, 0), normalizedHorizontalMovement)
     const quatX = quatFromAxisAngle(player.right, normalizedVerticalMovement)
     const quat = quatMultiply(quatY, quatX)
 
     player.lookDirection = normalize(toVec3(quatApply(vec4(...player.lookDirection, 1), quat)))
-    player.right = cross(Vector3s.up, player.lookDirection)
-
-    // TODO bug with bumps in rotation
+    player.right = normalize(cross(Vector3s.up, player.lookDirection))
 }
 
 const moveFrameSpeed = 1e-1

@@ -1,4 +1,12 @@
-import { perspectiveProjection, vec3, lookAtMatrix, add, multMatrices } from "../../../libs/util"
+import {
+    perspectiveProjection,
+    vec3,
+    lookAtMatrix,
+    add,
+    multMatrices,
+    sqrMagnitude,
+    subtract,
+} from "../../../libs/util"
 import { Matrix4x4 } from "../../../types"
 import { GamePlayer } from "./player"
 
@@ -14,7 +22,9 @@ export const initializeCamera = (player: GamePlayer): GameCamera => ({
 
 export const calculatePlayerViewMatrix = (player: GamePlayer): Matrix4x4 => {
     const at = add(player.position, player.lookDirection)
-    return lookAtMatrix(player.position, at, vec3(0, 1, 0))
+    const view = lookAtMatrix(player.position, at, vec3(0, 1, 0))
+
+    return view
 }
 
 export const getCameraProjectionViewMatrix = (camera: GameCamera): Matrix4x4 => {

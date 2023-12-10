@@ -1,23 +1,6 @@
-import {
-    Colors,
-    boolToNumber,
-    flattenMatrix,
-    loadTexture,
-    vec3,
-    vectorsEqual,
-} from "../../libs/util"
+import { boolToNumber } from "../../libs/util"
 import { createCanvasSection, createCanvas, pointerLockCanvas } from "../../libs/web"
-import {
-    createBind,
-    createPass,
-    createTextureBind,
-    generateDepthBuffer,
-    generateMultisampleBuffer,
-    genreateVertexBuffer,
-    initializeWebGPU,
-    setupShaderPipeline,
-    writeToBufferF32,
-} from "../../libs/webgpu"
+import { initializeWebGPU } from "../../libs/webgpu"
 import { Executable, ViewGenerator, ExecutableQueue, Vector3 } from "../../types"
 import {
     GameCamera,
@@ -25,7 +8,7 @@ import {
     getCameraProjectionViewMatrix,
     initializeCamera,
 } from "./logic/camera"
-import { Tile, TileType, boundPositionInTile } from "./logic/tile"
+import { Tile, boundPositionInTile } from "./logic/tile"
 import {
     GamePlayer,
     initializePlayer,
@@ -36,7 +19,6 @@ import {
 import {
     createDungeonRender,
     generateDungeonMap,
-    generateMap,
     generateMeshFromTiles,
     worldToMap,
 } from "./logic/dungeon"
@@ -58,6 +40,9 @@ const execute: Executable = async () => {
     let inGame = false
 
     const onMouseMove = (dx: number, dy: number) => {
+        const maxFrameDisplacement = 24
+        if (Math.abs(dx) > maxFrameDisplacement || Math.abs(dy) > maxFrameDisplacement) return
+
         updatePlayerLookDirection(player, -dx / CANVAS_SIZE, dy / CANVAS_SIZE)
     }
 
@@ -80,8 +65,8 @@ const execute: Executable = async () => {
         dungeonOnPlayerView?.(cameraMatrix)
     }
 
-    const updateTile = () => {
-        const mapPosition = worldToMap(player.position)
+    const updateTile = (position: Vector3) => {
+        const mapPosition = worldToMap(position)
 
         const nextTile = tileMap[mapPosition[0]][mapPosition[1]]
         if (nextTile === null) {
@@ -93,7 +78,7 @@ const execute: Executable = async () => {
         currentTile = nextTile
     }
 
-    const handleKeyInput = (player: GamePlayer, keyMap: { [key: string]: boolean }) => {
+    const updatePosition = (keyMap: { [key: string]: boolean }) => {
         const forward = boolToNumber(keyMap["w"]) - boolToNumber(keyMap["s"])
         const strafe = boolToNumber(keyMap["a"]) - boolToNumber(keyMap["d"])
         const moveSpeedModifier = keyMap["v"]
@@ -101,16 +86,17 @@ const execute: Executable = async () => {
         if (!forward && !strafe) return
 
         const newPosition = calculatePlayerPosition(player, forward, strafe, moveSpeedModifier)
-        updateTile()
         boundPositionInTile(newPosition, currentTile)
         player.position = newPosition
+        updateTile(newPosition)
+
         for (const r of shadowMapRenders) r.onPlayerMove?.(player.position)
         dungeonOnPlayerMove?.(player.position)
     }
 
     const frame = (time: number) => {
+        updatePosition(keyMap)
         updateCameraProjectionViewMatrix()
-        handleKeyInput(player, keyMap)
 
         const encoder = device.createCommandEncoder()
 

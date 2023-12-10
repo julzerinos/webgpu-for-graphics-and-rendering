@@ -28,7 +28,7 @@ import dungeonShader from "../shaders/dungeon.wgsl?raw"
 import { createLightProjectionMatrix } from "./lights"
 import { byteLength } from "../../../libs/util/byteLengths"
 
-const DUNGEON_DIMENSION = 10
+const DUNGEON_DIMENSION = 4
 
 const directionToMapOffset = {
     1: vec2(0, 1),
@@ -193,7 +193,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } = generateMap()
+    const { map, center } = generateDebugMap() //generateMap()
 
     const { tiles, tileMap } = populateTiles(map)
 
