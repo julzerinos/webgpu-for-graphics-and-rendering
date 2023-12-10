@@ -296,10 +296,8 @@ export const createDungeonRender = async (
     })
 
     const updateLightIntensities = (time: number, lights: Light[]) => {
-        const slowerTime = time / 6e3
-
         const nextFlickerIntensity = (previousIntensity: number): number => {
-            if (previousIntensity < 5) return (previousIntensity += 0.03)
+            if (previousIntensity < 6) return (previousIntensity += 0.1 * Math.random())
 
             return Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
         }

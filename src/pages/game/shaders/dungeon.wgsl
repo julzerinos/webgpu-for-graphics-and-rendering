@@ -8,7 +8,7 @@ struct LightSource {
     position : vec3f,
     direction : vec3f,
     projection : mat4x4f,
-    light_intensity: f32
+    light_intensity : f32
 };
 
 @group(2) @binding(0) var<uniform> light_sources : array<LightSource, 3>;
@@ -42,7 +42,8 @@ fn calculate_visibility(light_index : u32, world_position : vec4f) -> f32
     let shadow_lookup = light_sources[light_index].projection * world_position;
     let t = (shadow_lookup.xyz / shadow_lookup.w) * vec3f(.5, -.5, 1) + vec3f(.5, .5, 0);
 
-    var visibility = textureLoad(shadow_maps, vec2i(i32(t.x * 2048), i32(t.y * 512)), light_index, 0).r;
+    let lookup = t.xy;
+    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x * 2048), i32(lookup.y * 512)), light_index, 0).r;
 
     let covered = abs(t.z - visibility) > 0.0003;
     visibility = select(visibility, 0., covered);
@@ -71,7 +72,7 @@ fn lambertian(normal : vec3f, world_position : vec4f) -> vec3f
 
         let light_wall_direction = light_sources[i].direction;
         let wall_light_boost = max(1, dot(normal, light_wall_direction) * 4.5);
-    
+
         let light_emission = light_emission_tint * light_sources[i].light_intensity;
 
         let visibility = calculate_visibility(i, world_position);
@@ -101,4 +102,33 @@ fn main_fs(input : VertexOutput) -> @location(0) vec4f
     let result = (1 - fog_modifier) * color.rgb * shading + fog_modifier * fog_tint;
 
     return vec4f(result, color.a);
+}
+
+//PRNG xorshift seed generator by NVIDIA
+fn tea(val0 : u32, val1 : u32) -> u32
+{
+    const N = 16u;  //User specified number of iterations
+    var v0 = val0;
+    var v1 = val1;
+    var s0 = 0u;
+    for(var n = 0u; n < N; n++)
+    {
+        s0 += 0x9e3779b9;
+        v0 += ((v1<<4) + 0xa341316c)^(v1 + s0)^((v1>>5) + 0xc8013ea4);
+        v1 += ((v0<<4) + 0xad90777d)^(v0 + s0)^((v0>>5) + 0x7e95761e);
+    }
+    return v0;
+}
+
+fn mcg31(prev : ptr < function, u32>) -> u32
+{
+    const LCG_A = 1977654935u;
+    *prev = (LCG_A * (*prev)) & 0x7FFFFFFF;
+    return * prev;
+}
+
+//Generate random float in [0, 1)
+fn rnd(prev : ptr < function, u32>) -> f32
+{
+    return f32(mcg31(prev)) / f32(0x80000000);
 }
