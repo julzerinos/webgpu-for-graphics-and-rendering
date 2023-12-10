@@ -1,9 +1,6 @@
 import {
     Colors,
-    Cube,
     add,
-    createScaleMatrix,
-    createTranslateMatrix,
     flattenMatrix,
     flattenVector,
     lookAtMatrix,
@@ -15,39 +12,37 @@ import {
     toVec3,
     vec3,
     vec4,
-    vectorMatrixMult,
 } from "../../../libs/util"
-import { Matrix4x4, Vector3 } from "../../../types"
-import { BufferedMesh, GameEngine, GameLightData, Light, Mesh, Renderable } from "../interfaces"
+import { Matrix4x4, Vector3, Vector4 } from "../../../types"
+import { BufferedMesh, GameEngine, GameLightData, Light, Renderable } from "../interfaces"
 import { mapToWorld } from "./dungeon"
-import { Direction, TILE_SIZE, Tile, TileType } from "./tile"
+import { TILE_SIZE, Tile } from "./tile"
 
 import shaderCode from "../shaders/shadowMap.wgsl?raw"
-import {
-    createBind,
-    genreateIndexBuffer,
-    genreateVertexBuffer,
-    writeToBufferF32,
-} from "../../../libs/webgpu"
-import light from "../../rendering/02-lighting-models/light"
+import { createBind, writeToBufferF32 } from "../../../libs/webgpu"
 import { byteLength } from "../../../libs/util/byteLengths"
 
-export const defineLightsFromTiles = (lightTiles: Tile[]): Light[] =>
-    lightTiles.flatMap(lt => {
-        const ls = []
-        const halfSize = TILE_SIZE / 2 - 0.1
-        const worldPosition = mapToWorld(lt.position)
-        if (!(lt.cardinality & Direction.NORTH))
-            ls.push({
-                direction: vec4(0, 0, -1, 0),
-                position: vec4(...add(vec3(0, 0.3, halfSize), worldPosition), 1),
-                intensity: 0,
-                tint: vec3(1, 1, 1),
-                active: false,
-            })
+const ACTIVE_LIGHTS = 4
 
-        return ls
-    })
+export const dungeonTileLight = (t: Tile): Light => {
+    const halfSize = TILE_SIZE / 2 - 0.1
+    const worldPosition = mapToWorld(t.position)
+    return {
+        direction: vec4(0, 0, -1, 0),
+        position: vec4(...add(vec3(0, 0.3, halfSize), worldPosition), 1),
+        intensity: 0,
+        tint: vec3(0.9, 0.4, 0),
+        active: false,
+    }
+}
+
+export const portalLight = (position: Vector4, direction: Vector4): Light => ({
+    direction: direction,
+    position: position,
+    intensity: 4,
+    tint: vec3(35 / 100, 50 / 100, 9 / 100),
+    active: false,
+})
 
 export const createLightProjectionMatrix = (light: Light): Matrix4x4 => {
     const view = lookAtMatrix(
@@ -71,7 +66,7 @@ export const lightDataFlat = (lights: Light[]): Float32Array =>
             [
                 flattenVector([l.position, l.direction]),
                 flattenMatrix(createLightProjectionMatrix(l)),
-                [...l.tint, l.intensity],
+                [l.intensity, 0, 0, 0, ...l.tint, 0],
             ].flat()
         )
     )
@@ -129,7 +124,6 @@ export const createShadowMapPass = (
         dimension: "2d",
         format: "rgba32float",
         usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
-        // |GPUTextureUsage.COPY_SRC,
     })
 
     const lightBindGroups = lights.map(
@@ -198,24 +192,22 @@ export const createShadowMapPass = (
     let activeLightIndices = [] as number[]
 
     const activeLightIndicesBuffer = device.createBuffer({
-        size: new Uint32Array(3).byteLength,
+        size: new Uint32Array(ACTIVE_LIGHTS).byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
 
-    const activeLightSourcesBuffer = device.createBuffer({
-        size: new Float32Array(36).byteLength * 3,
+    const lightSourcesBuffer = device.createBuffer({
+        size: new Float32Array(36).byteLength * 20, // max lights
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
+    device.queue.writeBuffer(lightSourcesBuffer, 0, lightDataFlat(lights))
 
     const onTileChange = (world: Vector3) => {
         activeLightIndices = nSmallestElementsIndices(
             lights.map(l => sqrMagnitude(subtract(l.position, vec4(...world, 1)))),
-            3
+            ACTIVE_LIGHTS
         )
         device.queue.writeBuffer(activeLightIndicesBuffer, 0, new Uint32Array(activeLightIndices))
-
-        const activeLights = activeLightIndices.map(ali => lights[ali])
-        device.queue.writeBuffer(activeLightSourcesBuffer, 0, lightDataFlat(activeLights))
 
         for (let l = 0; l < lights.length; l++)
             if (!activeLightIndices.includes(l)) deactiveLight(lights[l])
@@ -236,7 +228,7 @@ export const createShadowMapPass = (
             const flickerIntensity = nextFlickerIntensity(l.intensity)
             writeToBufferF32(
                 device,
-                activeLightSourcesBuffer,
+                lightSourcesBuffer,
                 new Float32Array([flickerIntensity]),
                 currentOffset
             )
@@ -252,7 +244,7 @@ export const createShadowMapPass = (
             lights,
             shadowMapTexture,
             activeLightsChangeListeners,
-            activeLightSourcesBuffer,
+            lightSourcesBuffer: lightSourcesBuffer,
             activeLightIndicesBuffer,
         },
     }

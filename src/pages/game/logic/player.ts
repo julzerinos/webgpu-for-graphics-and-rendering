@@ -42,7 +42,6 @@ const createPlayerBufferedMesh = (
         new Uint32Array(flattenVector(playerShadowMesh.triangleIndices.map(f => toVec3(f))))
     )
 
-    // TODO
     const updateMesh = (position: Vector3) => {
         const translation = createTranslateMatrix(add(position, vec3(0, -0.5, 0)))
         const scale = createScaleMatrix(1, 2, 1)

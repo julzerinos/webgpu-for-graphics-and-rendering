@@ -1,4 +1,5 @@
 import {
+    add,
     flattenMatrix,
     flattenVector,
     identity4x4,
@@ -19,41 +20,49 @@ import { Matrix4x4 } from "../../../types"
 import { GameEngine, Mesh, Renderable } from "../interfaces"
 
 import portalShader from "../shaders/portal.wgsl?raw"
+import { mapToWorld } from "./dungeon"
+import { portalLight } from "./lights"
+import { TILE_SIZE, Tile } from "./tile"
 
-export const generatePortalMesh = (halfSize: number): Mesh => {
+export const generatePortalMesh = (tile: Tile): Mesh => {
+    const world = vec4(...mapToWorld(tile.position), 0)
+    const direction = vec4(0, 0, -1, 0)
+    const halfSize = 2
+
     const vertices = new Float32Array(
         flattenVector([
-            vec4(-halfSize, halfSize, 0, 1),
-            vec4(-halfSize, -halfSize, 0, 1),
-            vec4(halfSize, -halfSize, 0, 1),
-            vec4(halfSize, halfSize, 0, 1),
+            add(world, vec4(-halfSize, halfSize, TILE_SIZE / 2 - 0.1, 1)),
+            add(world, vec4(-halfSize, -halfSize, TILE_SIZE / 2 - 0.1, 1)),
+            add(world, vec4(halfSize, -halfSize, TILE_SIZE / 2 - 0.1, 1)),
+            add(world, vec4(halfSize, halfSize, TILE_SIZE / 2 - 0.1, 1)),
         ])
     )
     const triangles = new Uint32Array(flattenVector([vec3(0, 1, 3), vec3(3, 1, 2)]))
     const uvs = new Float32Array(flattenVector([vec2(0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0)]))
-    const normals = new Float32Array(
-        flattenVector([vec4(0, 0, 1, 0), vec4(0, 0, 1, 0), vec4(0, 0, 1, 0), vec4(0, 0, 1, 0)])
-    )
+    const normals = new Float32Array(flattenVector([direction, direction, direction, direction]))
 
     return {
         vertices,
         triangles,
         uvs,
         normals,
+        lights: [portalLight(add(world, vec4(0, 0.2, TILE_SIZE / 2 - 0.1, 1)), direction)],
     }
 }
 
-export const createPortalRender = async ({
-    device,
-    mainCanvas: {
-        context,
-        canvasFormat,
-        depthData: { depthStencil, depthStencilTextureView },
-        multisampleData: { msaaTextureView, multisample },
-    },
-}: GameEngine): Promise<Renderable> => {
+export const createPortalRender = async (
+    {
+        device,
+        mainCanvas: {
+            context,
+            canvasFormat,
+            depthData: { depthStencil, depthStencilTextureView },
+            multisampleData: { msaaTextureView, multisample },
+        },
+    }: GameEngine,
+    portalMesh: Mesh
+): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/portal.png")
-    const portalMesh = generatePortalMesh(2)
 
     const { buffer: indexBuffer } = genreateIndexBuffer(device, portalMesh.triangles!)
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
@@ -112,7 +121,6 @@ export const createPortalRender = async ({
             view: msaaTextureView,
             resolveTarget: context.getCurrentTexture().createView(),
             loadOp: "load",
-            // clearValue: Colors.blueScreenBlue,
             storeOp: "store",
         }
         const pass = encoder.beginRenderPass({

@@ -1,14 +1,8 @@
-import {
-    vec4,
-    flattenVector,
-    boolToNumber,
-    add,
-    clamp,
-    vec2,
-    vec3,
-} from "../../../libs/util"
+import { vec4, flattenVector, boolToNumber, add, clamp, vec2, vec3 } from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
+import { Light, Mesh } from "../interfaces"
 import { mapToWorld } from "./dungeon"
+import { dungeonTileLight } from "./lights"
 
 export const TILE_SIZE = 4
 
@@ -64,7 +58,7 @@ export const getRandomCardinality = (legal: number = 15) =>
     (legal & Direction.SOUTH) * Math.round(Math.random()) +
     (legal & Direction.WEST) * Math.round(Math.random())
 
-export const TileMeshData = (tile: Tile) => {
+export const TileMeshData = (tile: Tile): Mesh => {
     const halfSize = TILE_SIZE / 2
     const worldPosition = mapToWorld(tile.position)
 
@@ -119,7 +113,7 @@ export const TileMeshData = (tile: Tile) => {
         vec2(1, 1),
         vec2(0.5, 1),
     ]
-    
+
     if (!(tile.cardinality & Direction.NORTH)) {
         cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
@@ -155,7 +149,11 @@ export const TileMeshData = (tile: Tile) => {
     const normals = new Float32Array(flattenVector(cubeNormals))
     const uvs = new Float32Array(flattenVector(cubeUvs))
 
-    return { vertices, normals, uvs }
+    let lights = [] as Light[]
+    if (!(tile.cardinality & Direction.NORTH) && tile.type === TileType.LIGHT)
+        lights = [dungeonTileLight(tile)]
+
+    return { vertices, normals, uvs, lights }
 }
 
 export const boundPositionInTile = (position: Vector3, tile: Tile) => {
@@ -178,4 +176,3 @@ export const boundPositionInTile = (position: Vector3, tile: Tile) => {
     position[0] = clamp(position[0], tileWorldMin[0], tileWorldMax[0])
     position[2] = clamp(position[2], tileWorldMin[2], tileWorldMax[2])
 }
-

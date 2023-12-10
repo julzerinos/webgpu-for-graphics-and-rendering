@@ -5,15 +5,13 @@ import {
     createDungeonRender,
     generateDungeonMap,
     generateMeshFromTiles,
-    getTileFromMap,
 } from "./logic/dungeon"
-import { defineLightsFromTiles, createShadowMapPass } from "./logic/lights"
-import { createPortalRender } from "./logic/portal"
+import { createShadowMapPass } from "./logic/lights"
+import { createPortalRender, generatePortalMesh } from "./logic/portal"
 import { setupEngine } from "./engine/engine"
 import { BufferedMesh, GamePlayer, GameState } from "./interfaces"
 import { updateGameState } from "./logic/gameState"
-import { Cube, vec3, flattenVector, toVec3, nSmallestElementsIndices } from "../../libs/util"
-import { genreateVertexBuffer, genreateIndexBuffer } from "../../libs/webgpu"
+import { genreateVertexBuffer } from "../../libs/webgpu"
 
 const execute: Executable = async () => {
     const gameEngine = await setupEngine()
@@ -42,9 +40,11 @@ const execute: Executable = async () => {
         vertexCount: dungeon.vertices.length / 4,
     }
 
+    const portalMesh = generatePortalMesh(tileSet.endTile!)
+
     const { renderable: shadowMapPass, lightData } = createShadowMapPass(
         gameEngine,
-        defineLightsFromTiles(tileSet.lightTiles),
+        [...dungeon.lights, ...portalMesh.lights],
         [dungeonBufferedMesh, player.shadowBufferedMesh]
     )
     gameState.tileChangeListeners.push(shadowMapPass.onTileChange!)
@@ -58,7 +58,8 @@ const execute: Executable = async () => {
     player.playerMoveListeners.push(dungeonOnPlayerMove!)
 
     const { pass: portalRenderPass, onPlayerView: portalOnPlayerView } = await createPortalRender(
-        gameEngine
+        gameEngine,
+        portalMesh
     )
     player.playerViewListeners.push(portalOnPlayerView!)
 
@@ -75,7 +76,7 @@ const execute: Executable = async () => {
         shadowMapPass.pass(encoder, time)
 
         dungeonRenderPass(encoder, time)
-        // portalRenderPass(encoder, time)
+        portalRenderPass(encoder, time)
 
         gameEngine.device.queue.submit([encoder.finish()])
 

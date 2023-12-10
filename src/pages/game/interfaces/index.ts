@@ -19,6 +19,7 @@ export interface Mesh {
     normals: Float32Array
     uvs: Float32Array
     triangles?: Uint32Array
+    lights: Light[]
 }
 
 export interface BufferedMesh {
@@ -49,7 +50,7 @@ export interface GameLightData {
     lights: Light[]
     shadowMapTexture: GPUTexture
     activeLightsChangeListeners: ((activeIndices: number[]) => void)[]
-    activeLightSourcesBuffer: GPUBuffer
+    lightSourcesBuffer: GPUBuffer
     activeLightIndicesBuffer: GPUBuffer
 }
 

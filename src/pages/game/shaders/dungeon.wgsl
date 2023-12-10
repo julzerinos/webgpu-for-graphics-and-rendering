@@ -8,14 +8,14 @@ struct LightSource {
     position : vec3f,
     direction : vec3f,
     projection : mat4x4f,
-    light_intensity : f32
+    light_intensity : f32,
+    light_tint : vec4f,
 };
 
-@group(2) @binding(0) var<uniform> light_sources : array<LightSource, 3>;
+@group(2) @binding(0) var<uniform> light_sources : array<LightSource, 20>;
 @group(2) @binding(1) var shadow_maps : texture_2d_array<f32>;
-@group(2) @binding(2) var<uniform> active_light_indices: vec3u;
+@group(2) @binding(2) var<uniform> active_light_indices : vec4u;
 
-const light_emission_tint = vec3f(.9, .4, 0.);
 const ambient_light = vec3f(.0);
 const fog_tint = vec3f(.025, .025, .125);
 
@@ -43,10 +43,8 @@ fn calculate_visibility(light_index : u32, world_position : vec4f) -> f32
     let shadow_lookup = light_sources[light_index].projection * world_position;
     let t = (shadow_lookup.xyz / shadow_lookup.w) * vec3f(.5, -.5, 1) + vec3f(.5, .5, 0);
 
-    var a = active_light_indices;
-
     let lookup = t.xy;
-    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x * 2048), i32(lookup.y * 512)), active_light_indices[light_index], 0).r;
+    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x * 2048), i32(lookup.y * 512)), light_index, 0).r;
 
     let covered = abs(t.z - visibility) > 0.0003;
     visibility = select(visibility, 0., covered);
@@ -66,19 +64,21 @@ fn lambertian(normal : vec3f, world_position : vec4f) -> vec3f
 {
     var lambertian = vec3f(0);
 
-    for (var i : u32 = 0; i < 3; i++)
+    for (var i : u32 = 0; i < 4; i++)
     {
-        let light_position = light_sources[i].position;
+        let light = light_sources[active_light_indices[i]];
+
+        let light_position = light.position;
         let line_to_light = light_position - world_position.xyz;
         let distance_to_light = length(line_to_light);
         let parallelity_to_light = max(0, dot(normal, line_to_light / distance_to_light));
 
-        let light_wall_direction = light_sources[i].direction;
+        let light_wall_direction = light.direction;
         let wall_light_boost = max(1, dot(normal, light_wall_direction) * 4.5);
 
-        let light_emission = light_emission_tint * light_sources[i].light_intensity;
+        let light_emission = light.light_tint.rgb * light.light_intensity;
 
-        let visibility = calculate_visibility(i, world_position);
+        let visibility = calculate_visibility(active_light_indices[i], world_position);
         lambertian += visibility * light_emission * parallelity_to_light * wall_light_boost / (distance_to_light * distance_to_light);
     }
 

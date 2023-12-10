@@ -15,7 +15,7 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { GameEngine, GameLightData, Mesh, Renderable, TileSet } from "../interfaces"
+import { GameEngine, GameLightData, Light, Mesh, Renderable, TileSet } from "../interfaces"
 import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
@@ -207,7 +207,7 @@ export const generateDungeonMap = (): {
     tileMap: (Tile | null)[][]
     center: Vector2
 } => {
-    const { map, center } =  generateMap()
+    const { map, center } = generateMap()
 
     const { tileSet, tileMap } = populateTiles(map)
 
@@ -231,15 +231,17 @@ export const generateMeshFromTiles = (tiles: Tile[]): Mesh => {
     let dungeonVertices = new Float32Array()
     let dunegonNormals = new Float32Array()
     let dungeonUvs = new Float32Array()
+    let lights = [] as Light[]
 
     for (const t of tiles) {
         const mesh = TileMeshData(t)
         dungeonVertices = new Float32Array([...dungeonVertices, ...mesh.vertices])
         dunegonNormals = new Float32Array([...dunegonNormals, ...mesh.normals])
         dungeonUvs = new Float32Array([...dungeonUvs, ...mesh.uvs])
+        lights = [...lights, ...mesh.lights]
     }
 
-    return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs }
+    return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs, lights }
 }
 
 export const getTileFromMap = (map: (Tile | null)[][], worldPosition: Vector3): Tile | null => {
@@ -265,7 +267,7 @@ export const createDungeonRender = async (
         },
     }: GameEngine,
     dungeon: Mesh,
-    { shadowMapTexture, activeLightSourcesBuffer, activeLightIndicesBuffer }: GameLightData
+    { shadowMapTexture, lightSourcesBuffer: activeLightSourcesBuffer, activeLightIndicesBuffer }: GameLightData
 ): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
 
@@ -348,8 +350,6 @@ export const createDungeonRender = async (
     const onPlayerMove = (position: Vector3) => {
         writeToBufferF32(device, playerPositionBuffer, new Float32Array(position), 0)
     }
-
-    const onActiveLightsChange = (activeLightIndices: number[]) => {}
 
     const dungeonRenderPass = (encoder: GPUCommandEncoder, time: number) => {
         const colorAttachment: GPURenderPassColorAttachment = {
