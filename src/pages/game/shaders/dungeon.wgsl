@@ -42,8 +42,8 @@ fn calculate_visibility(light_index : u32, world_position : vec4f) -> f32
     let shadow_lookup = light_sources[light_index].projection * world_position;
     let t = (shadow_lookup.xyz / shadow_lookup.w) * vec3f(.5, -.5, 1) + vec3f(.5, .5, 0);
 
-    let lookup = t.xy;
-    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x * 2048), i32(lookup.y * 512)), light_index, 0).r;
+    let lookup = t.xy * vec2f(2048, 512);
+    var visibility = textureLoad(shadow_maps, vec2i(i32(lookup.x), i32(lookup.y)), light_index, 0).r;
 
     let covered = abs(t.z - visibility) > 0.0003;
     visibility = select(visibility, 0., covered);

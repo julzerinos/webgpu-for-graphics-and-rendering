@@ -79,20 +79,23 @@ const execute: Executable = async () => {
     }
 
     updatePlayerLookDirection(gameEngine, player, 0, 0)
+
+    let frameNumber = 0
     const frame = (time: number) => {
         handleKeys()
         updateGameState(gameState, player)
 
         const encoder = gameEngine.device.createCommandEncoder()
 
-        shadowMapPass.pass(encoder, time)
+        shadowMapPass.pass(encoder, time, frameNumber)
 
-        dungeonRenderPass(encoder, time)
-        portalRenderPass(encoder, time)
-        torchesRenderPass(encoder, time)
+        dungeonRenderPass(encoder, time, frameNumber)
+        portalRenderPass(encoder, time, frameNumber)
+        torchesRenderPass(encoder, time, frameNumber)
 
         gameEngine.device.queue.submit([encoder.finish()])
 
+        frameNumber++
         requestAnimationFrame(frame)
     }
 

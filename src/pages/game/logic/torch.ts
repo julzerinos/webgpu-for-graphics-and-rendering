@@ -46,7 +46,7 @@ export const dungeonTileLight = (t: Tile): Light => {
     const direction = directionToWorld[lightWallDirection]
 
     const tileWorld = mapToWorld(t.position)
-    const lightPosition = add(vec4(...add(vec3(0, 0, 0), tileWorld), 1), scale(direction, halfSize))
+    const lightPosition = add(vec4(...add(vec3(0, .4, 0), tileWorld), 1), scale(direction, halfSize))
 
     return {
         direction: directionToWorld[reverseDirection[lightWallDirection]],
@@ -76,13 +76,13 @@ export const generateTorchesInstancedMesh = (
 
     const modelMatrices = lights.map(l => {
         const worldPosition = createTranslateMatrix(
-            toVec3(add(l.position, add(scale(l.direction, -0.05), vec4(0, -0.55, 0, 0))))
+            toVec3(add(l.position, add(scale(l.direction, 0.1), vec4(0, -0.65, 0, 0))))
         )
         const rotation = multMatrices(
             createRotationYMatrix(90),
             createRotationMatrix(30, toVec3(l.direction))
         )
-        const stretch = createScaleMatrix(0.1, 0.75, 0.1)
+        const stretch = createScaleMatrix(0.1, 0.65, 0.1)
 
         return multMatrices(multMatrices(worldPosition, rotation), stretch)
     })

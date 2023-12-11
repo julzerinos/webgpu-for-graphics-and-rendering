@@ -50,7 +50,7 @@ export const isInstancedBufferedMesh = (bm: BufferedMesh): bm is InstancedBuffer
     "instances" in bm
 
 export interface Renderable {
-    pass: (encoder: GPUCommandEncoder, time: number) => void
+    pass: (encoder: GPUCommandEncoder, time: number, frame: number) => void
     onPlayerMove?: (position: Vector3) => void
     onPlayerView?: (cameraMatrix: Matrix4x4) => void
     onTileChange?: (world: Vector3, map: Vector2) => void

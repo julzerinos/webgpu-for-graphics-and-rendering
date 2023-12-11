@@ -1,6 +1,7 @@
 import {
     Colors,
     add,
+    createTranslateMatrix,
     flattenMatrices,
     flattenMatrix,
     flattenVector,
@@ -138,8 +139,39 @@ export const createShadowMapPass = (
         return createBind(device, dungeonShadowPipeline, [modelMatrices], "STORAGE", 1).bindGroup
     })
 
-    const executeShadowPass = (encoder: GPUCommandEncoder, time: number) => {
+    const { bindGroup: noJitterBind } = createBind(
+        device,
+        dungeonShadowPipeline,
+        [new Float32Array(flattenMatrix(identity4x4()))],
+        "UNIFORM",
+        2
+    )
+    const {
+        bindGroup: jitterMatrixBind,
+        buffers: [jitterMatrixBuffer],
+    } = createBind(
+        device,
+        dungeonShadowPipeline,
+        [new Float32Array(flattenMatrix(identity4x4()))],
+        "UNIFORM",
+        2
+    )
+    const updateJitterTranslationMatrix = (time: number, frame: number) => {
+        if (frame % 2 === 0) return
+
+        const localTime = time / 1e3
+
+        const jitter = createTranslateMatrix([
+            0.01 * Math.sin(localTime) * Math.random(),
+            0.01 * Math.sin(localTime) * Math.random(),
+            0.01 * Math.sin(localTime) * Math.random(),
+        ])
+        writeToBufferF32(device, jitterMatrixBuffer, new Float32Array(flattenMatrix(jitter)), 0)
+    }
+
+    const executeShadowPass = (encoder: GPUCommandEncoder, time: number, frame: number) => {
         updateActiveLightFlicker(time)
+        updateJitterTranslationMatrix(time, frame)
 
         for (let l = 0; l < lights.length; l++) {
             if (!activeLightIndices.includes(l)) continue
@@ -177,9 +209,12 @@ export const createShadowMapPass = (
                 shadowMapPass.setBindGroup(1, modelMatricesBindGroups[bm])
 
                 if (!bufferedMesh.indexBuffer || !bufferedMesh.triangleCount) {
+                    shadowMapPass.setBindGroup(2, noJitterBind)
                     shadowMapPass.draw(bufferedMesh.vertexCount)
                     continue
                 }
+
+                shadowMapPass.setBindGroup(2, jitterMatrixBind)
 
                 const instances = isInstancedBufferedMesh(bufferedMesh)
                     ? bufferedMesh.instances
@@ -240,7 +275,7 @@ export const createShadowMapPass = (
         const nextFlickerIntensity = (previousIntensity: number): number => {
             if (previousIntensity < 6) return (previousIntensity += 0.1 * Math.random())
 
-            return Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
+            return Math.sin(time / 1e4) * Math.random() + 6
         }
 
         const byteOffset = byteLength.float32x4 * 2 + byteLength.float32x4x4 + byteLength.float32x4
