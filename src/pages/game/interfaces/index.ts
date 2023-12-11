@@ -11,6 +11,8 @@ export interface GamePlayer {
     playerViewListeners: ((cameraMatrix: Matrix4x4) => void)[]
 
     shadowBufferedMesh: BufferedMesh
+    playerPerspectiveBuffer: GPUBuffer
+    playerPositionBuffer: GPUBuffer
 }
 
 export interface Mesh {
@@ -18,7 +20,10 @@ export interface Mesh {
     normals: Float32Array
     uvs: Float32Array
     triangles?: Uint32Array
+
     lights: Light[]
+
+    modelMatrix?: Matrix4x4
 }
 
 export interface BufferedMesh {
@@ -26,9 +31,23 @@ export interface BufferedMesh {
     vertexBufferLayout: GPUVertexBufferLayout
     vertexCount: number
 
+    normalsBuffer?: GPUBuffer
+    normalsBufferLayout?: GPUVertexBufferLayout
+
+    uvsBuffer?: GPUBuffer
+    uvsBufferLayout?: GPUVertexBufferLayout
+
     indexBuffer?: GPUBuffer
     triangleCount?: number
 }
+
+export interface InstancedBufferedMesh extends BufferedMesh {
+    instances: number
+    modelMatrices: Matrix4x4[]
+}
+
+export const isInstancedBufferedMesh = (bm: BufferedMesh): bm is InstancedBufferedMesh =>
+    "instances" in bm
 
 export interface Renderable {
     pass: (encoder: GPUCommandEncoder, time: number) => void

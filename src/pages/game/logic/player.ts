@@ -6,6 +6,7 @@ import {
     createScaleMatrix,
     createTranslateMatrix,
     cross,
+    flattenMatrix,
     flattenVector,
     multMatrices,
     normalize,
@@ -18,6 +19,7 @@ import {
     vec4,
     vectorMatrixMult,
 } from "../../../libs/util"
+import { byteLength } from "../../../libs/util/byteLengths"
 import { genreateIndexBuffer, genreateVertexBuffer, writeToBufferF32 } from "../../../libs/webgpu"
 import { Vector3 } from "../../../types"
 import { BufferedMesh, GameEngine, GamePlayer, GameState } from "../interfaces"
@@ -75,6 +77,23 @@ export const initializePlayer = ({ device }: GameEngine): GamePlayer => {
 
     const camera = initializeCamera(startPosition, startLookDirection)
 
+    const playerPerspectiveBuffer = device.createBuffer({
+        size: byteLength.float32x4x4,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    })
+    writeToBufferF32(
+        device,
+        playerPerspectiveBuffer,
+        new Float32Array(flattenMatrix(getCameraProjectionViewMatrix(camera))),
+        0
+    )
+
+    const playerPositionBuffer = device.createBuffer({
+        size: byteLength.float32x3,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    })
+    writeToBufferF32(device, playerPositionBuffer, new Float32Array(vec3()), 0)
+
     const { bufferedMesh, updateMesh } = createPlayerBufferedMesh(device)
 
     return {
@@ -85,10 +104,17 @@ export const initializePlayer = ({ device }: GameEngine): GamePlayer => {
         playerMoveListeners: [updateMesh],
         playerViewListeners: [],
         shadowBufferedMesh: bufferedMesh,
+        playerPerspectiveBuffer,
+        playerPositionBuffer,
     } as GamePlayer
 }
 
-export const updatePlayerLookDirection = (player: GamePlayer, dx: number, dy: number) => {
+export const updatePlayerLookDirection = (
+    { device }: GameEngine,
+    player: GamePlayer,
+    dx: number,
+    dy: number
+) => {
     let normalizedHorizontalMovement = -dx / 512
     let normalizedVerticalMovement = dy / 512
 
@@ -104,16 +130,25 @@ export const updatePlayerLookDirection = (player: GamePlayer, dx: number, dy: nu
     player.lookDirection = normalize(toVec3(quatApply(vec4(...player.lookDirection, 1), quat)))
     player.right = normalize(cross(Vector3s.up, player.lookDirection))
 
-    refreshPlayerCamera(player)
+    refreshPlayerCamera(device, player)
 }
 
-export const refreshPlayerCamera = (player: GamePlayer) => {
+export const refreshPlayerCamera = (device: GPUDevice, player: GamePlayer) => {
     player.camera.extrinsics = calculatePlayerViewMatrix(player.position, player.lookDirection)
+
     const cameraMatrix = getCameraProjectionViewMatrix(player.camera)
     for (const l of player.playerViewListeners) l(cameraMatrix)
+
+    writeToBufferF32(
+        device,
+        player.playerPerspectiveBuffer,
+        new Float32Array(flattenMatrix(getCameraProjectionViewMatrix(player.camera))),
+        0
+    )
 }
 
 export const updatePlayerPosition = (
+    { device }: GameEngine,
     player: GamePlayer,
     gameState: GameState,
     keyMap: { [key: string]: boolean }
@@ -130,7 +165,9 @@ export const updatePlayerPosition = (
 
     for (const l of player.playerMoveListeners) l(player.position)
 
-    refreshPlayerCamera(player)
+    writeToBufferF32(device, player.playerPositionBuffer, new Float32Array(player.position), 0)
+
+    refreshPlayerCamera(device, player)
 }
 
 const moveFrameSpeed = 1e-1

@@ -19,6 +19,7 @@ import {
     Direction,
     GameEngine,
     GameLightData,
+    GamePlayer,
     Light,
     Mesh,
     Renderable,
@@ -111,7 +112,7 @@ const insertStartRoom = (map: TileType[][], center: Vector2): Vector2 => {
     setTile(map, add(center, vec2(-1, 0)), TileType.NORMAL)
 
     setTile(map, add(center, vec2(1, 1)), TileType.LIGHT)
-    setTile(map, add(center, vec2(0, 1)), TileType.EMPTY)
+    setTile(map, add(center, vec2(0, 1)), TileType.NORMAL)
     setTile(map, add(center, vec2(-1, 1)), TileType.LIGHT)
 
     setTile(map, add(center, vec2(1, 2)), TileType.NORMAL)
@@ -166,8 +167,6 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
     }
 
     followPath(startPathPosition)
-
-    console.log(snapshotObject(map))
 
     return { map, center }
 }
@@ -292,8 +291,6 @@ export const generateMeshFromTiles = (tiles: Tile[]): Mesh => {
         lights = [...lights, ...mesh.lights]
     }
 
-    console.log(lights)
-
     return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs, lights }
 }
 
@@ -324,7 +321,8 @@ export const createDungeonRender = async (
         shadowMapTexture,
         lightSourcesBuffer: activeLightSourcesBuffer,
         activeLightIndicesBuffer,
-    }: GameLightData
+    }: GameLightData,
+    { playerPerspectiveBuffer, playerPositionBuffer }: GamePlayer
 ): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
 
@@ -365,15 +363,15 @@ export const createDungeonRender = async (
         }
     )
 
-    const {
-        bindGroup: uniformBindGroup,
-        buffers: [playerCameraBuffer, playerPositionBuffer],
-    } = createBind(
-        device,
-        pipeline,
-        [new Float32Array(flattenMatrix(identity4x4())), new Float32Array(vec3(0, 0, 0))],
-        "UNIFORM"
-    )
+    const uniformBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            { binding: 0, resource: { buffer: playerPerspectiveBuffer } },
+            { binding: 1, resource: { buffer: playerPositionBuffer } },
+        ],
+    })
+
+    // return { buffers, bindGroup }
 
     const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
 
@@ -394,19 +392,6 @@ export const createDungeonRender = async (
             },
         ],
     })
-
-    const onPlayerView = (cameraMatrix: Matrix4x4) => {
-        writeToBufferF32(
-            device,
-            playerCameraBuffer,
-            new Float32Array(flattenMatrix(cameraMatrix)),
-            0
-        )
-    }
-
-    const onPlayerMove = (position: Vector3) => {
-        writeToBufferF32(device, playerPositionBuffer, new Float32Array(position), 0)
-    }
 
     const dungeonRenderPass = (encoder: GPUCommandEncoder, time: number) => {
         const colorAttachment: GPURenderPassColorAttachment = {
@@ -438,5 +423,5 @@ export const createDungeonRender = async (
         pass.end()
     }
 
-    return { pass: dungeonRenderPass, onPlayerView, onPlayerMove }
+    return { pass: dungeonRenderPass }
 }

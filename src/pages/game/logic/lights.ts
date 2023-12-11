@@ -1,58 +1,37 @@
 import {
     Colors,
     add,
+    flattenMatrices,
     flattenMatrix,
     flattenVector,
+    identity4x4,
     lookAtMatrix,
     multMatrices,
     nSmallestElementsIndices,
     perspectiveProjection,
-    scale,
     sqrMagnitude,
     subtract,
     toVec3,
     vec3,
     vec4,
 } from "../../../libs/util"
-import { Matrix4x4, Vector3, Vector4 } from "../../../types"
-import { BufferedMesh, GameEngine, GameLightData, Light, Renderable, Tile } from "../interfaces"
-import { mapToWorld } from "./dungeon"
+import { Matrix4x4, Vector3 } from "../../../types"
+import {
+    BufferedMesh,
+    GameEngine,
+    GameLightData,
+    Light,
+    Renderable,
+    isInstancedBufferedMesh,
+} from "../interfaces"
 import { TILE_SIZE } from "./tile"
 
 import shaderCode from "../shaders/shadowMap.wgsl?raw"
 import { createBind, writeToBufferF32 } from "../../../libs/webgpu"
 import { byteLength } from "../../../libs/util/byteLengths"
-import { directionToWorld, randomDirectionFromCardinality, reverseDirection } from "./direction"
-import { snapshotObject } from "../../../libs/util/javascript"
 
 const ACTIVE_LIGHTS = 4
-const MAX_LIGHTS = 30
-
-export const dungeonTileLight = (t: Tile): Light => {
-    const halfSize = TILE_SIZE / 2 - 0.1
-
-    const lightWallDirection = randomDirectionFromCardinality(~t.cardinality & 15)
-    const direction = directionToWorld[lightWallDirection]
-
-    const tileWorld = mapToWorld(t.position)
-    const lightPosition = add(vec4(...add(vec3(0, 0, 0), tileWorld), 1), scale(direction, halfSize))
-
-    return {
-        direction: directionToWorld[reverseDirection[lightWallDirection]],
-        position: lightPosition,
-        intensity: 0,
-        tint: vec3(0.9, 0.4, 0),
-        active: false,
-    }
-}
-
-export const portalLight = (position: Vector4, direction: Vector4): Light => ({
-    direction: direction,
-    position: position,
-    intensity: 4,
-    tint: vec3(35 / 100, 50 / 100, 9 / 100),
-    active: false,
-})
+export const MAX_LIGHTS = 30
 
 export const createLightProjectionMatrix = (light: Light): Matrix4x4 => {
     const view = lookAtMatrix(
@@ -151,6 +130,14 @@ export const createShadowMapPass = (
             ).bindGroup
     )
 
+    const modelMatricesBindGroups = bufferedMeshes.map(bm => {
+        const modelMatrices = isInstancedBufferedMesh(bm)
+            ? new Float32Array(flattenMatrices(bm.modelMatrices))
+            : new Float32Array(flattenMatrix(identity4x4()))
+
+        return createBind(device, dungeonShadowPipeline, [modelMatrices], "STORAGE", 1).bindGroup
+    })
+
     const executeShadowPass = (encoder: GPUCommandEncoder, time: number) => {
         updateActiveLightFlicker(time)
 
@@ -183,16 +170,23 @@ export const createShadowMapPass = (
             shadowMapPass.setPipeline(dungeonShadowPipeline)
             shadowMapPass.setBindGroup(0, lightBindGroups[l])
 
-            for (const bm of bufferedMeshes) {
-                shadowMapPass.setVertexBuffer(0, bm.vertexBuffer)
+            for (let bm = 0; bm < bufferedMeshes.length; bm++) {
+                const bufferedMesh = bufferedMeshes[bm]
 
-                if (!bm.indexBuffer || !bm.triangleCount) {
-                    shadowMapPass.draw(bm.vertexCount)
+                shadowMapPass.setVertexBuffer(0, bufferedMesh.vertexBuffer)
+                shadowMapPass.setBindGroup(1, modelMatricesBindGroups[bm])
+
+                if (!bufferedMesh.indexBuffer || !bufferedMesh.triangleCount) {
+                    shadowMapPass.draw(bufferedMesh.vertexCount)
                     continue
                 }
 
-                shadowMapPass.setIndexBuffer(bm.indexBuffer, "uint32")
-                shadowMapPass.drawIndexed(bm.triangleCount)
+                const instances = isInstancedBufferedMesh(bufferedMesh)
+                    ? bufferedMesh.instances
+                    : undefined
+
+                shadowMapPass.setIndexBuffer(bufferedMesh.indexBuffer, "uint32")
+                shadowMapPass.drawIndexed(bufferedMesh.triangleCount * 3, instances)
             }
 
             shadowMapPass.end()
@@ -224,12 +218,20 @@ export const createShadowMapPass = (
         )
         device.queue.writeBuffer(activeLightIndicesBuffer, 0, new Uint32Array(activeLightIndices))
 
-        console.log(activeLightIndices)
-
         for (const ali of activeLightIndices) activateLight(lights[ali])
 
         for (let l = 0; l < lights.length; l++)
-            if (!activeLightIndices.includes(l)) deactiveLight(lights[l])
+            if (!activeLightIndices.includes(l)) {
+                deactiveLight(lights[l])
+                const byteOffset =
+                    byteLength.float32x4 * 2 + byteLength.float32x4x4 + byteLength.float32x4
+                writeToBufferF32(
+                    device,
+                    lightSourcesBuffer,
+                    new Float32Array([0]),
+                    byteOffset * l + byteOffset - byteLength.float32
+                )
+            }
 
         for (const l of activeLightsChangeListeners) l(activeLightIndices)
     }

@@ -2,7 +2,7 @@ import { vec4, flattenVector, boolToNumber, add, clamp, vec2, vec3 } from "../..
 import { Vector, Vector2, Vector3 } from "../../../types"
 import { Direction, Light, Mesh, Tile, TileType } from "../interfaces"
 import { mapToWorld } from "./dungeon"
-import { dungeonTileLight } from "./lights"
+import { dungeonTileLight } from "./torch"
 
 export const TILE_SIZE = 4
 

@@ -1,4 +1,5 @@
 @group(0) @binding(0) var<uniform> projection_view : mat4x4f;
+@group(1) @binding(0) var<storage> model_matrices : array<mat4x4f>;
 
 struct VertexOutput {
     @builtin(position) position : vec4f,
@@ -6,9 +7,9 @@ struct VertexOutput {
 }
 
 @vertex
-fn main_vs(@location(0) position : vec4f) -> VertexOutput
+fn main_vs(@location(0) position : vec4f, @builtin(instance_index) instance : u32) -> VertexOutput
 {
-    var projected = projection_view * position;
+    var projected = projection_view * model_matrices[instance] * position;
     return VertexOutput(projected, projected);
 }
 

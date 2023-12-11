@@ -8,12 +8,15 @@ import { setupEngine } from "./engine/engine"
 import { BufferedMesh, GamePlayer, GameState } from "./interfaces"
 import { updateGameState } from "./logic/gameState"
 import { genreateVertexBuffer } from "../../libs/webgpu"
+import { createTorchesRenderPass, generateTorchesInstancedMesh } from "./logic/torch"
 
 const execute: Executable = async () => {
     const gameEngine = await setupEngine()
 
     const player: GamePlayer = initializePlayer(gameEngine)
-    gameEngine.input.mouseMoveListeners.push((dx, dy) => updatePlayerLookDirection(player, dx, dy))
+    gameEngine.input.mouseMoveListeners.push((dx, dy) =>
+        updatePlayerLookDirection(gameEngine, player, dx, dy)
+    )
 
     const { tileSet, tileMap } = generateDungeonMap()
     const dungeon = generateMeshFromTiles(tileSet.allTiles)
@@ -39,31 +42,34 @@ const execute: Executable = async () => {
         vertexCount: dungeon.vertices.length / 4,
     }
 
-    const portalMesh = generatePortalMesh(tileSet.endTile)
+    const portalMesh = generatePortalMesh(tileSet.endTile!)
+    const torchBMesh = generateTorchesInstancedMesh(gameEngine, dungeon.lights)
 
     const { renderable: shadowMapPass, lightData } = createShadowMapPass(
         gameEngine,
         [...dungeon.lights, ...portalMesh.lights],
-        [dungeonBufferedMesh, player.shadowBufferedMesh]
+        [dungeonBufferedMesh, player.shadowBufferedMesh, torchBMesh]
     )
     gameState.tileChangeListeners.push(shadowMapPass.onTileChange!)
 
-    const {
-        pass: dungeonRenderPass,
-        onPlayerView: dungeonOnPlayerView,
-        onPlayerMove: dungeonOnPlayerMove,
-    } = await createDungeonRender(gameEngine, dungeon, lightData)
-    player.playerViewListeners.push(dungeonOnPlayerView!)
-    player.playerMoveListeners.push(dungeonOnPlayerMove!)
-
-    const { pass: portalRenderPass, onPlayerView: portalOnPlayerView } = await createPortalRender(
+    const { pass: dungeonRenderPass } = await createDungeonRender(
         gameEngine,
-        portalMesh
+        dungeon,
+        lightData,
+        player
     )
-    player.playerViewListeners.push(portalOnPlayerView!)
+
+    const { pass: portalRenderPass } = await createPortalRender(gameEngine, portalMesh, player)
+
+    const { pass: torchesRenderPass } = createTorchesRenderPass(
+        gameEngine,
+        torchBMesh,
+        player,
+        lightData
+    )
 
     const handleKeys = () => {
-        updatePlayerPosition(player, gameState, gameEngine.input.keyMap)
+        updatePlayerPosition(gameEngine, player, gameState, gameEngine.input.keyMap)
 
         if (gameEngine.input.keyMap["p"]) {
             gameState.cheats.noClip = !gameState.cheats.noClip
@@ -72,6 +78,7 @@ const execute: Executable = async () => {
         }
     }
 
+    updatePlayerLookDirection(gameEngine, player, 0, 0)
     const frame = (time: number) => {
         handleKeys()
         updateGameState(gameState, player)
@@ -82,6 +89,7 @@ const execute: Executable = async () => {
 
         dungeonRenderPass(encoder, time)
         portalRenderPass(encoder, time)
+        torchesRenderPass(encoder, time)
 
         gameEngine.device.queue.submit([encoder.finish()])
 

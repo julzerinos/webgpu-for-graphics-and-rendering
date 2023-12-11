@@ -1,52 +1,70 @@
 import {
     add,
+    createRotationYMatrix,
+    createTranslateMatrix,
     flattenMatrix,
     flattenVector,
-    identity4x4,
     loadTexture,
+    scale,
+    toVec3,
     vec2,
     vec3,
     vec4,
+    vectorMatrixMult,
 } from "../../../libs/util"
 import {
-    createBind,
     createTextureBind,
     genreateIndexBuffer,
     genreateVertexBuffer,
     setupShaderPipeline,
     writeToBufferF32,
 } from "../../../libs/webgpu"
-import { Matrix4x4 } from "../../../types"
-import { GameEngine, Mesh, Renderable, Tile } from "../interfaces"
+import { Vector4 } from "../../../types"
+import { Direction, GameEngine, GamePlayer, Light, Mesh, Renderable, Tile } from "../interfaces"
 
 import portalShader from "../shaders/portal.wgsl?raw"
+import { directionToWorld, randomDirectionFromCardinality } from "./direction"
 import { mapToWorld } from "./dungeon"
-import { portalLight } from "./lights"
 import { TILE_SIZE } from "./tile"
+
+export const portalLight = (position: Vector4, direction: Vector4): Light => ({
+    direction: direction,
+    position: position,
+    intensity: 4,
+    tint: vec3(35 / 100, 50 / 100, 9 / 100),
+    active: false,
+})
 
 export const generatePortalMesh = (tile: Tile): Mesh => {
     const world = vec4(...mapToWorld(tile.position), 0)
-    const direction = vec4(0, 0, -1, 0)
-    const halfSize = 2
 
-    const vertices = new Float32Array(
-        flattenVector([
-            add(world, vec4(-halfSize, halfSize, TILE_SIZE / 2 - 0.1, 1)),
-            add(world, vec4(-halfSize, -halfSize, TILE_SIZE / 2 - 0.1, 1)),
-            add(world, vec4(halfSize, -halfSize, TILE_SIZE / 2 - 0.1, 1)),
-            add(world, vec4(halfSize, halfSize, TILE_SIZE / 2 - 0.1, 1)),
-        ])
-    )
+    const direction = randomDirectionFromCardinality(tile.cardinality)
+    const worldDirection = directionToWorld[direction]
+    const halfSize = 2
+    const depthOffset = scale(worldDirection, TILE_SIZE / 2 - 0.1)
+
+    let vertices = [
+        vec4(-halfSize, halfSize, 0, 1),
+        vec4(-halfSize, -halfSize, 0, 1),
+        vec4(halfSize, -halfSize, 0, 1),
+        vec4(halfSize, halfSize, 0, 1),
+    ]
+    if (direction === Direction.EAST || direction === Direction.WEST)
+        vertices = vertices.map(v => vectorMatrixMult(v, createRotationYMatrix(90)))
+
     const triangles = new Uint32Array(flattenVector([vec3(0, 1, 3), vec3(3, 1, 2)]))
     const uvs = new Float32Array(flattenVector([vec2(0, 0), vec2(0, 1), vec2(1, 1), vec2(1, 0)]))
-    const normals = new Float32Array(flattenVector([direction, direction, direction, direction]))
+    const normals = new Float32Array(
+        flattenVector([worldDirection, worldDirection, worldDirection, worldDirection])
+    )
 
     return {
-        vertices,
+        vertices: new Float32Array(flattenVector(vertices)),
         triangles,
         uvs,
         normals,
-        lights: [portalLight(add(world, vec4(0, 0.2, TILE_SIZE / 2 - 0.1, 1)), direction)],
+        lights: [portalLight(add(world, depthOffset), worldDirection)],
+        modelMatrix: createTranslateMatrix(toVec3(add(world, depthOffset))),
     }
 }
 
@@ -60,7 +78,8 @@ export const createPortalRender = async (
             multisampleData: { msaaTextureView, multisample },
         },
     }: GameEngine,
-    portalMesh: Mesh
+    portalMesh: Mesh,
+    { playerPerspectiveBuffer }: GamePlayer
 ): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/portal.png")
 
@@ -102,15 +121,31 @@ export const createPortalRender = async (
         }
     )
 
-    const {
-        bindGroup: uniformBindGroup,
-        buffers: [playerCameraBuffer, timeBuffer],
-    } = createBind(
-        device,
-        pipeline,
-        [new Float32Array(flattenMatrix(identity4x4())), new Float32Array([0])],
-        "UNIFORM"
-    )
+    const modelMatrix = new Float32Array(flattenMatrix(portalMesh.modelMatrix!))
+    const modelMatrixBuffer = device.createBuffer({
+        size: modelMatrix.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    })
+    device.queue.writeBuffer(modelMatrixBuffer, 0, modelMatrix)
+
+    const timeArray = new Float32Array([0])
+    const timeBuffer = device.createBuffer({
+        size: timeArray.byteLength,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    })
+    device.queue.writeBuffer(timeBuffer, 0, timeArray)
+
+    const uniformBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            {
+                binding: 0,
+                resource: { buffer: playerPerspectiveBuffer },
+            },
+            { binding: 1, resource: { buffer: modelMatrixBuffer } },
+            { binding: 2, resource: { buffer: timeBuffer } },
+        ],
+    })
 
     const textureBind = createTextureBind(device, pipeline, texture, sampler, 1)
 
@@ -145,14 +180,5 @@ export const createPortalRender = async (
         pass.end()
     }
 
-    const onPlayerView = (cameraMatrix: Matrix4x4) => {
-        writeToBufferF32(
-            device,
-            playerCameraBuffer,
-            new Float32Array(flattenMatrix(cameraMatrix)),
-            0
-        )
-    }
-
-    return { pass: portalRenderPass, onPlayerView }
+    return { pass: portalRenderPass }
 }
