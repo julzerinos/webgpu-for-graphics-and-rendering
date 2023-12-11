@@ -1,5 +1,4 @@
 import { Matrix4x4, Vector2, Vector3, Vector4 } from "../../../types"
-import { Tile } from "../logic/tile"
 
 export interface GamePlayer {
     camera: GameCamera
@@ -101,4 +100,27 @@ export interface GameState {
     cheats: {
         noClip: boolean
     }
+}
+
+export enum TileType {
+    OUT_OF_BOUNDS = -1,
+    EMPTY = 0,
+    NORMAL,
+    PICKUP,
+    SPAWN,
+    END,
+    LIGHT,
+}
+
+export interface Tile {
+    position: Vector2
+    cardinality: number
+    type: TileType
+}
+
+export enum Direction {
+    NORTH = 1,
+    EAST = 2,
+    SOUTH = 4,
+    WEST = 8,
 }

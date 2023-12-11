@@ -17,12 +17,12 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4 } from "../../../types"
-import { GameEngine, Mesh, Renderable } from "../interfaces"
+import { GameEngine, Mesh, Renderable, Tile } from "../interfaces"
 
 import portalShader from "../shaders/portal.wgsl?raw"
 import { mapToWorld } from "./dungeon"
 import { portalLight } from "./lights"
-import { TILE_SIZE, Tile } from "./tile"
+import { TILE_SIZE } from "./tile"
 
 export const generatePortalMesh = (tile: Tile): Mesh => {
     const world = vec4(...mapToWorld(tile.position), 0)

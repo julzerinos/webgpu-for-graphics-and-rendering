@@ -71,7 +71,7 @@ const createPlayerBufferedMesh = (
 
 export const initializePlayer = ({ device }: GameEngine): GamePlayer => {
     const startPosition = vec3(0, 0, 0)
-    const startLookDirection = vec3(0, 0, -1)
+    const startLookDirection = vec3(0, 0, 1)
 
     const camera = initializeCamera(startPosition, startLookDirection)
 
@@ -89,9 +89,6 @@ export const initializePlayer = ({ device }: GameEngine): GamePlayer => {
 }
 
 export const updatePlayerLookDirection = (player: GamePlayer, dx: number, dy: number) => {
-    const maxFrameDisplacement = 24
-    if (Math.abs(dx) > maxFrameDisplacement || Math.abs(dy) > maxFrameDisplacement) return
-
     let normalizedHorizontalMovement = -dx / 512
     let normalizedVerticalMovement = dy / 512
 

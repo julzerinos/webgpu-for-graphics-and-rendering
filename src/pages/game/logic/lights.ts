@@ -7,6 +7,7 @@ import {
     multMatrices,
     nSmallestElementsIndices,
     perspectiveProjection,
+    scale,
     sqrMagnitude,
     subtract,
     toVec3,
@@ -14,22 +15,31 @@ import {
     vec4,
 } from "../../../libs/util"
 import { Matrix4x4, Vector3, Vector4 } from "../../../types"
-import { BufferedMesh, GameEngine, GameLightData, Light, Renderable } from "../interfaces"
+import { BufferedMesh, GameEngine, GameLightData, Light, Renderable, Tile } from "../interfaces"
 import { mapToWorld } from "./dungeon"
-import { TILE_SIZE, Tile } from "./tile"
+import { TILE_SIZE } from "./tile"
 
 import shaderCode from "../shaders/shadowMap.wgsl?raw"
 import { createBind, writeToBufferF32 } from "../../../libs/webgpu"
 import { byteLength } from "../../../libs/util/byteLengths"
+import { directionToWorld, randomDirectionFromCardinality, reverseDirection } from "./direction"
+import { snapshotObject } from "../../../libs/util/javascript"
 
 const ACTIVE_LIGHTS = 4
+const MAX_LIGHTS = 30
 
 export const dungeonTileLight = (t: Tile): Light => {
     const halfSize = TILE_SIZE / 2 - 0.1
-    const worldPosition = mapToWorld(t.position)
+
+    const lightWallDirection = randomDirectionFromCardinality(~t.cardinality & 15)
+    const direction = directionToWorld[lightWallDirection]
+
+    const tileWorld = mapToWorld(t.position)
+    const lightPosition = add(vec4(...add(vec3(0, 0, 0), tileWorld), 1), scale(direction, halfSize))
+
     return {
-        direction: vec4(0, 0, -1, 0),
-        position: vec4(...add(vec3(0, 0.3, halfSize), worldPosition), 1),
+        direction: directionToWorld[reverseDirection[lightWallDirection]],
+        position: lightPosition,
         intensity: 0,
         tint: vec3(0.9, 0.4, 0),
         active: false,
@@ -60,13 +70,17 @@ export const deactiveLight = (light: Light) => {
     light.intensity = 0
 }
 
+export const activateLight = (light: Light) => {
+    light.active = true
+}
+
 export const lightDataFlat = (lights: Light[]): Float32Array =>
     new Float32Array(
         lights.flatMap(l =>
             [
                 flattenVector([l.position, l.direction]),
                 flattenMatrix(createLightProjectionMatrix(l)),
-                [l.intensity, 0, 0, 0, ...l.tint, 0],
+                [...l.tint, l.intensity],
             ].flat()
         )
     )
@@ -138,10 +152,7 @@ export const createShadowMapPass = (
     )
 
     const executeShadowPass = (encoder: GPUCommandEncoder, time: number) => {
-        updateActiveLightFlicker(
-            activeLightIndices.map(ali => lights[ali]),
-            time
-        )
+        updateActiveLightFlicker(time)
 
         for (let l = 0; l < lights.length; l++) {
             if (!activeLightIndices.includes(l)) continue
@@ -196,8 +207,12 @@ export const createShadowMapPass = (
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
 
+    if (lights.length > MAX_LIGHTS)
+        console.warn("[initialization] number of lights larger than allowed limit")
+
     const lightSourcesBuffer = device.createBuffer({
-        size: new Float32Array(36).byteLength * 20, // max lights
+        size:
+            (byteLength.float32x4 * 2 + byteLength.float32x4x4 + byteLength.float32x4) * MAX_LIGHTS,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
     device.queue.writeBuffer(lightSourcesBuffer, 0, lightDataFlat(lights))
@@ -209,32 +224,34 @@ export const createShadowMapPass = (
         )
         device.queue.writeBuffer(activeLightIndicesBuffer, 0, new Uint32Array(activeLightIndices))
 
+        console.log(activeLightIndices)
+
+        for (const ali of activeLightIndices) activateLight(lights[ali])
+
         for (let l = 0; l < lights.length; l++)
             if (!activeLightIndices.includes(l)) deactiveLight(lights[l])
 
         for (const l of activeLightsChangeListeners) l(activeLightIndices)
     }
 
-    const updateActiveLightFlicker = (lights: Light[], time: number) => {
+    const updateActiveLightFlicker = (time: number) => {
         const nextFlickerIntensity = (previousIntensity: number): number => {
             if (previousIntensity < 6) return (previousIntensity += 0.1 * Math.random())
 
             return Math.abs(Math.sin(time / 3e3)) * Math.random() + 6
         }
 
-        const byteOffset = byteLength.float32x4 * 2 + byteLength.float32x4x4
-        let currentOffset = byteOffset
-        for (const l of lights) {
-            const flickerIntensity = nextFlickerIntensity(l.intensity)
+        const byteOffset = byteLength.float32x4 * 2 + byteLength.float32x4x4 + byteLength.float32x4
+        for (const ali of activeLightIndices) {
+            const light = lights[ali]
+            light.intensity = nextFlickerIntensity(light.intensity)
+
             writeToBufferF32(
                 device,
                 lightSourcesBuffer,
-                new Float32Array([flickerIntensity]),
-                currentOffset
+                new Float32Array([light.intensity]),
+                byteOffset * ali + byteOffset - byteLength.float32
             )
-
-            currentOffset += byteOffset + byteLength.float32x4
-            l.intensity = flickerIntensity
         }
     }
 

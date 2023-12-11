@@ -39,7 +39,7 @@ const execute: Executable = async () => {
         vertexCount: dungeon.vertices.length / 4,
     }
 
-    const portalMesh = generatePortalMesh(tileSet.endTile!)
+    const portalMesh = generatePortalMesh(tileSet.endTile)
 
     const { renderable: shadowMapPass, lightData } = createShadowMapPass(
         gameEngine,

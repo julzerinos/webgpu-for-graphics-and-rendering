@@ -1,3 +1,4 @@
+import { clamp } from "../../../libs/util"
 import { pointerLockCanvas } from "../../../libs/web"
 import { initializeWebGPU, generateMultisampleBuffer } from "../../../libs/webgpu"
 import { GameEngine } from "../interfaces"
@@ -27,6 +28,11 @@ export const setupEngine = async (): Promise<GameEngine> => {
     const onMouseMoveListeners = [] as ((dx: number, dy: number) => void)[]
 
     const onMouseMove = (dx: number, dy: number) => {
+        const maxFrameDisplacement = 36
+
+        dx = clamp(dx, -maxFrameDisplacement, maxFrameDisplacement)
+        dy = clamp(dy, -maxFrameDisplacement, maxFrameDisplacement)
+
         for (const l of onMouseMoveListeners) l(dx, dy)
     }
 

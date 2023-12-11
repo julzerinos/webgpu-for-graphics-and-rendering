@@ -5,18 +5,17 @@
 @group(1) @binding(1) var texture : texture_2d<f32>;
 
 struct LightSource {
-    position : vec3f,
-    direction : vec3f,
+    position : vec4f,
+    direction : vec4f,
     projection : mat4x4f,
-    light_intensity : f32,
     light_tint : vec4f,
 };
 
-@group(2) @binding(0) var<uniform> light_sources : array<LightSource, 20>;
+@group(2) @binding(0) var<uniform> light_sources : array<LightSource, 30>;
 @group(2) @binding(1) var shadow_maps : texture_2d_array<f32>;
 @group(2) @binding(2) var<uniform> active_light_indices : vec4u;
 
-const ambient_light = vec3f(.0);
+const ambient_light = vec3f(.1);
 const fog_tint = vec3f(.025, .025, .125);
 
 struct VertexOutput {
@@ -68,15 +67,15 @@ fn lambertian(normal : vec3f, world_position : vec4f) -> vec3f
     {
         let light = light_sources[active_light_indices[i]];
 
-        let light_position = light.position;
-        let line_to_light = light_position - world_position.xyz;
+        let light_position = light.position.xyz;
+        let line_to_light = light_position.xyz - world_position.xyz;
         let distance_to_light = length(line_to_light);
         let parallelity_to_light = max(0, dot(normal, line_to_light / distance_to_light));
 
         let light_wall_direction = light.direction;
-        let wall_light_boost = max(1, dot(normal, light_wall_direction) * 4.5);
+        let wall_light_boost = max(1, dot(normal, light_wall_direction.xyz) * 4.5);
 
-        let light_emission = light.light_tint.rgb * light.light_intensity;
+        let light_emission = light.light_tint.rgb * light.light_tint.w;
 
         let visibility = calculate_visibility(active_light_indices[i], world_position);
         lambertian += visibility * light_emission * parallelity_to_light * wall_light_boost / (distance_to_light * distance_to_light);

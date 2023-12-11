@@ -15,19 +15,24 @@ import {
     writeToBufferF32,
 } from "../../../libs/webgpu"
 import { Matrix4x4, Vector2, Vector3 } from "../../../types"
-import { GameEngine, GameLightData, Light, Mesh, Renderable, TileSet } from "../interfaces"
-import { Direction, TILE_SIZE, Tile, TileMeshData, TileType } from "./tile"
+import {
+    Direction,
+    GameEngine,
+    GameLightData,
+    Light,
+    Mesh,
+    Renderable,
+    Tile,
+    TileSet,
+    TileType,
+} from "../interfaces"
+import { TILE_SIZE, TileMeshData } from "./tile"
 
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
+import { directionToMapOffset } from "./direction"
+import { snapshotObject } from "../../../libs/util/javascript"
 
-const DUNGEON_DIMENSION = 10
-
-const directionToMapOffset = {
-    1: vec2(0, 1),
-    2: vec2(1, 0),
-    4: vec2(0, -1),
-    8: vec2(-1, 0),
-} as { [key in Direction]: Vector2 }
+const DUNGEON_DIMENSION = 12
 
 const setTile = (map: TileType[][], position: Vector2, tile: TileType) => {
     map[position[0]][position[1]] = tile
@@ -41,46 +46,80 @@ const getTile = (map: TileType[][], position: Vector2): TileType =>
         : TileType.OUT_OF_BOUNDS
 const isTileEmpty = (map: TileType[][], position: Vector2): boolean =>
     getTile(map, position) === TileType.EMPTY
+const isTileEmptyOrOutOfBounds = (map: TileType[][], position: Vector2): boolean => {
+    const tile = getTile(map, position)
+    return tile === TileType.EMPTY || tile === TileType.OUT_OF_BOUNDS
+}
 const isDirectionEmpty = (map: TileType[][], position: Vector2, direction: Direction): boolean => {
     switch (direction) {
         case Direction.NORTH:
             return (
-                isTileEmpty(map, add(position, vec2(-1, 1))) &&
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(-1, 1))) &&
                 isTileEmpty(map, add(position, vec2(0, 1))) &&
-                isTileEmpty(map, add(position, vec2(1, 1)))
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(1, 1)))
             )
 
         case Direction.EAST:
             return (
-                isTileEmpty(map, add(position, vec2(1, 1))) &&
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(1, 1))) &&
                 isTileEmpty(map, add(position, vec2(1, 0))) &&
-                isTileEmpty(map, add(position, vec2(1, -1)))
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(1, -1)))
             )
 
         case Direction.SOUTH:
             return (
-                isTileEmpty(map, add(position, vec2(-1, -1))) &&
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(-1, -1))) &&
                 isTileEmpty(map, add(position, vec2(0, -1))) &&
-                isTileEmpty(map, add(position, vec2(1, -1)))
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(1, -1)))
             )
 
         case Direction.WEST:
             return (
-                isTileEmpty(map, add(position, vec2(-1, 1))) &&
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(-1, 1))) &&
                 isTileEmpty(map, add(position, vec2(-1, 0))) &&
-                isTileEmpty(map, add(position, vec2(-1, -1)))
+                isTileEmptyOrOutOfBounds(map, add(position, vec2(-1, -1)))
             )
     }
 
     return false
 }
 
+const checkLoopTile = (map: TileType[][], position: Vector2): boolean => {
+    const horizontalLoop =
+        !isTileEmptyOrOutOfBounds(map, add(position, vec2(0, 1))) &&
+        !isTileEmptyOrOutOfBounds(map, add(position, vec2(0, -1)))
+    const verticalLoop =
+        !isTileEmptyOrOutOfBounds(map, add(position, vec2(1, 0))) &&
+        !isTileEmptyOrOutOfBounds(map, add(position, vec2(-1, 0)))
+
+    return horizontalLoop || verticalLoop
+}
+
 const sampleTileType = (): TileType => {
     const event = Math.random()
 
-    if (event < 0.2) return TileType.LIGHT
+    // TODO randomize tiletype
+    // if (event < 0.3) return TileType.EMPTY
+    if (event < 0.15) return TileType.LIGHT
 
     return TileType.NORMAL
+}
+
+const insertStartRoom = (map: TileType[][], center: Vector2): Vector2 => {
+    setTile(map, add(center, vec2(1, 0)), TileType.NORMAL)
+    setTile(map, add(center, vec2(0, 0)), TileType.SPAWN)
+    setTile(map, add(center, vec2(-1, 0)), TileType.NORMAL)
+
+    setTile(map, add(center, vec2(1, 1)), TileType.LIGHT)
+    setTile(map, add(center, vec2(0, 1)), TileType.EMPTY)
+    setTile(map, add(center, vec2(-1, 1)), TileType.LIGHT)
+
+    setTile(map, add(center, vec2(1, 2)), TileType.NORMAL)
+    setTile(map, add(center, vec2(0, 2)), TileType.NORMAL)
+    setTile(map, add(center, vec2(-1, 2)), TileType.NORMAL)
+
+    const startPathPosition = add(center, vec2(0, 3))
+    return startPathPosition
 }
 
 export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
@@ -88,35 +127,47 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
         Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
     ) as TileType[][]
     const center = vec2(DUNGEON_DIMENSION / 2, DUNGEON_DIMENSION / 2)
+
+    const startPathPosition = insertStartRoom(map, center)
+
     let endSet = false
 
     const followPath = (position: Vector2) => {
-        // TODO randomize tiletype
+        const isLoopTile = checkLoopTile(map, position)
         const tileType = sampleTileType()
-        if (tileType === TileType.EMPTY) return
+
+        if (tileType === TileType.EMPTY || isLoopTile) return
 
         setTile(map, position, tileType)
 
-        let followedPath = false
-        for (let i = 0; i < 4; i++) {
-            const direction = (1 << i) as Direction
-            if (!isDirectionEmpty(map, position, direction)) continue
+        let pathsCreatedCount = 0
 
-            // TODO random chance to not go in that direction proportional to distance from center
+        const directions = [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST]
+        directions.sort(() => Math.sign(Math.random() * 2 - 1))
+
+        for (let i = 0; i < 4; i++) {
+            const direction = directions[i]
+            if (
+                !isDirectionEmpty(map, position, direction) ||
+                (tileType === TileType.LIGHT && pathsCreatedCount >= 3)
+            )
+                continue
 
             const nextTilePosition = add(position, directionToMapOffset[direction])
             followPath(nextTilePosition)
 
-            followedPath = true
+            ++pathsCreatedCount
         }
 
-        if (!followedPath && !endSet) {
+        if (pathsCreatedCount === 0 && !endSet) {
             setTile(map, position, TileType.END)
             endSet = true
         }
     }
 
-    followPath(center)
+    followPath(startPathPosition)
+
+    console.log(snapshotObject(map))
 
     return { map, center }
 }
@@ -241,6 +292,8 @@ export const generateMeshFromTiles = (tiles: Tile[]): Mesh => {
         lights = [...lights, ...mesh.lights]
     }
 
+    console.log(lights)
+
     return { vertices: dungeonVertices, normals: dunegonNormals, uvs: dungeonUvs, lights }
 }
 
@@ -267,7 +320,11 @@ export const createDungeonRender = async (
         },
     }: GameEngine,
     dungeon: Mesh,
-    { shadowMapTexture, lightSourcesBuffer: activeLightSourcesBuffer, activeLightIndicesBuffer }: GameLightData
+    {
+        shadowMapTexture,
+        lightSourcesBuffer: activeLightSourcesBuffer,
+        activeLightIndicesBuffer,
+    }: GameLightData
 ): Promise<Renderable> => {
     const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
 

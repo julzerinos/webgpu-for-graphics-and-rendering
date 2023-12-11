@@ -1,62 +1,10 @@
 import { vec4, flattenVector, boolToNumber, add, clamp, vec2, vec3 } from "../../../libs/util"
 import { Vector, Vector2, Vector3 } from "../../../types"
-import { Light, Mesh } from "../interfaces"
+import { Direction, Light, Mesh, Tile, TileType } from "../interfaces"
 import { mapToWorld } from "./dungeon"
 import { dungeonTileLight } from "./lights"
 
 export const TILE_SIZE = 4
-
-export enum TileType {
-    OUT_OF_BOUNDS = -1,
-    EMPTY = 0,
-    NORMAL,
-    PICKUP,
-    SPAWN,
-    END,
-    LIGHT,
-}
-
-export interface Tile {
-    position: Vector2
-    cardinality: number
-    type: TileType
-}
-
-export enum Direction {
-    NORTH = 1,
-    EAST = 2,
-    SOUTH = 4,
-    WEST = 8,
-}
-
-export const reverseDirection = {
-    [Direction.NORTH]: Direction.SOUTH,
-    [Direction.EAST]: Direction.WEST,
-    [Direction.SOUTH]: Direction.NORTH,
-    [Direction.WEST]: Direction.EAST,
-}
-
-export const generateTileOpenWallsFlags = ({
-    North,
-    South,
-    East,
-    West,
-}: {
-    North?: boolean
-    East?: boolean
-    South?: boolean
-    West?: boolean
-}): number =>
-    Direction.NORTH * boolToNumber(North) +
-    Direction.EAST * boolToNumber(East) +
-    Direction.SOUTH * boolToNumber(South) +
-    Direction.WEST * boolToNumber(West)
-
-export const getRandomCardinality = (legal: number = 15) =>
-    (legal & Direction.NORTH) * Math.round(Math.random()) +
-    (legal & Direction.EAST) * Math.round(Math.random()) +
-    (legal & Direction.SOUTH) * Math.round(Math.random()) +
-    (legal & Direction.WEST) * Math.round(Math.random())
 
 export const TileMeshData = (tile: Tile): Mesh => {
     const halfSize = TILE_SIZE / 2
@@ -105,20 +53,19 @@ export const TileMeshData = (tile: Tile): Mesh => {
         vec2(0, 1),
         vec2(0.5, 1),
     ]
-    const lightWallUvs = [
-        vec2(0.5, 1),
-        vec2(0.5, 0.5),
-        vec2(1, 0.5),
-        vec2(1, 0.5),
-        vec2(1, 1),
-        vec2(0.5, 1),
-    ]
+    // const lightWallUvs = [
+    //     vec2(0.5, 1),
+    //     vec2(0.5, 0.5),
+    //     vec2(1, 0.5),
+    //     vec2(1, 0.5),
+    //     vec2(1, 1),
+    //     vec2(0.5, 1),
+    // ]
 
     if (!(tile.cardinality & Direction.NORTH)) {
         cubeTriangles.push(vec4(1, 0, 3), vec4(3, 2, 1))
         cubeNormals.push(...Array(6).fill(vec4(0, 0, -1, 0)))
-        const wallUvs = tile.type === TileType.LIGHT ? lightWallUvs : normalWallUvs
-        cubeUvs.push(...wallUvs)
+        cubeUvs.push(...normalWallUvs)
     }
     if (!(tile.cardinality & Direction.EAST)) {
         cubeTriangles.push(vec4(2, 3, 7), vec4(7, 6, 2))
@@ -150,8 +97,7 @@ export const TileMeshData = (tile: Tile): Mesh => {
     const uvs = new Float32Array(flattenVector(cubeUvs))
 
     let lights = [] as Light[]
-    if (!(tile.cardinality & Direction.NORTH) && tile.type === TileType.LIGHT)
-        lights = [dungeonTileLight(tile)]
+    if (tile.type === TileType.LIGHT) lights = [dungeonTileLight(tile)]
 
     return { vertices, normals, uvs, lights }
 }
