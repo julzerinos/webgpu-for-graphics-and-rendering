@@ -8,6 +8,7 @@ import { SpatialPartitioning } from "./06-partitioning"
 import { Progressive } from "./07-progressive"
 import { BRDF } from "./08-brdf"
 import { Environmental } from "./09-environmental"
+import { DebuggingRendering } from "./debugging"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     RaycastingIntroduction(container, executeQueue)
@@ -46,5 +47,7 @@ export const renderingRoutes: IRoute = {
         { name: "07-progressive", generator: Progressive },
         { name: "08-brdf", generator: BRDF },
         { name: "09-environmental", generator: Environmental },
+        { name: "10-production-rendering", generator: () => {} }, // TODO add images
+        { name: "debugging", generator: DebuggingRendering },
     ],
 }
