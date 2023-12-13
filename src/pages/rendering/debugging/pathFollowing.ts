@@ -1,172 +1,240 @@
-import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
+import { Executable, ExecutableQueue, ICanvasCoordinates, ViewGenerator } from "../../../types"
 
 import {
     initializeWebGPU,
     createPass,
     setupShaderPipeline,
-    generateTexture,
-    createTextureBind,
-    writeToBufferF32,
     createBind,
+    writeToBufferU32,
+    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import {
+    createBoolInput,
     createCanvas,
     createCanvasSection,
+    createCanvasStack,
     createInteractableSection,
-    createRange,
-    createSelect,
     createText,
     createTitle,
     createWithLabel,
-    subscribeMultiple,
+    subscribeToCanvasDrag,
     subscribeToInput,
-    watchInput,
 } from "../../../libs/web"
 
-import { Colors, computeJitters, flattenVector, readImageData } from "../../../libs/util"
+import {
+    Colors,
+    build_bsp_tree,
+    computeJitters,
+    flattenVector,
+    getDrawingInfo,
+    interleaveF32s,
+    parseOBJ,
+    shiftIntoU32InPlace,
+    vec4,
+} from "../../../libs/util"
 
-import shaderCode from "./texturing.wgsl?raw"
+import shaderCode from "./pathFollowing.wgsl?raw"
+import { byteLength } from "../../../libs/util/byteLengths"
 
-const CANVAS_ID = "texturing"
-const TEXTURE_SCALE_RANGE_ID = "grass-texture-scale"
-const JITTER_SUBD_SLIDER_ID = "subdivision-jitter-slider"
-const TEXTURE_SELECT_ID = "grass-texture-select"
-const TEX_OPT_SEL_ID = "texture-repeat-style-on-plane"
-const TEXTURE_OPTIONS: GPUAddressMode[] = ["clamp-to-edge", "repeat", "mirror-repeat"]
+const CANVAS_ID = "path-following"
+
 const execute: Executable = async () => {
-    const { device, canvas, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
+    const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const getScale = watchInput<number>(TEXTURE_SCALE_RANGE_ID)
-    const getSubdivisions = watchInput<number>(JITTER_SUBD_SLIDER_ID)
-    const getTexture = watchInput<string>(TEXTURE_SELECT_ID) as () =>
-        | "grass.jpg"
-        | "grass_minecraft.png"
+    const debugCanvas = document.getElementById(CANVAS_ID + "-overlay") as HTMLCanvasElement
+    const debugContext = (debugCanvas.getContext("gpupresent") ||
+        debugCanvas.getContext("webgpu")) as GPUCanvasContext
+    debugContext.configure({
+        device,
+        format: canvasFormat,
+        alphaMode: "premultiplied",
+    })
 
-    const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
+    const wgsl = device.createShaderModule({
+        code: shaderCode,
+    })
+    const pipeline = device.createRenderPipeline({
+        layout: "auto",
+        vertex: {
+            module: wgsl,
+            entryPoint: "main_vs",
+            buffers: [],
+        },
+        fragment: {
+            module: wgsl,
+            entryPoint: "main_fs",
+            targets: [{ format: canvasFormat }, { format: canvasFormat }],
+        },
+        primitive: {
+            topology: "triangle-strip",
+        },
+    })
 
-    let textureBindGroup: GPUBindGroup, textureMCBindGroup: GPUBindGroup
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBox.obj"))
+    const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
-    const loadImages = async (textureMode: GPUAddressMode) => {
-        const imageLoaders = [
-            readImageData("textures/grass.jpg"),
-            readImageData("textures/grass_minecraft.png"),
-        ]
-        const imageData = await Promise.all(imageLoaders)
+    const interleavedVerticesNormals = interleaveF32s([
+        bspTreeResults.vertices,
+        bspTreeResults.normals,
+    ])
 
-        const { texture, sampler } = generateTexture(
-            device,
-            imageData[0].textureData,
-            imageData[0].width,
-            imageData[0].height,
-            { addressModeU: textureMode, addressModeV: textureMode }
+    const interleavedIndicesMatIndices = new Uint32Array(bspTreeResults.indices)
+    shiftIntoU32InPlace(interleavedIndicesMatIndices, modelDrawingInfo.matIndices, 4)
+    const lightFaceIndices = new Uint32Array(modelDrawingInfo.lightIndices)
+
+    const materialsArray = new Float32Array(
+        modelDrawingInfo.materials.reduce(
+            (arr, mat) => [
+                ...arr,
+                ...flattenVector([
+                    mat.color,
+                    mat.specular,
+                    mat.emission,
+                    vec4(mat.illum, mat.shininess, mat.ior),
+                ]),
+            ],
+            [] as number[]
         )
-        const { texture: textureMC, sampler: samplerMC } = generateTexture(
-            device,
-            imageData[1].textureData,
-            imageData[1].width,
-            imageData[1].height,
-            { addressModeU: textureMode, addressModeV: textureMode }
-        )
-        textureBindGroup = createTextureBind(device, pipeline, texture, sampler)
-        textureMCBindGroup = createTextureBind(device, pipeline, textureMC, samplerMC)
-    }
+    )
 
-    await loadImages("repeat")
-
-    const {
-        bindGroup: globalsBind,
-        buffers: [globalsBuffer],
-    } = createBind(
+    const { bindGroup: modelStorage } = createBind(
         device,
         pipeline,
-        [new Float32Array([getScale(), getSubdivisions() * getSubdivisions()])],
-        "UNIFORM",
+        [
+            interleavedVerticesNormals,
+            interleavedIndicesMatIndices,
+            lightFaceIndices,
+            materialsArray,
+        ],
+        "STORAGE"
+    )
+
+    const { bindGroup: bspTreeStorage } = createBind(
+        device,
+        pipeline,
+        [bspTreeResults.bspPlanes, bspTreeResults.bspTree, bspTreeResults.treeIds],
+        "STORAGE",
         1
     )
 
+    const jitters = computeJitters(canvas.height, 2)
     const {
-        bindGroup: jittersBind,
-        buffers: [jittersBuffer],
-    } = createBind(device, pipeline, [new Float32Array(200)], "STORAGE", 2)
+        bindGroup: uniformsBind,
+        buffers: [_, __, mouseUVBuffer],
+    } = createBind(
+        device,
+        pipeline,
+        [
+            bspTreeResults.aabb,
+            new Float32Array(flattenVector(jitters.map(j => vec4(...j, 0, 0)))),
+            new Float32Array([0.34765625, 0.387603759765625, 0, 0]),
+            new Uint32Array([lightFaceIndices.length]),
+        ],
+        "UNIFORM",
+        2
+    )
 
-    const draw = () => {
-        writeToBufferF32(
-            device,
-            globalsBuffer,
-            new Float32Array([getScale(), getSubdivisions() * getSubdivisions()]),
-            0
-        )
-
-        const selectedTextureBindGroup = {
-            "grass.jpg": textureBindGroup,
-            "grass_minecraft.png": textureMCBindGroup,
-        }[getTexture()]
-
-        const { pass, executePass } = createPass(device, context, Colors.black)
-
-        pass.setPipeline(pipeline)
-        pass.setBindGroup(0, selectedTextureBindGroup)
-        pass.setBindGroup(1, globalsBind)
-        pass.setBindGroup(2, jittersBind)
-
-        pass.draw(4)
-        executePass()
-    }
-
-    const setSubdivisions = (subdivisions: number) => {
-        const jitters = computeJitters(canvas.height, subdivisions)
-        writeToBufferF32(device, jittersBuffer, new Float32Array(flattenVector(jitters)), 0, true)
-    }
-
-    const subdivisions = subscribeToInput<number>(JITTER_SUBD_SLIDER_ID, setSubdivisions)
-    setSubdivisions(subdivisions)
-
-    subscribeMultiple([TEXTURE_SCALE_RANGE_ID, TEXTURE_SELECT_ID, JITTER_SUBD_SLIDER_ID], draw)
-    subscribeToInput(TEX_OPT_SEL_ID, async textureMode => {
-        await loadImages(textureMode as GPUAddressMode)
-        draw()
+    const MAX_DEPTH = 10
+    const rayPathBuffer = device.createBuffer({
+        size: byteLength.float32x4 * 2 * MAX_DEPTH,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
+    })
+    writeToBufferF32(device, rayPathBuffer, new Float32Array(4 * 2 * MAX_DEPTH), 0)
+    const rayPathDisplayBuffer = device.createBuffer({
+        size: (byteLength.float32x4 * 2 + byteLength.float32 * 4) * MAX_DEPTH,
+        usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+    })
+    const rayPathBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(3),
+        entries: [
+            {
+                binding: 0,
+                resource: { buffer: rayPathBuffer },
+            },
+        ],
     })
 
-    draw()
+    const displayRayPath = async () => {
+        if (rayPathDisplayBuffer.mapState !== "unmapped") return
+
+        await rayPathDisplayBuffer.mapAsync(GPUMapMode.READ)
+        const results = new Float32Array(rayPathDisplayBuffer.getMappedRange())
+        for (let i = 0; i < results.length; i += 4 * 2) {
+            console.info("[ray path details]", i / 8)
+            console.info("a", results.slice(i, i + 4))
+            console.info("b", results.slice(i + 4, i + 8))
+            // console.info("depth, thickness, exists, opacity", results.slice(i + 8, i + 12))
+        }
+        rayPathDisplayBuffer.unmap()
+    }
+
+    const draw = () => {
+        const { pass, encoder } = createPass(device, context, Colors.black, {
+            otherColorAttachments: [
+                {
+                    view: debugContext.getCurrentTexture().createView(),
+                    loadOp: "clear",
+                    clearValue: Colors.transparent,
+                    storeOp: "store",
+                },
+            ],
+        })
+
+        pass.setPipeline(pipeline)
+        pass.setBindGroup(0, modelStorage)
+        pass.setBindGroup(1, bspTreeStorage)
+        pass.setBindGroup(2, uniformsBind)
+        pass.setBindGroup(3, rayPathBindGroup)
+
+        pass.draw(4)
+        pass.end()
+
+        if (rayPathDisplayBuffer.mapState === "unmapped")
+            encoder.copyBufferToBuffer(
+                rayPathBuffer,
+                0,
+                rayPathDisplayBuffer,
+                0,
+                rayPathBuffer.size
+            )
+        // encoder.clearBuffer(rayPathBuffer)
+        device.queue.submit([encoder.finish()])
+
+        displayRayPath()
+    }
+
+    requestAnimationFrame(draw)
+
+    subscribeToCanvasDrag(
+        "path-following",
+        {
+            onMove: (coordinates: ICanvasCoordinates) => {
+                const u = coordinates.x / canvas.width
+                const v = 1 - coordinates.y / canvas.height
+                writeToBufferF32(device, mouseUVBuffer, new Float32Array([u, v, 0, 0]), 0)
+
+                requestAnimationFrame(draw)
+            },
+        },
+        {}
+    )
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Applying textures in rendering")
-    const description = createText("No description yet")
+    const canvas = createCanvas(CANVAS_ID)
+    const debugCanvas = createCanvas(CANVAS_ID + "-overlay", { overlay: true })
+    const canvasStack = createCanvasStack()
+    canvasStack.append(canvas, debugCanvas)
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID)
-
     const interactables = createInteractableSection()
+    interactables.append()
+    canvasSection.append(canvasStack, interactables)
 
-    const textureScaleRange = createWithLabel(
-        createRange(TEXTURE_SCALE_RANGE_ID, 0.2, 0.1, 2, 0.1),
-        "Texture scale"
-    )
-    const subdivisionRange = createWithLabel(
-        createRange(JITTER_SUBD_SLIDER_ID, 1, 1, 10, 1),
-        "Subdivisions for stratisfied jitter"
-    )
-    const textureSelect = createWithLabel(
-        createSelect(
-            TEXTURE_SELECT_ID,
-            ["grass.jpg", "grass_minecraft.png"],
-            "grass_minecraft.png"
-        ),
-        "Grass texture",
-        false
-    )
-    const textureOptionSelect = createWithLabel(
-        createSelect(TEX_OPT_SEL_ID, TEXTURE_OPTIONS, "repeat"),
-        "Texture edge behavior",
-        false
-    )
-
-    interactables.append(textureSelect, textureScaleRange, textureOptionSelect, subdivisionRange)
-    canvasSection.append(canvas, interactables)
+    const title = createTitle("Tracing the ray path")
+    const description = createText("No description yet")
     div.append(title, description, canvasSection)
-
     executeQueue.push(execute)
 }
 

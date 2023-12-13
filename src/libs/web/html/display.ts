@@ -39,16 +39,25 @@ export const createWithLabel = (
 
 export const createCanvas = (
     canvasId: string,
-    width: number = 512,
-    height: number = 512,
-    lowRes?: boolean
+    {
+        width,
+        height,
+        lowRes,
+        overlay,
+    }: {
+        width?: number
+        height?: number
+        lowRes?: boolean
+        overlay?: boolean
+    } = {}
 ): HTMLCanvasElement => {
     const canvas = document.createElement("canvas")
-    canvas.width = width
-    canvas.height = height
+    canvas.width = width ?? 512
+    canvas.height = height ?? 512
     canvas.id = canvasId
 
     if (lowRes) canvas.classList.add("low-res")
+    if (overlay) canvas.classList.add("overlay")
 
     return canvas
 }

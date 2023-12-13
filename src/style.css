@@ -103,3 +103,22 @@ canvas.low-res {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
 }
+
+canvas {
+    user-select: none;
+}
+
+canvas.overlay {
+    pointer-events: none;
+    background-color: transparent;
+}
+
+.canvas-stack {
+    display: grid;
+    place-items: center;
+    grid-template-columns: inner;
+}
+
+.canvas-stack > canvas {
+    grid-area: inner;
+}

@@ -12,3 +12,9 @@ export const createCanvasSection = (): HTMLDivElement => {
     return div
 }
 
+export const createCanvasStack = (): HTMLDivElement => {
+    const div = document.createElement("div")
+    div.className = "canvas-stack"
+
+    return div
+}

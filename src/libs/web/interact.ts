@@ -55,7 +55,8 @@ export const subscribeToCanvasDrag = (
         onEnd,
     }: {
         [callback in "onStart" | "onMove" | "onEnd"]?: (coordinates: ICanvasCoordinates) => void
-    }
+    },
+    { alwaysMouseMove }: { alwaysMouseMove?: boolean } = {}
 ) => {
     const canvas = document.getElementById(id)
     if (!canvas) throw new Error(`Could not locate canvas with id ${id}`)
@@ -87,7 +88,7 @@ export const subscribeToCanvasDrag = (
     })
 
     canvas.addEventListener("mousemove", (event: MouseEvent) => {
-        if (!isDragging) return
+        if (!alwaysMouseMove && !isDragging) return
         onMove?.(getCoordinates(event))
     })
 }

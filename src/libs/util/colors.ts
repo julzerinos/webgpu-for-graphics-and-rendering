@@ -9,6 +9,7 @@ export const Colors: { [key: string]: GPUColorDict } = {
     black: color(0, 0, 0, 1),
     white: color(1, 1, 1, 1),
     blueScreenBlue: color(0.1, 0.3, 0.6, 1.0),
+    transparent: color(0, 0, 0, 0),
 }
 
 export const hexToColor = (hex: string): GPUColorDict => {
