@@ -1,4 +1,4 @@
-import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
+import { Executable, ExecutableQueue, ViewGenerator } from "../../../../types"
 
 import {
     initializeWebGPU,
@@ -6,7 +6,7 @@ import {
     setupShaderPipeline,
     writeToBufferF32,
     createBind,
-} from "../../../libs/webgpu"
+} from "../../../../libs/webgpu"
 
 import {
     createCanvas,
@@ -17,9 +17,9 @@ import {
     createTitle,
     createInteractableSection,
     subscribeToInput,
-} from "../../../libs/web"
+} from "../../../../libs/web"
 
-import { Colors } from "../../../libs/util"
+import { Colors } from "../../../../libs/util"
 
 import shaderCode from "./rayLineIntersection.wgsl?raw"
 
@@ -56,7 +56,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, 512, 512)
+    const canvas = createCanvas(CANVAS_ID)
 
     const interactableSection = createInteractableSection()
     const thicknessSlider = createWithLabel(

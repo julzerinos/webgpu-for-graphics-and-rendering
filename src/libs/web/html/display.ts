@@ -79,3 +79,11 @@ export const routesIndex = (routes: IRoute[]): HTMLElement => {
 
     return div
 }
+
+export const createValueDisplay = (id: string) => {
+    const div = document.createElement("div")
+    div.id = id
+    div.className = "value-display"
+
+    return div
+}

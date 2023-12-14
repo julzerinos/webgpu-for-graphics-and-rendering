@@ -1,4 +1,4 @@
-import { Executable, ExecutableQueue, ICanvasCoordinates, ViewGenerator } from "../../../types"
+import { Executable, ExecutableQueue, ICanvasCoordinates, ViewGenerator } from "../../../../types"
 
 import {
     initializeWebGPU,
@@ -7,7 +7,7 @@ import {
     createBind,
     writeToBufferU32,
     writeToBufferF32,
-} from "../../../libs/webgpu"
+} from "../../../../libs/webgpu"
 
 import {
     createBoolInput,
@@ -20,7 +20,7 @@ import {
     createWithLabel,
     subscribeToCanvasDrag,
     subscribeToInput,
-} from "../../../libs/web"
+} from "../../../../libs/web"
 
 import {
     Colors,
@@ -32,11 +32,11 @@ import {
     parseOBJ,
     shiftIntoU32InPlace,
     vec4,
-} from "../../../libs/util"
+} from "../../../../libs/util"
 
 import shaderCode from "./pathFollowing.wgsl?raw"
 import debugShaderCode from "./drawDebugRays.wgsl?raw"
-import { byteLength } from "../../../libs/util/byteLengths"
+import { byteLength } from "../../../../libs/util/byteLengths"
 
 const CANVAS_ID = "path-following"
 
@@ -161,7 +161,6 @@ const execute: Executable = async () => {
         size: byteLength.float32x4 * 2 * MAX_DEPTH,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     })
-    // writeToBufferF32(device, rayPathBuffer, new Float32Array(4 * 2 * MAX_DEPTH), 0)
     const rayPathDisplayBuffer = device.createBuffer({
         size: byteLength.float32x4 * 2 * MAX_DEPTH,
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
@@ -194,7 +193,6 @@ const execute: Executable = async () => {
             console.info("[ray path details]", i / 8)
             console.info("a", results.slice(i, i + 4))
             console.info("b", results.slice(i + 4, i + 8))
-            // console.info("depth, thickness, exists, opacity", results.slice(i + 8, i + 12))
         }
         rayPathDisplayBuffer.unmap()
     }

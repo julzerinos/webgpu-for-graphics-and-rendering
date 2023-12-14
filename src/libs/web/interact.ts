@@ -61,12 +61,11 @@ export const subscribeToCanvasDrag = (
     const canvas = document.getElementById(id)
     if (!canvas) throw new Error(`Could not locate canvas with id ${id}`)
 
-    const rect = canvas.getBoundingClientRect()
+    const getCoordinates = (event: MouseEvent): ICanvasCoordinates => {
+        const rect = canvas.getBoundingClientRect()
 
-    const getCoordinates = (event: MouseEvent): ICanvasCoordinates => ({
-        x: event.clientX - rect.left,
-        y: event.clientY - rect.top,
-    })
+        return { x: event.clientX - rect.left, y: event.clientY - rect.top }
+    }
 
     let isDragging = false
 
@@ -155,4 +154,11 @@ export const pointerLockCanvas = (
     )
 
     return { keyMap }
+}
+
+export const createDisplaySetter = (displayId: string): ((value: string) => void) => {
+    const display = document.getElementById(displayId)
+    if (!display) throw new Error(`Could not locate display with id ${displayId}`)
+
+    return (value: string) => (display.innerText = value)
 }
