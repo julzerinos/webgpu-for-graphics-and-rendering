@@ -52,7 +52,6 @@ const visibility = 1.;
 
 const sphere_refractive_index = 1.5;
 const air_refractive_index = 1.;
-const sphere_radius = 90;
 
 const up = vec3f(0., 1., 0.);
 const target_point = vec3f(277., 275., 0.);
@@ -308,11 +307,11 @@ fn intersect_min_max(r : ptr < function, Ray>) -> bool
 }
 
 
-fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, center : vec3f) -> bool {
+fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, object : u32, center : vec3f, radius : f32) -> bool {
 
     var from_center = r.origin - center;
     var b_half = dot(from_center, r.direction);
-    var c = dot(from_center, from_center) - sphere_radius * sphere_radius;
+    var c = dot(from_center, from_center) - radius * radius;
     var b_half_2_c = b_half * b_half - c;
 
     var does_intersection_exist = b_half_2_c >= 0;
@@ -351,11 +350,14 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 {
     (*hit).has_hit = false;
 
-    let hit_mirror_sphere = intersect_sphere(*r, hit, 1, vec3f(420, 90, 370));
-    (*r).tmax = select((*r).tmax, (*hit).dist, hit_mirror_sphere);
+    const mirror_material = 1;
+    const refractive_material = 2;
 
-    let hit_refractive_sphere = intersect_sphere(*r, hit, 2, vec3f(130, 90, 250));
-    (*r).tmax = select((*r).tmax, (*hit).dist, hit_refractive_sphere);
+    (*r).tmax = select((*r).tmax, (*hit).dist, intersect_sphere(*r, hit, refractive_material, vec3f(230, 120, 70), 90));
+    (*r).tmax = select((*r).tmax, (*hit).dist, intersect_sphere(*r, hit, refractive_material, vec3f(400, 90, 150), 45));
+    (*r).tmax = select((*r).tmax, (*hit).dist, intersect_sphere(*r, hit, refractive_material, vec3f(400, 90, 250), 65));
+
+    (*r).tmax = select((*r).tmax, (*hit).dist, intersect_sphere(*r, hit, mirror_material, vec3f(230, 66, 350), 40));
 
     if (!intersect_min_max(r))
     {
@@ -483,7 +485,7 @@ fn refractive(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> Light
     var reflected_direction = reflect((*r).direction, (*hit).normal);
 
     (*r).direction = normalize(select(direction, reflected_direction, is_reflected));
-    (*r).origin = (*hit).position;
+    (*r).origin = (*hit).position + .1 * (*r).direction;
     (*r).tmin = .01;
     (*r).tmax = default_tmax;
 
@@ -537,12 +539,11 @@ fn render(coords : vec2f) -> vec4f
 
         for (hit.depth = 0; hit.depth < max_depth; hit.depth++)
         {
-
             if (!intersect_scene(&r, &hit))
             {
                 hit.color += backgroundColor.rgb;
 
-                if (i == 0 && is_mouse_pixel(coords+.5))
+                if (i == 0 && is_mouse_pixel(uv+.5))
                 {
                     ray_path[hit.depth] = Line(r.origin, r.origin + r.direction * r.tmax);
                 }

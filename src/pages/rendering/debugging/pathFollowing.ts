@@ -251,7 +251,7 @@ const execute: Executable = async () => {
 
         device.queue.submit([encoder.finish()])
 
-        displayRayPath()
+        // displayRayPath()
     }
 
     requestAnimationFrame(draw)

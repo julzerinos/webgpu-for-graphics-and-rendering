@@ -107,12 +107,11 @@ fn intersect_line(r : Ray, line : Line) -> vec4f
     let is_inside_line_section = s >= 0 && s <= 1;
     let is_intersection_close_enough = d < thickness;
 
-    let camera_safeguard = .0000000001;
-    let is_in_camera = length(line.a - r.origin) < camera_safeguard || length(line.b - r.origin) < camera_safeguard;
+    let not_is_in_camera = length(line.a - r.origin) >0 &&length(line.b - r.origin) >0;
 
-    let did_hit = !is_in_camera && u_has_length && lines_are_not_parallel && is_inside_ray_section && is_inside_line_section && is_intersection_close_enough;
+    let did_hit = not_is_in_camera && u_has_length && lines_are_not_parallel && is_inside_ray_section && is_inside_line_section && is_intersection_close_enough;
 
-    let color = vec4f(select(0, 1., did_hit), 0, 0, select(0, 1., did_hit));
+    let color = vec4f(select(0, clamp(1-s, .5, 1), did_hit), 0, 0, select(0, 1., did_hit));
 
     return color;
 }
