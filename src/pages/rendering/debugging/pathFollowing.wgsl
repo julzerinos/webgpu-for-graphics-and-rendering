@@ -35,12 +35,11 @@ struct Aabb {
 @group(2) @binding(3) var<uniform> light_indices_count : u32;
 
 struct Line {
-    a : vec4f,
-    b : vec4f,
-    depth : f32, thickness : f32, exists : f32, opacity : f32
+    a : vec3f,
+    b : vec3f,
 }
 
-@group(3) @binding(0) var<storage, read_write> ray_path : array<vec4f>;
+@group(3) @binding(0) var<storage, read_write> ray_path : array<Line>;
 
 const MAX_LEVEL = 20u;
 const BSP_LEAF = 3u;
@@ -543,18 +542,17 @@ fn render(coords : vec2f) -> vec4f
             {
                 hit.color += backgroundColor.rgb;
 
-                //hit.position = r.origin + r.direction * r.tmax;
-                //if (i == 0 && is_mouse_pixel(uv+.5))
-                //{
-                //store_path_step(r, hit);
-                //}
+                if (i == 0 && is_mouse_pixel(coords+.5))
+                {
+                    ray_path[hit.depth] = Line(r.origin, r.origin + r.direction * r.tmax);
+                }
                 break;
             }
 
-            let store_condition = i == 0 && is_mouse_pixel(coords+.5);
-            ray_path[hit.depth * 2] = select(vec4f(0), vec4f(r.origin, 1.), store_condition);
-            ray_path[(hit.depth * 2) + 1] = select(vec4f(0), vec4f(hit.position, 1), store_condition);
-
+            if (i == 0 && is_mouse_pixel(uv+.5))
+            {
+                ray_path[hit.depth] = Line(r.origin, hit.position);
+            }
 
             var next_light_result = shader(&r, &hit);
             light_result.additive += next_light_result.additive;
@@ -581,99 +579,15 @@ fn render(coords : vec2f) -> vec4f
     return vec4f(pow(final_result, vec3f(1.0 / 1.25)), 1.0);
 }
 
-struct FragmentOutput {
-    @location(0) frame : vec4f,
-    @location(1) debug : vec4f
-}
-
 @fragment
-fn main_fs(@location(0) coords : vec2f) -> FragmentOutput
+fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 {
-    let equal_space_coords = .5 * coords;
-
-    var fo : FragmentOutput;
-    fo.debug = debug(equal_space_coords);
-    fo.frame = render(equal_space_coords);
-
-    return fo;
+    return render(coords*.5);
 }
 
 //DEBUG
 
 fn is_mouse_pixel(coords01 : vec2f) -> bool
 {
-    return length(mouse_uv.xy - coords01) <= .1;
+    return length(round(mouse_uv.xy * 512) - round(coords01 * 512)) <= .0;
 }
-
-fn intersect_line(r : Ray, hit : ptr < function, HitInfo>, line : Line) -> vec4f
-{
-    let v = r.direction * default_tmax;
-    let u = line.b.xyz - line.a.xyz;
-
-    let u_has_length = length(u) > 0;
-
-    let vxu = cross(v, u);
-    let vxu_dot = dot(vxu, vxu);
-    let lines_are_not_parallel = abs(vxu_dot) > 0;
-
-    let t = dot(cross(line.a.xyz - r.origin, u), vxu) / (vxu_dot);
-    let ray_point = r.origin + t * v;
-
-    let s = dot(cross(line.a.xyz - r.origin, v), vxu) / (vxu_dot);
-    let line_point = line.a.xyz + s * u;
-
-    let d = length(line_point - ray_point);
-
-    let is_inside_ray_section = t >= r.tmin && t <= 1;
-    let is_inside_line_section = s >= 0 && s <= 1;
-    let is_intersection_close_enough = d < line.thickness;
-
-    let did_hit = u_has_length && lines_are_not_parallel && is_inside_ray_section && is_inside_line_section && is_intersection_close_enough;
-
-    let color = select(vec4f(0), vec4f(vec3f(line.opacity), 1), did_hit);
-    let control = vec4f(t, 0, 0, 1);
-
-    return control;
-}
-
-fn debug(coords : vec2f) -> vec4f
-{
-    const opacity = 1.0;
-
-    var r = generate_ray_from_camera(coords);
-    var hit = generate_default_hitinfo();
-
-    //var color = vec4f(0);
-    //var line : Line;
-    //line.a = vec4f(277, 275, -570, 1);
-    //line.b = vec4f(412.9595031738281, 172.81314086914062, 335.4677734375, 1);
-    //line.thickness = 4.;
-    //line.exists = 1.;
-    //line.opacity = 1.;
-    //color = intersect_line(r, &hit, line);
-    //
-    //line.a = vec4f(412.9595031738281, 172.81314086914062, 335.4677734375, 1);
-    //line.b = vec4f(384.6812438964844, 548.7999877929688, 254.6155548095703, 1);
-    //color = intersect_line(r, &hit, line);
-
-    var color = vec4f(1, 1, 1, 1);
-    for (var i = 0; i < 1; i++)
-    {
-        let line_a = ray_path[i * 2];
-        let line_b = ray_path[(i * 2) + 1];
-        color = line_a;
-            //intersect_line(r, &hit, line);
-    }
-
-    return color;
-}
-
-//fn store_path_step(line_a : vec4f, line_b : vec4f)
-//{
-//ray_path[hit.depth * 2] = vec4f(ray.origin, 1.);
-//ray_path[(hit.depth * 2) + 1] = vec4f(hit.position, 1);
-////ray_path[hit.depth].depth = f32(hit.depth);
-////ray_path[hit.depth].thickness = 4.;
-////ray_path[hit.depth].exists = 1.;
-////ray_path[hit.depth].opacity = f32(hit.depth) / max_depth + .5;
-//}

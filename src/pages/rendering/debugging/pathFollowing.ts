@@ -35,21 +35,13 @@ import {
 } from "../../../libs/util"
 
 import shaderCode from "./pathFollowing.wgsl?raw"
+import debugShaderCode from "./drawDebugRays.wgsl?raw"
 import { byteLength } from "../../../libs/util/byteLengths"
 
 const CANVAS_ID = "path-following"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
-
-    const debugCanvas = document.getElementById(CANVAS_ID + "-overlay") as HTMLCanvasElement
-    const debugContext = (debugCanvas.getContext("gpupresent") ||
-        debugCanvas.getContext("webgpu")) as GPUCanvasContext
-    debugContext.configure({
-        device,
-        format: canvasFormat,
-        alphaMode: "premultiplied",
-    })
 
     const wgsl = device.createShaderModule({
         code: shaderCode,
@@ -64,7 +56,36 @@ const execute: Executable = async () => {
         fragment: {
             module: wgsl,
             entryPoint: "main_fs",
-            targets: [{ format: canvasFormat }, { format: canvasFormat }],
+            targets: [{ format: canvasFormat }],
+        },
+        primitive: {
+            topology: "triangle-strip",
+        },
+    })
+
+    const debugCanvas = document.getElementById(CANVAS_ID + "-overlay") as HTMLCanvasElement
+    const debugContext = (debugCanvas.getContext("gpupresent") ||
+        debugCanvas.getContext("webgpu")) as GPUCanvasContext
+    debugContext.configure({
+        device,
+        format: canvasFormat,
+        alphaMode: "premultiplied",
+    })
+
+    const debugWgsl = device.createShaderModule({
+        code: debugShaderCode,
+    })
+    const debugPipeline = device.createRenderPipeline({
+        layout: "auto",
+        vertex: {
+            module: debugWgsl,
+            entryPoint: "main_vs",
+            buffers: [],
+        },
+        fragment: {
+            module: debugWgsl,
+            entryPoint: "main_fs",
+            targets: [{ format: canvasFormat }],
         },
         primitive: {
             topology: "triangle-strip",
@@ -140,13 +161,22 @@ const execute: Executable = async () => {
         size: byteLength.float32x4 * 2 * MAX_DEPTH,
         usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST,
     })
-    writeToBufferF32(device, rayPathBuffer, new Float32Array(4 * 2 * MAX_DEPTH), 0)
+    // writeToBufferF32(device, rayPathBuffer, new Float32Array(4 * 2 * MAX_DEPTH), 0)
     const rayPathDisplayBuffer = device.createBuffer({
-        size: (byteLength.float32x4 * 2 + byteLength.float32 * 4) * MAX_DEPTH,
+        size: byteLength.float32x4 * 2 * MAX_DEPTH,
         usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
     })
-    const rayPathBindGroup = device.createBindGroup({
+    const rayPathWriteBindGroup = device.createBindGroup({
         layout: pipeline.getBindGroupLayout(3),
+        entries: [
+            {
+                binding: 0,
+                resource: { buffer: rayPathBuffer },
+            },
+        ],
+    })
+    const rayPathReadBindGroup = device.createBindGroup({
+        layout: debugPipeline.getBindGroupLayout(0),
         entries: [
             {
                 binding: 0,
@@ -170,12 +200,15 @@ const execute: Executable = async () => {
     }
 
     const draw = () => {
-        const { pass, encoder } = createPass(device, context, Colors.black, {
-            otherColorAttachments: [
+        const encoder = device.createCommandEncoder()
+        encoder.clearBuffer(rayPathBuffer)
+
+        const pass = encoder.beginRenderPass({
+            colorAttachments: [
                 {
-                    view: debugContext.getCurrentTexture().createView(),
+                    view: context.getCurrentTexture().createView(),
                     loadOp: "clear",
-                    clearValue: Colors.transparent,
+                    clearValue: Colors.black,
                     storeOp: "store",
                 },
             ],
@@ -185,10 +218,27 @@ const execute: Executable = async () => {
         pass.setBindGroup(0, modelStorage)
         pass.setBindGroup(1, bspTreeStorage)
         pass.setBindGroup(2, uniformsBind)
-        pass.setBindGroup(3, rayPathBindGroup)
+        pass.setBindGroup(3, rayPathWriteBindGroup)
 
         pass.draw(4)
         pass.end()
+
+        const debugPass = encoder.beginRenderPass({
+            colorAttachments: [
+                {
+                    view: debugContext.getCurrentTexture().createView(),
+                    loadOp: "clear",
+                    clearValue: Colors.transparent,
+                    storeOp: "store",
+                },
+            ],
+        })
+
+        debugPass.setPipeline(debugPipeline)
+        debugPass.setBindGroup(0, rayPathReadBindGroup)
+
+        debugPass.draw(4)
+        debugPass.end()
 
         if (rayPathDisplayBuffer.mapState === "unmapped")
             encoder.copyBufferToBuffer(
@@ -198,7 +248,7 @@ const execute: Executable = async () => {
                 0,
                 rayPathBuffer.size
             )
-        // encoder.clearBuffer(rayPathBuffer)
+
         device.queue.submit([encoder.finish()])
 
         displayRayPath()
@@ -206,16 +256,19 @@ const execute: Executable = async () => {
 
     requestAnimationFrame(draw)
 
+    const updateMouseUv = (coordinates: ICanvasCoordinates) => {
+        const u = coordinates.x / canvas.width
+        const v = 1 - coordinates.y / canvas.height
+        writeToBufferF32(device, mouseUVBuffer, new Float32Array([u, v, 0, 0]), 0)
+
+        requestAnimationFrame(draw)
+    }
+
     subscribeToCanvasDrag(
         "path-following",
         {
-            onMove: (coordinates: ICanvasCoordinates) => {
-                const u = coordinates.x / canvas.width
-                const v = 1 - coordinates.y / canvas.height
-                writeToBufferF32(device, mouseUVBuffer, new Float32Array([u, v, 0, 0]), 0)
-
-                requestAnimationFrame(draw)
-            },
+            onMove: updateMouseUv,
+            onStart: updateMouseUv,
         },
         {}
     )
