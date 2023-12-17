@@ -106,7 +106,12 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("Projecting a cube")
-    const description = createText("No description yet")
+    const description = createText(`
+Along the journey in the direction of 3D scenes from 2D shapes a key stop is orthographic projection, known for its use in early game development (or in modern, as a stylistic choice).
+This projection assumes a volume created by lines directly perpendicular to the image plane.
+
+Wireframe rendering (using lines instead of triangles) is a simplification which can be used to observe the shape without having to deal with side differentiaion (through shading or unique colors).
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
@@ -114,7 +119,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
 
     const rotationSlide = createWithLabel(
         createRange(WIREFRAME_ROTATION, 45, 0, 360),
-        "Rotation about (1, 1, 1)"
+        "Rotation in degrees about (1, 1, 1)"
     )
 
     interactableSection.append(rotationSlide)

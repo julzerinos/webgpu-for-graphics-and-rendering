@@ -253,7 +253,16 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("About Gimbal's lock")
-    const description = createText("No description yet")
+    const description = createText(`
+As we descend into the depths of computer graphics, rotations of objects in three dimensions will become a big part of creating interactive showcases.
+
+An issue which appears when using Euler angles with only three angle axes (three units of freedom) is a phenomenon known as Gimbal's lock. 
+The short version is that a three-axes system cannot guarantee independent rotations. Each rotation is "local" to the previous rotations.
+This can be observed when making half-rotations around two axess, which eliminates the third axis (ie. it does not have an effect).
+
+In a later section, quaternions are introduced which are four dimensional abstractions of vectors. The fourth dimension allows the rotation information to remain absolute (without a reference system). 
+One may think of these are homogeneous Euler angles.
+    `)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
