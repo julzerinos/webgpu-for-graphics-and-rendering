@@ -22,5 +22,10 @@ export const route = (routes: IRoute[]): { route: IRoute; breadcrumbs: IBreadcru
 }
 
 export const redirect = (to: string) => {
-    location.href = "/webgpu-for-graphics-and-rendering/graphics/drawing" + to
+    location.href = "/webgpu-for-graphics-and-rendering" + to
 }
+
+export const asset = (assetPath: string) =>
+    import.meta.env.PROD
+        ? `https://julzerinos.github.io/webgpu-for-graphics-and-rendering/${assetPath}`
+        : `/${assetPath}`

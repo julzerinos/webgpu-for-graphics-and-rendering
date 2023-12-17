@@ -13,6 +13,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -44,7 +45,7 @@ const ROTATION_AROUND = "rotation-around-monkey"
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const monkeyObj = await parseOBJ("models/monkey.obj", 1, false)
+    const monkeyObj = await parseOBJ(asset("models/monkey.obj"), 1, false)
     // const monkeyShape = objToShape(monkeyObj)
     const monkeyDrawingInfo = getDrawingInfo(monkeyObj, { indicesIn3: true })
 

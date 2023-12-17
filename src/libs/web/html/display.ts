@@ -124,7 +124,7 @@ export const createHeader = (route: IRoute, breadcrumbs: IBreadcrumb[]): HTMLEle
     landingPageA.className = "underline-white"
     landingPageA.textContent = LandingPageRoute.name
     landingPageA.onclick = () => {
-        location.href = "/"
+        redirect("/")
     }
 
     div.append(landingPageA)

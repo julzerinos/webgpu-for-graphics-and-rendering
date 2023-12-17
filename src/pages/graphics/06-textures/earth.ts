@@ -15,6 +15,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -42,7 +43,7 @@ const CANVAS_ID = "earth"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
-    const { textureData, width, height } = await readImageData("textures/earth.jpg")
+    const { textureData, width, height } = await readImageData(asset("textures/earth.jpg"))
 
     const sphere = TetrahedronSphere(7)
     const { buffer: indexBuffer } = genreateIndexBuffer(
@@ -126,7 +127,7 @@ const execute: Executable = async () => {
     const draw = (time: number) => {
         updateRotation(time / 5e1)
 
-        const { pass, executePass } = createPass(device, context, vec4(.5, 0.1, .5), {
+        const { pass, executePass } = createPass(device, context, vec4(0.5, 0.1, 0.5), {
             depthStencilAttachmentFactory,
             msaaTexture,
         })
@@ -150,8 +151,18 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("A sphere")
-    const description = createText("no desc yet")
+    const title = createTitle("Earth ball")
+    const description = createText(`
+Using the sphere algorithm from the previous section combined with the ability to apply textures, a simplified model of the Earth can be created.
+
+The sphere texture is a two dimensional rectangle and has to be mapped to a sphere. This is done with a uv-mapping function, which in this case is spherical uv-mapping.
+
+To address magnification and minification, settings can be fiddled with, but is some cases it may not be possible to find a perfect solution.
+With the earth texture, certain regions with high elevation are prone to aliasing issues due to many sudden changes in color values. 
+This could be fixed by applying a heightmap which could stretch the crowded texels over a larger surface, but on a flat surface could instead be treated with applied smoothing filters.
+
+Note: the earth texture is quite large and may take some time to load into the browser.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
