@@ -1,5 +1,5 @@
-import { boolToNumber, vec2, vec4 } from "../../../libs/util"
-import { Vector2, Vector4 } from "../../../types"
+import { boolToNumber, vec2, vec4 } from "../../../../libs/util"
+import { Vector2, Vector4 } from "../../../../types"
 import { Direction } from "../interfaces"
 
 export const reverseDirection = {

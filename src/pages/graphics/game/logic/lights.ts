@@ -1,35 +1,34 @@
 import {
-    Colors,
-    add,
-    createTranslateMatrix,
-    flattenMatrices,
-    flattenMatrix,
-    flattenVector,
-    identity4x4,
     lookAtMatrix,
-    multMatrices,
-    nSmallestElementsIndices,
+    toVec3,
+    add,
+    vec3,
     perspectiveProjection,
+    multMatrices,
+    flattenVector,
+    flattenMatrix,
+    flattenMatrices,
+    identity4x4,
+    createTranslateMatrix,
+    Colors,
+    nSmallestElementsIndices,
     sqrMagnitude,
     subtract,
-    toVec3,
-    vec3,
     vec4,
-} from "../../../libs/util"
-import { Matrix4x4, Vector3 } from "../../../types"
+} from "../../../../libs/util"
+import { byteLength } from "../../../../libs/util/byteLengths"
+import { createBind, writeToBufferF32 } from "../../../../libs/webgpu"
+import { Matrix4x4, Vector3 } from "../../../../types"
 import {
-    BufferedMesh,
-    GameEngine,
-    GameLightData,
     Light,
+    GameEngine,
+    BufferedMesh,
     Renderable,
+    GameLightData,
     isInstancedBufferedMesh,
 } from "../interfaces"
-import { TILE_SIZE } from "./tile"
-
 import shaderCode from "../shaders/shadowMap.wgsl?raw"
-import { createBind, writeToBufferF32 } from "../../../libs/webgpu"
-import { byteLength } from "../../../libs/util/byteLengths"
+import { TILE_SIZE } from "./tile"
 
 const ACTIVE_LIGHTS = 4
 export const MAX_LIGHTS = 30

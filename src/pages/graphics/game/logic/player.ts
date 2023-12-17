@@ -1,34 +1,10 @@
-import {
-    Cube,
-    Vector3s,
-    add,
-    boolToNumber,
-    createScaleMatrix,
-    createTranslateMatrix,
-    cross,
-    flattenMatrix,
-    flattenVector,
-    multMatrices,
-    normalize,
-    quatApply,
-    quatFromAxisAngle,
-    quatMultiply,
-    scale,
-    toVec3,
-    vec3,
-    vec4,
-    vectorMatrixMult,
-} from "../../../libs/util"
-import { byteLength } from "../../../libs/util/byteLengths"
-import { genreateIndexBuffer, genreateVertexBuffer, writeToBufferF32 } from "../../../libs/webgpu"
-import { Vector3 } from "../../../types"
-import { BufferedMesh, GameEngine, GamePlayer, GameState } from "../interfaces"
-import {
-    calculatePlayerViewMatrix,
-    getCameraProjectionViewMatrix,
-    initializeCamera,
-} from "./camera"
-import { boundPositionInTile } from "./tile"
+import { Cube, vec3, flattenVector, toVec3, createTranslateMatrix, add, createScaleMatrix, multMatrices, vectorMatrixMult, flattenMatrix, cross, quatFromAxisAngle, quatMultiply, normalize, quatApply, vec4, Vector3s, boolToNumber, scale } from "../../../../libs/util";
+import { byteLength } from "../../../../libs/util/byteLengths";
+import { genreateVertexBuffer, genreateIndexBuffer, writeToBufferF32 } from "../../../../libs/webgpu";
+import { Vector3 } from "../../../../types";
+import { BufferedMesh, GameEngine, GamePlayer, GameState } from "../interfaces";
+import { initializeCamera, getCameraProjectionViewMatrix, calculatePlayerViewMatrix } from "./camera";
+import { boundPositionInTile } from "./tile";
 
 const createPlayerBufferedMesh = (
     device: GPUDevice

@@ -1,11 +1,5 @@
-import {
-    perspectiveProjection,
-    vec3,
-    lookAtMatrix,
-    add,
-    multMatrices,
-} from "../../../libs/util"
-import { Matrix4x4, Vector3 } from "../../../types"
+import { perspectiveProjection, add, lookAtMatrix, vec3, multMatrices } from "../../../../libs/util"
+import { Vector3, Matrix4x4 } from "../../../../types"
 import { GameCamera } from "../interfaces"
 
 export const initializeCamera = (position: Vector3, direction: Vector3): GameCamera => ({

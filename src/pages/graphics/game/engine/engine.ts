@@ -1,6 +1,6 @@
-import { clamp } from "../../../libs/util"
-import { pointerLockCanvas } from "../../../libs/web"
-import { initializeWebGPU, generateMultisampleBuffer } from "../../../libs/webgpu"
+import { clamp } from "../../../../libs/util"
+import { pointerLockCanvas } from "../../../../libs/web"
+import { initializeWebGPU, generateMultisampleBuffer } from "../../../../libs/webgpu"
 import { GameEngine } from "../interfaces"
 
 export const setupEngine = async (): Promise<GameEngine> => {

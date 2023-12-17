@@ -1,5 +1,3 @@
-import { createCanvasSection, createCanvas } from "../../libs/web"
-import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
 import { initializePlayer, updatePlayerLookDirection, updatePlayerPosition } from "./logic/player"
 import { createDungeonRender, generateDungeonMap, generateMeshFromTiles } from "./logic/dungeon"
 import { createShadowMapPass } from "./logic/lights"
@@ -7,8 +5,10 @@ import { createPortalRender, generatePortalMesh } from "./logic/portal"
 import { setupEngine } from "./engine/engine"
 import { BufferedMesh, GamePlayer, GameState } from "./interfaces"
 import { updateGameState } from "./logic/gameState"
-import { genreateVertexBuffer } from "../../libs/webgpu"
 import { createTorchesRenderPass, generateTorchesInstancedMesh } from "./logic/torch"
+import { createCanvasSection, createCanvas } from "../../../libs/web"
+import { genreateVertexBuffer } from "../../../libs/webgpu"
+import { Executable, ViewGenerator, ExecutableQueue } from "../../../types"
 
 const execute: Executable = async () => {
     const gameEngine = await setupEngine()

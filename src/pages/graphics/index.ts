@@ -10,53 +10,90 @@ import { EnvMapping } from "./07-env-mapping"
 import { Shadows } from "./08-shadows"
 import { ShadowMapping } from "./09-shadow-mapping"
 import { CameraMovement } from "./10-camera-movement"
+import { Game } from "./game"
 
 export const Graphics: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
     if (!grapichsRoutes.children) throw "Graphics routes do not exist"
-    
+
     for (const g of grapichsRoutes.children.map(c => c.generator)) g(container, executeQueue)
 }
 
 export const grapichsRoutes: IRoute = {
-    name: "graphics",
+    path: "graphics",
+    name: "Graphics",
+    description: "",
     generator: Graphics,
     children: [
         {
-            name: "01-webgpu-basics",
+            path: "webgpu-basics",
+            name: "Introduction to the basics",
+            description: "A walkthrough the basics of graphics and setting it up in WebGPU.",
             generator: WebGPUBasics,
         },
         {
-            name: "02-drawing",
+            path: "drawing",
+            name: "Drawing via interaction",
+            description:
+                "Using the browser interaction features to create a simple drawing application.",
             generator: Drawing,
         },
         {
-            name: "03-projection",
+            path: "projection",
+            name: "Projection types",
+            description: "An overview of the types of projections and GPU instancing.",
             generator: Projection,
         },
         {
-            name: "04-lighting",
+            path: "lighting",
+            name: "Lighting",
+            description:
+                "Showcase of the most common GPU lighting models and runtime mesh creation.",
             generator: Lighting,
         },
-        { name: "05-meshes", generator: Meshes },
         {
-            name: "06-texturing",
+            path: "meshes",
+            name: "Mesh intstantiation",
+            description: "Populating mesh data in the GPU and displaying a model in the frame.",
+            generator: Meshes,
+        },
+        {
+            path: "texturing",
+            name: "Applying textures",
+            description:
+                "Using textures to add colors to a mesh and an overview of the WebGPU process mipmapping.",
             generator: Texturing,
         },
         {
-            name: "07-env-mapping",
+            path: "env-mapping",
+            name: "Environmental mapping",
+            description:
+                "Using environmental maps to populate color values reflected by mirror surfaces (with or without normal maps).",
             generator: EnvMapping,
         },
         {
-            name: "08-shadows",
+            path: "shadows",
+            name: "Shadows (projection)",
+            description: "Creating shadows in the scene using projective shadowing.",
             generator: Shadows,
         },
         {
-            name: "09-shadow-mapping",
+            path: "shadow-mapping",
+            name: "Shadows (maps)",
+            description: "Creating shadows in the scene using shadow maps.",
             generator: ShadowMapping,
         },
         {
-            name: "10-camera-movement",
+            path: "camera-movement",
+            name: "Other interaction types",
+            description: "A showcase of other scene interaction methods.",
             generator: CameraMovement,
+        },
+        {
+            path: "game",
+            name: "A simple game engine (project)",
+            description:
+                "Using the graphics toolset to create a simple dungeon crawler with focus on lighting, shadow maps and player movement.",
+            generator: Game,
         },
     ],
 }

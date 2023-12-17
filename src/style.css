@@ -17,7 +17,7 @@
 body {
     margin: 0;
     display: flex;
-    place-items: center;
+    /* place-items: center; */
     min-width: 320px;
     min-height: 100vh;
 }
@@ -31,7 +31,7 @@ h1 {
     max-width: 1280px;
     margin: 0 auto;
     padding: 2rem;
-    text-align: center;
+    /* text-align: center; */
 }
 
 button {
@@ -53,6 +53,10 @@ button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* ------------------------------------------------------------ */
+
+/* Themes */
+
 @media (prefers-color-scheme: light) {
     :root {
         color: #213547;
@@ -66,7 +70,15 @@ button:focus-visible {
     }
 }
 
-/* ------------------------------------------------------------ */
+.graphics {
+    --topic-color: rgb(16, 185, 129);
+}
+
+.rendering {
+    --topic-color: rgb(202, 145, 24);
+}
+
+/* -------- */
 
 .interactables {
     display: flex;
@@ -96,9 +108,6 @@ button:focus-visible {
     justify-content: space-between;
 }
 
-.routes-container {
-}
-
 canvas.low-res {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -121,4 +130,68 @@ canvas.overlay {
 
 .canvas-stack > canvas {
     grid-area: inner;
+}
+
+/* Routes */
+
+.routes {
+    display: flex;
+    flex-direction: column;
+    width: 50%;
+}
+
+.routes > a {
+    font-size: 24px;
+
+    font-weight: 600;
+    text-transform: capitalize;
+
+    padding-bottom: 1rem;
+}
+
+.routes-container {
+    display: grid;
+    counter-reset: css-counter 0;
+}
+
+.route-entry {
+    border-top: solid var(--topic-color) 1px;
+
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    cursor: pointer;
+
+    counter-increment: css-counter 1;
+}
+
+.route-entry:hover {
+    filter: contrast(0.5);
+}
+
+.route-entry > a {
+    font-weight: 500;
+}
+
+.route-entry > a:before {
+    content: counter(css-counter) ") ";
+}
+
+/* Generic */
+
+.generic-row {
+    display: flex;
+    gap: 2rem;
+}
+
+.underline {
+    -webkit-text-decoration-line: underline;
+    text-decoration-line: underline;
+    -webkit-text-decoration-color: var(--topic-color);
+    text-decoration-color: var(--topic-color);
+}
+
+.underline-thin {
+    text-decoration-thickness: 1px;
 }

@@ -7,5 +7,5 @@ export const RunTests: ViewGenerator = (app: HTMLElement, queue: ExecutableQueue
 
 export const TestRoute: IRoute = {
     generator: RunTests,
-    name: "test",
+    path: "test",
 }

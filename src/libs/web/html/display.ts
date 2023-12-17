@@ -62,22 +62,37 @@ export const createCanvas = (
     return canvas
 }
 
-export const routesIndex = (routes: IRoute[]): HTMLElement => {
-    const div = document.createElement("div")
-    div.className = "routes-container"
+export const routesIndex = (route: IRoute): HTMLElement => {
+    const wrapper = document.createElement("div")
+    wrapper.className = `routes ${route.path}`
 
-    for (const r of routes) {
+    const routeTitle = document.createElement("a")
+    routeTitle.text = route.path
+    routeTitle.className = "underline"
+    wrapper.append(routeTitle)
+
+    const container = document.createElement("div")
+    container.className = "routes-container"
+
+    for (const r of route.children ?? []) {
+        const div = document.createElement("div")
+        div.className = "route-entry"
+
         const a = document.createElement("a")
         a.text = r.name
 
-        a.onclick = () => {
-            location.search = "t=rendering"
-        }
+        const span = document.createElement("span")
+        span.textContent = r.description
 
-        div.append(a)
+        div.onclick = () => {
+            location.href = `/${route.path}/${r.path}`
+        }
+        div.append(a, span)
+        container.append(div)
     }
 
-    return div
+    wrapper.append(container)
+    return wrapper
 }
 
 export const createValueDisplay = (id: string) => {

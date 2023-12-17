@@ -1,6 +1,6 @@
-import { vec4, flattenVector, boolToNumber, add, clamp, vec2, vec3 } from "../../../libs/util"
-import { Vector, Vector2, Vector3 } from "../../../types"
-import { Direction, Light, Mesh, Tile, TileType } from "../interfaces"
+import { vec4, vec2, flattenVector, add, vec3, clamp } from "../../../../libs/util"
+import { Vector, Vector3 } from "../../../../types"
+import { Tile, Mesh, Direction, Light, TileType } from "../interfaces"
 import { mapToWorld } from "./dungeon"
 import { dungeonTileLight } from "./torch"
 

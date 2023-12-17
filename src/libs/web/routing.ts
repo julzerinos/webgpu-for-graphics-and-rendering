@@ -3,8 +3,9 @@ import { RunTests } from "../../tests"
 import { IRoute, ViewGenerator } from "../../types"
 
 export const route = (routes: IRoute[]): ViewGenerator => {
-    const query = new URLSearchParams(document.location.search)
-    const paths = [query.get("t"), query.get("p")]
+    const paths = window.location.pathname.split("/").slice(import.meta.env.PROD ? 1 : 2)
+
+    console.log(paths)
 
     if (paths[0] === "test") return RunTests
 
@@ -12,9 +13,9 @@ export const route = (routes: IRoute[]): ViewGenerator => {
     let routesToSearch: IRoute[] = routes
 
     for (const p of paths) {
-        const route: IRoute | undefined = routesToSearch.find(r => r.name === p)
+        const route: IRoute | undefined = routesToSearch.find(r => r.path === p)
 
-        if (!route) break // TODO change to default error page
+        if (!route) break
 
         foundRoute = route
         routesToSearch = foundRoute.children ?? []

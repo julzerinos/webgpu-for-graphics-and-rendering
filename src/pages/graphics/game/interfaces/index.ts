@@ -1,4 +1,4 @@
-import { Matrix4x4, Vector2, Vector3, Vector4 } from "../../../types"
+import { Vector3, Matrix4x4, Vector2, Vector4 } from "../../../../types"
 
 export interface GamePlayer {
     camera: GameCamera

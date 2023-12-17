@@ -21,33 +21,83 @@ export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: E
 }
 
 export const renderingRoutes: IRoute = {
-    name: "rendering",
+    path: "rendering",
     generator: Rendering,
+    name: "Rendering",
+    description: "",
     children: [
         {
-            name: "01-raycasting-introduction",
+            path: "raycasting-introduction",
+            name: "Introduction to raycasting",
+            description: "A conscise look into the anatomy of a raycasting system.",
             generator: RaycastingIntroduction,
         },
         {
-            name: "02-lighting-models",
+            path: "lighting-models",
+            name: "Lighting models",
+            description: "An overview of the basic lighting models implemented in rendering.",
             generator: LightingModels,
         },
         {
-            name: "03-texture-mapping",
+            path: "texture-mapping",
+            name: "Adding textures",
+            description:
+                "The process of applying textures to conceptual objects in a rendered scene.",
             generator: TextureMapping,
         },
         {
-            name: "05-meshes",
+            path: "measuring-light",
+            name: "Radiometry and photometry",
+            description:
+                "Understanding the process of measuring light through examples of photometric and radiometric equations.",
+            generator: () => {},
+        },
+        {
+            path: "meshes",
+            name: "Mesh instantiation",
+            description:
+                "The simplest appraoch of Writing mesh data into buffers to loop over in the render process.",
             generator: Meshes,
         },
         {
-            name: "06-partitioning",
+            path: "partitioning",
+            name: "Partitioning mesh data",
+            description: "Using the binary space partitioning tree (BSP) to manage large meshes.",
             generator: SpatialPartitioning,
         },
-        { name: "07-progressive", generator: Progressive },
-        { name: "08-brdf", generator: BRDF },
-        { name: "09-environmental", generator: Environmental },
-        { name: "10-production-rendering", generator: () => {} }, // TODO add images
-        { name: "debugging", generator: DebuggingRendering },
+        {
+            path: "progressive",
+            name: "Progressive rendering",
+            description:
+                "Harnessing the power of progressive rendering to generate smooth render images.",
+            generator: Progressive,
+        },
+        {
+            path: "brdf",
+            name: "Global illumination",
+            description:
+                "Introducing sampling ray paths to the light models in progressive rendering.",
+            generator: BRDF,
+        },
+        {
+            path: "environmental",
+            name: "Environemntal mapping",
+            description:
+                "Reading light and color data from an environment map, placing rendered objects in a real life scene.",
+            generator: Environmental,
+        },
+        {
+            path: "10-production-rendering",
+            name: "Production rendering",
+            description: "A short discussion of production rendering with example from Blender.",
+            generator: () => {},
+        }, // TODO add images
+        {
+            path: "debugging",
+            name: "An approach to debugging (project)",
+            description:
+                "A project delving into the options available to debug and understand rendering systems via displaying ray paths and reading color or variable values.",
+            generator: DebuggingRendering,
+        },
     ],
 }

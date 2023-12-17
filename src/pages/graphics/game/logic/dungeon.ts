@@ -1,37 +1,25 @@
+import { add, vec2, vec3, loadTexture, Colors } from "../../../../libs/util"
 import {
-    Colors,
-    add,
-    flattenMatrix,
-    identity4x4,
-    loadTexture,
-    vec2,
-    vec3,
-} from "../../../libs/util"
-import {
-    setupShaderPipeline,
     genreateVertexBuffer,
-    createBind,
+    setupShaderPipeline,
     createTextureBind,
-    writeToBufferF32,
-} from "../../../libs/webgpu"
-import { Matrix4x4, Vector2, Vector3 } from "../../../types"
+} from "../../../../libs/webgpu"
+import { Vector2, Vector3 } from "../../../../types"
 import {
+    TileType,
     Direction,
+    TileSet,
+    Tile,
+    Mesh,
+    Light,
     GameEngine,
     GameLightData,
     GamePlayer,
-    Light,
-    Mesh,
     Renderable,
-    Tile,
-    TileSet,
-    TileType,
 } from "../interfaces"
-import { TILE_SIZE, TileMeshData } from "./tile"
-
 import dungeonShader from "../shaders/dungeon.wgsl?raw"
 import { directionToMapOffset } from "./direction"
-import { snapshotObject } from "../../../libs/util/javascript"
+import { TILE_SIZE, TileMeshData } from "./tile"
 
 const DUNGEON_DIMENSION = 12
 

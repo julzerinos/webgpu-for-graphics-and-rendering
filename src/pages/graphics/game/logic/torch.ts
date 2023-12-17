@@ -1,38 +1,35 @@
 import {
-    Colors,
-    Cube,
     add,
-    createRotationMatrix,
-    createRotationYMatrix,
-    createScaleMatrix,
-    createTranslateMatrix,
-    flattenMatrices,
-    flattenMatrix,
-    flattenVector,
-    multMatrices,
-    scale,
-    toVec3,
-    vec2,
-    vec3,
     vec4,
-} from "../../../libs/util"
-import { byteLength } from "../../../libs/util/byteLengths"
+    vec3,
+    scale,
+    Cube,
+    vec2,
+    createTranslateMatrix,
+    toVec3,
+    multMatrices,
+    createRotationYMatrix,
+    createRotationMatrix,
+    createScaleMatrix,
+    flattenVector,
+    flattenMatrices,
+    Colors,
+} from "../../../../libs/util"
+import { byteLength } from "../../../../libs/util/byteLengths"
 import {
-    createBind,
     genreateIndexBuffer,
     genreateVertexBuffer,
     setupShaderPipeline,
-} from "../../../libs/webgpu"
+} from "../../../../libs/webgpu"
 import {
+    Tile,
     Light,
-    Renderable,
     GameEngine,
     InstancedBufferedMesh,
-    Tile,
     GamePlayer,
     GameLightData,
+    Renderable,
 } from "../interfaces"
-
 import torchShader from "../shaders/torch.wgsl?raw"
 import { randomDirectionFromCardinality, directionToWorld, reverseDirection } from "./direction"
 import { mapToWorld } from "./dungeon"
@@ -46,7 +43,10 @@ export const dungeonTileLight = (t: Tile): Light => {
     const direction = directionToWorld[lightWallDirection]
 
     const tileWorld = mapToWorld(t.position)
-    const lightPosition = add(vec4(...add(vec3(0, .4, 0), tileWorld), 1), scale(direction, halfSize))
+    const lightPosition = add(
+        vec4(...add(vec3(0, 0.4, 0), tileWorld), 1),
+        scale(direction, halfSize)
+    )
 
     return {
         direction: directionToWorld[reverseDirection[lightWallDirection]],
