@@ -5,6 +5,6 @@ import { default as shadowMapping } from "./shadowMapping"
 export { teapotProjectionShadows, shadowMapping }
 
 export const ShadowMapping: ViewGenerator = (app: HTMLElement, executeQueue: ExecutableQueue) => {
-    // teapotProjectionShadows(app, executeQueue)
+    teapotProjectionShadows(app, executeQueue)
     shadowMapping(app, executeQueue)
 }

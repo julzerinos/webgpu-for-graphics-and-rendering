@@ -157,7 +157,7 @@ Using the sphere algorithm from the previous section combined with the ability t
 
 The sphere texture is a two dimensional rectangle and has to be mapped to a sphere. This is done with a uv-mapping function, which in this case is spherical uv-mapping.
 
-To address magnification and minification, settings can be fiddled with, but is some cases it may not be possible to find a perfect solution.
+To address magnification and minification, settings can be fiddled with, but in some cases it may not be possible to find a perfect solution.
 With the earth texture, certain regions with high elevation are prone to aliasing issues due to many sudden changes in color values. 
 This could be fixed by applying a heightmap which could stretch the crowded texels over a larger surface, but on a flat surface could instead be treated with applied smoothing filters.
 

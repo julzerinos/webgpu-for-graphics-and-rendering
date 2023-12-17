@@ -13,6 +13,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createBoolInput,
     createCanvas,
     createCanvasSection,
@@ -51,13 +52,15 @@ const CANVAS_ID = "shadow-mapping"
 const TEAPOT_MOVEMENT = "teapot-movement-shadow-mapping"
 const LIGHT_MOVEMENT = "light-movement-shadow-mapping"
 
+// Made with help from https://toolness.github.io/shadowmap-2d/
+
 const execute: Executable = async () => {
     const getTeapotMovementEnabled = watchInput<boolean>(TEAPOT_MOVEMENT, "checked")
     const getLightMovementEnabled = watchInput<boolean>(LIGHT_MOVEMENT, "checked")
 
-    const marbleTextureData = await readImageData("textures/xamp23.png")
+    const marbleTextureData = await readImageData(asset("textures/xamp23.png"))
 
-    const teapotObj = await parseOBJ("models/teapot.obj", 0.25, false)
+    const teapotObj = await parseOBJ(asset("models/teapot.obj"), 0.25, false)
     const teapotDrawingInfo = getDrawingInfo(teapotObj, { indicesIn3: true })
 
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
@@ -128,8 +131,8 @@ const execute: Executable = async () => {
                     format: canvasFormat,
                 },
                 {
-                    format: "rgba32float"
-                }
+                    format: "rgba32float",
+                },
             ],
         },
         // depthStencil: {
@@ -376,8 +379,23 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("shadow mapping")
-    const description = createText("https://toolness.github.io/shadowmap-2d/")
+    const title = createTitle("Tea time 2: the tea that wasn't")
+    const description = createText(`
+Shadow mapping is another approach to handling shadows in the rasterization pipeline, but instead of using primitives to generate shadows, the other side of the system is utilized - cameras.
+More specifically, projection and view matrices are defined for each light in the scene and the shadow is created by answering a simple question - does the light's camera see this surface point?
+
+This is certainly more complicated than generating additional shapes, but vastly more universal (and slightly more costly). 
+The resulting shadow map is the scene from the camera's perspective, which can be used as a color texture within shadow catching objects to discolor or darken obstructed parts of the surface.
+
+The shadow map look up has to calculated using the light's camera matrix within the shadow catcher's reference in the shader.
+
+To provide more clarity, the below example has two canvases. The first is the teapot scene with shadow maps instead of projection shadows. 
+The second is the same scene from the light's perspective. In this case the light is only interested in focusing on the teapot and will adjust it's pose to always view the teapot. 
+Anything else is out of scope for this specific camera. 
+
+The plane may (after the shadow map pass has finished) read from the shadow map texture. The shader for the plane must calculate the fragment position as it would be visible in the light's camera.
+If a value exists, this means the teapot is visible at that position, and therefore the plane is not visible and should be shaded.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

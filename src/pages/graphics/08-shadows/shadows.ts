@@ -14,6 +14,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -44,7 +45,7 @@ const CANVAS_ID = "shadow-quads"
 const execute: Executable = async () => {
     const { device, context, canvasFormat, canvas } = await initializeWebGPU(CANVAS_ID)
 
-    const marbleTextureData = await readImageData("textures/xamp23.png")
+    const marbleTextureData = await readImageData(asset("textures/xamp23.png"))
 
     const quadIndices = new Uint32Array([0, 1, 2, 0, 2, 3])
     const quadUvs = new Float32Array(
@@ -233,7 +234,17 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("Shadow as a shape")
-    const description = createText("No description yet")
+    const description = createText(`
+Implementing shadows in the rasterization pipeline is no simple task. Shapes have very limited information about the existence of other shapes out of the box.
+The entire system is based on a simple ordered drawing of shapes to the screen.
+
+There is a way to implement shadows while staying in the shapes only paradigm - projection shadows. The concept is simple, shadows are in fact copies of their obstructing object.
+The projection shadow objects are drawn with the appropriate transformation matrix (depending on the light source).
+
+To make sure shadows only exist on the surfaces of shadow-catching objects (such as the plane in the example below and not beyond it), 
+clever manipulation of the z-buffer can be used to make sure a shape is only drawn if there exists a fragement beneath it.
+Further modification of the draw orders or implementations of draw layers would allow mixing and matching shadow casters and shadow catchers.
+    `)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
