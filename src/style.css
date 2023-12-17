@@ -185,6 +185,8 @@ canvas.overlay {
     gap: 0.5rem;
     cursor: pointer;
 
+    min-height: 5rem;
+
     counter-increment: css-counter 1;
 }
 

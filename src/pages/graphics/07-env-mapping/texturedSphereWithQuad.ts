@@ -16,6 +16,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -67,7 +68,7 @@ const execute: Executable = async () => {
             "textures/cubemap/cm_bottom.png", // NEGATIVE_Y
             "textures/cubemap/cm_back.png", // POSITIVE_Z
             "textures/cubemap/cm_front.png", // NEGATIVE_Z
-        ].map(tp => readImageData(tp))
+        ].map(tp => readImageData(asset(tp)))
     )
 
     const eye = vec3(0, 0, 3)
@@ -223,8 +224,27 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("A sphere")
-    const description = createText("explain transformation")
+    const title = createTitle("A map to the environment")
+    const description = createText(`
+An enviromental map can be represented as a single texture or, more conviniently, as a cube map - a set of six textures in each of the six directions of a cube.
+These are commonly used in modern game development as skybox textures or can be used in more advanced forms of shadow mapping.
+
+In the example below, an environment texture is applied to the scene in the form of a skybox (textures on a plane infinitely far away from the camera). The sphere in the center is a mirror-ish ball with four possible states.
+    
+1) Faux reflection - the reflection is not exactly a true mirror, as the ball rather maps the value of the environment directly leaving its surface along the normal at that point.
+
+2) Mirror reflection - more realistic reflection which follows the Law of Reflection, where the reflected ray depends on the angle upon which the viewer sees the surface. 
+The angle of reflection is mirrored about the surface normal which is why at the edges of the sphere more of the scene is visible, albeit squished.
+
+3) Show normal map - a precursor to the fourth option, a normal map can be applied to alter the behavior of the surface normal at the point (and its respective texture coordinate).
+The normal map combines with the surface normal to create a new surface normal. In the case, the "bump" misplaces the normal in a pattern to create a wave effect over the sphere surface.
+
+4) Bump reflection - this is the final effect when the normal map is applied to the sphere's surface.
+
+A difficulty arising from the non-atomic structure of the rasterization pipeline, as opposed to the rendering pipeline, is that finding a ray direction or the intersection of a ray is nigh impossible.
+In the example below, to find the environmental map value a set of reverse matrix transformations have to be applied. A point on the surface of the unit sphere is also the direction of the look up into the environemntal map.
+In the fragment shader, a fragment's texture look up direction can be found by premultiplying the interpolated homogeneous normalized device coordinate of the fragment by the inverse view matrix and inverse projection matrix (the reverse order of finding the fragment's camera space position).
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

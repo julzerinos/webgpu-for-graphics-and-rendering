@@ -7,7 +7,7 @@ const execute: Executable = async () => {}
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("Using WebGPU for graphics and rendering")
-    const description = createText(`is PROD? ${import.meta.env.PROD}`)
+    const description = createText(`TBD`)
 
     const routingGraphics = routesIndex(grapichsRoutes)
     const routingRendering = routesIndex(renderingRoutes)
