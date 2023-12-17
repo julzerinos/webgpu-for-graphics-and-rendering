@@ -1,4 +1,5 @@
-import { IRoute } from "../../../types"
+import { LandingPageRoute } from "../../../pages"
+import { IBreadcrumb, IRoute } from "../../../types"
 
 export const createText = (text: string): HTMLSpanElement => {
     const texts = text.split("\n\n")
@@ -110,6 +111,32 @@ export const createValueDisplay = (id: string) => {
     const div = document.createElement("div")
     div.id = id
     div.className = "value-display"
+
+    return div
+}
+
+export const createHeader = (route: IRoute, breadcrumbs: IBreadcrumb[]): HTMLElement => {
+    const div = document.createElement("div")
+    div.className = `navigation ${breadcrumbs.map(b => b.path).join(" ")}`
+
+    const landingPageA = document.createElement("a")
+    landingPageA.className = "underline-white"
+    landingPageA.textContent = LandingPageRoute.name
+    landingPageA.onclick = () => {
+        location.href = "/"
+    }
+
+    div.append(landingPageA)
+
+    if (breadcrumbs.length > 1) {
+        const divider = document.createElement("span")
+        divider.textContent = "/"
+
+        const routeA = document.createElement("a")
+        routeA.className = "underline"
+        routeA.textContent = route.name
+        div.append(divider, routeA)
+    }
 
     return div
 }

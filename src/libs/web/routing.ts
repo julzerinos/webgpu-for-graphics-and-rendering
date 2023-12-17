@@ -1,16 +1,14 @@
-import { LandingPage } from "../../pages"
-import { RunTests } from "../../tests"
-import { IRoute, ViewGenerator } from "../../types"
+import { LandingPageRoute } from "../../pages"
+import { IBreadcrumb, IRoute } from "../../types"
 
-export const route = (routes: IRoute[]): ViewGenerator => {
+export const route = (routes: IRoute[]): { route: IRoute; breadcrumbs: IBreadcrumb[] } => {
     const paths = window.location.pathname.split("/").slice(import.meta.env.PROD ? 1 : 2)
 
-    console.log(paths)
+    // if (paths[0] === "test") return RunTests
 
-    if (paths[0] === "test") return RunTests
-
-    let foundRoute: IRoute | undefined = undefined
+    let foundRoute: IRoute = LandingPageRoute
     let routesToSearch: IRoute[] = routes
+    const breadcrumbs = [LandingPageRoute] as IBreadcrumb[]
 
     for (const p of paths) {
         const route: IRoute | undefined = routesToSearch.find(r => r.path === p)
@@ -19,9 +17,8 @@ export const route = (routes: IRoute[]): ViewGenerator => {
 
         foundRoute = route
         routesToSearch = foundRoute.children ?? []
+        breadcrumbs.push(foundRoute)
     }
 
-    if (!foundRoute) return LandingPage
-
-    return foundRoute.generator
+    return { route: foundRoute, breadcrumbs }
 }

@@ -3,12 +3,17 @@ import "./style.css"
 import { ExecutableQueue } from "./types"
 
 import { allRoutes } from "./pages"
-import { instantiateApp, route } from "./libs/web"
+import { createHeader, instantiateApp, route } from "./libs/web"
 
 const app = instantiateApp()
 const executeQueue: ExecutableQueue = []
 
-const generator = route(allRoutes)
-generator(app, executeQueue)
+const { route: currentRoute, breadcrumbs } = route(allRoutes)
+
+console.log(breadcrumbs);
+
+app.append(createHeader(currentRoute, breadcrumbs))
+
+currentRoute.generator(app, executeQueue)
 
 for (const e of executeQueue) e()

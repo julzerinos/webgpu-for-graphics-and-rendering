@@ -1,7 +1,7 @@
-import { createTitle, createText, routesIndex } from "../../libs/web"
-import { Executable, ViewGenerator, ExecutableQueue } from "../../types"
-import { grapichsRoutes } from "../graphics"
-import { renderingRoutes } from "../rendering"
+import { createTitle, createText, routesIndex } from "../libs/web"
+import { Executable, ViewGenerator, ExecutableQueue } from "../types"
+import { grapichsRoutes } from "./graphics"
+import { renderingRoutes } from "./rendering"
 
 const execute: Executable = async () => {}
 

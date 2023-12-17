@@ -252,13 +252,15 @@ const execute: Executable = async () => {
 
     subscribeToButton(CLEAR_BTN_ID, clear)
 
-    subscribeToInput(DRAWING_MODE_SELECT_ID, type => {
+    subscribeToInput(DRAWING_MODE_SELECT_ID, (type: string) => {
         setInstruction(
-            {
-                POINT: "Click to create a point",
-                TRIANGLE: "Create three points to form a triangle",
-                CIRCLE: "Create two points to form a circle",
-            }[type]
+            (
+                {
+                    POINT: "Click to create a point",
+                    TRIANGLE: "Create three points to form a triangle",
+                    CIRCLE: "Create two points to form a circle",
+                } as { [key: string]: string }
+            )[type]
         )
     })
     setInstruction("Click to create a point")

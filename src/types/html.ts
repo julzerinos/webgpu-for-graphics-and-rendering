@@ -9,10 +9,13 @@ export interface ICanvasCoordinates {
     y: number
 }
 
-export interface IRoute {
-    name: string
+export interface IRoute extends IBreadcrumb {
     description: string
-    path: string
     generator: ViewGenerator
     children?: IRoute[]
+}
+
+export interface IBreadcrumb {
+    name: string
+    path: string
 }
