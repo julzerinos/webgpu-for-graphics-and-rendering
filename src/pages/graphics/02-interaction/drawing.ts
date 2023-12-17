@@ -22,6 +22,8 @@ import {
     subscribeToCanvasClick,
     subscribeToInput,
     watchInput,
+    createValueDisplay,
+    createDisplaySetter,
 } from "../../../libs/web"
 
 import {
@@ -57,6 +59,7 @@ const execute: Executable = async () => {
         draw()
     })
 
+    const setInstruction = createDisplaySetter("display-draw-instruction")
     const getPointsColor = watchInput<string>(POINT_COLOR_INPUT_ID)
     const getDrawingMode = watchInput<string>(DRAWING_MODE_SELECT_ID)
     const getCircleGranularity = watchInput<number>(CIRCLE_GRANULARITY_SLIDER_ID)
@@ -70,12 +73,8 @@ const execute: Executable = async () => {
         "float32x2"
     )
     const pointColorsArray = new Float32Array(6 * maxPoints * vectorByteLength["float32x3"])
-    const { buffer: pointColorsBuffer, bufferLayout: pointColorsBufferLayout } = genreateVertexBuffer(
-        device,
-        pointColorsArray,
-        "float32x3",
-        1
-    )
+    const { buffer: pointColorsBuffer, bufferLayout: pointColorsBufferLayout } =
+        genreateVertexBuffer(device, pointColorsArray, "float32x3", 1)
 
     const pipeline = setupShaderPipeline(
         device,
@@ -252,16 +251,47 @@ const execute: Executable = async () => {
     }
 
     subscribeToButton(CLEAR_BTN_ID, clear)
+
+    subscribeToInput(DRAWING_MODE_SELECT_ID, type => {
+        setInstruction(
+            {
+                POINT: "Click to create a point",
+                TRIANGLE: "Create three points to form a triangle",
+                CIRCLE: "Create two points to form a circle",
+            }[type]
+        )
+    })
+    setInstruction("Click to create a point")
+
     draw()
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("A simple GPU-based drawing program")
-    const description = createText("No description yet")
+    const title = createTitle("Drawing with WebGPU")
+    const description = createText(`
+The basic test to validate any computer graphics framework is to check if it has all the tools to create a drawing application. A basic drawing program should be able to at least support drawing points, triangles and circles.
+
+In the case of utilizing WebGPU, the program will be built with the following setup. Shapes will be fed into the graphics pipeline as triangles. 
+The vertex buffer will be initialized with an amount of empty triangles to support creating shapes until boredom for the average human.
+The interaction is powered by HTML Canvas mouse event listeners.
+
+Starting with the easiest of the shapes to implement - points. As in the previous page, points are actually two little triangles. Six vertices (actually four unique) create a square with its center at the click point. 
+This is a run and done operation, one click results in one shape. The appropriate partition in the vertex buffer is populated with the new vertex positions.
+
+A triangle is slightly more complicated in that two operations are being made at the same time. Before the user clicks all three vertices, two points exist (to indicate previous vertices).
+Once the third triangle vertex is selected, the pervious two points should be overwritten. It is important to remember that a point is already two triangles, therefore the vertex buffer is modified to replace four temporary triangles with the final single triangle (making sure to clear the previously used space in the buffer to avoid corrupting the shape data).
+
+A circle is a fan of triangles indicated by two user-selected points. In this case, the (single) temporary point is overwritten with the required amount of triangles to create a circle with the selected granularity.
+The granularity is a measure of the circle's resolution - how many triangles are used to form the shape.
+
+Apart from the vertex buffer, a secondary color (vertex) buffer is also manipulated to store the shape's colors. The pipeline will then automatically interpolate between the user-selected points. You can observe this by changing the draw color before finishing a triangle or circle.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
     const interactableSection = createInteractableSection()
+
+    const display = createValueDisplay("display-draw-instruction")
 
     const select = createSelect(DRAWING_MODE_SELECT_ID, DRAWING_MODES)
     const pointColorPicker = createWithLabel(
@@ -283,6 +313,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const drawButton = createButton(CLEAR_BTN_ID, "Clear canvas")
 
     interactableSection.append(
+        display,
         select,
         pointColorPicker,
         pointSizeSlider,
