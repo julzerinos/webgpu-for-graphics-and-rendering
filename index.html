@@ -6,11 +6,23 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta http-equiv="Permissions-Policy" content="interest-cohort=()" />
         <title>WebGPU for graphics and rendering</title>
-      <script type="module" crossorigin src="/webgpu-for-graphics-and-rendering/public/index-2a77d2f6.js"></script>
+      <script type="module" crossorigin src="/webgpu-for-graphics-and-rendering/public/index-2e3cea81.js"></script>
       <link rel="stylesheet" href="/webgpu-for-graphics-and-rendering/public/index-a8e66171.css">
     </head>
     <body>
         <div id="app"></div>
         
     </body>
+    <script>
+        if (window.location.hash.length > 1) {
+            const path = window.location.hash.replace("#", "")
+            history.pushState(
+                { page: 1 },
+                "Some title",
+                "/webgpu-for-graphics-and-rendering" + path
+            )
+
+            alert("was redirected")
+        }
+    </script>
 </html>
