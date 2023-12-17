@@ -6,7 +6,6 @@ import {
     createBind,
     generatePingPongTextures,
     writeToBufferU32,
-    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import {
@@ -14,7 +13,6 @@ import {
     createButton,
     createCanvas,
     createCanvasSection,
-    createColorPicker,
     createInteractableSection,
     createSelect,
     createText,
@@ -28,7 +26,6 @@ import {
 import {
     Colors,
     build_bsp_tree,
-    colorToVec4,
     flattenVector,
     getDrawingInfo,
     interleaveF32s,
@@ -216,7 +213,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("https://polyhaven.com/a/burnt_warehouse")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, 1028)
+    const canvas = createCanvas(CANVAS_ID, {width:1028})
     const interactables = createInteractableSection()
 
     const progressiveEnabled = createWithLabel(

@@ -1,3 +1,4 @@
+import { redirect } from ".."
 import { LandingPageRoute } from "../../../pages"
 import { IBreadcrumb, IRoute } from "../../../types"
 
@@ -97,7 +98,7 @@ export const routesIndex = (route: IRoute): HTMLElement => {
         span.textContent = r.description
 
         div.onclick = () => {
-            location.href = `/${route.path}/${r.path}`
+            redirect(`/${route.path}/${r.path}`)
         }
         div.append(a, span)
         container.append(div)

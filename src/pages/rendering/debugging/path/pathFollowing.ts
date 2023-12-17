@@ -2,24 +2,18 @@ import { Executable, ExecutableQueue, ICanvasCoordinates, ViewGenerator } from "
 
 import {
     initializeWebGPU,
-    createPass,
-    setupShaderPipeline,
     createBind,
-    writeToBufferU32,
     writeToBufferF32,
 } from "../../../../libs/webgpu"
 
 import {
-    createBoolInput,
     createCanvas,
     createCanvasSection,
     createCanvasStack,
     createInteractableSection,
     createText,
     createTitle,
-    createWithLabel,
     subscribeToCanvasDrag,
-    subscribeToInput,
 } from "../../../../libs/web"
 
 import {
@@ -249,7 +243,7 @@ const execute: Executable = async () => {
 
         device.queue.submit([encoder.finish()])
 
-        // displayRayPath()
+        displayRayPath()
     }
 
     requestAnimationFrame(draw)

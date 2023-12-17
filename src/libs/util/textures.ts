@@ -1,4 +1,4 @@
-import { Vector, Vector2, Vector4 } from "../../types"
+import { Vector2 } from "../../types"
 import { vec2 } from "."
 
 export const readImageData = async (

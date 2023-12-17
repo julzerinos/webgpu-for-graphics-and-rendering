@@ -1,6 +1,6 @@
 // Adapted from https://github.com/esangel/WebGL/blob/master/Common/MV.js
 
-import { Matrix, Vector, Vector2, Vector3, Vector4, VectorFormat } from "../../types"
+import { Matrix, Vector, Vector2, Vector3, Vector4 } from "../../types"
 
 export const vec2 = (x: number = 0.0, y: number = 0.0): Vector2 => [x, y]
 export const vec3 = (x: number = 0.0, y: number = 0.0, z: number = 0.0): Vector3 => [x, y, z]

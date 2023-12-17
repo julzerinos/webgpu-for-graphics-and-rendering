@@ -45,14 +45,16 @@ const execute: Executable = async () => {
         "STORAGE",
         0
     )
-    const { bindGroup: utahTeapotTriangleMetaBind, buffers: [utahTeapotTriangleMetaBuffer] } =
-        createBind(
-            device,
-            pipeline,
-            [new Uint32Array([utahTeapotShape.triangleCount, 0])],
-            "UNIFORM",
-            1
-        )
+    const {
+        bindGroup: utahTeapotTriangleMetaBind,
+        buffers: [utahTeapotTriangleMetaBuffer],
+    } = createBind(
+        device,
+        pipeline,
+        [new Uint32Array([utahTeapotShape.triangleCount, 0])],
+        "UNIFORM",
+        1
+    )
 
     const draw = (shadingType: "Flat" | "Vertex normals") => {
         const shadingTypeMap = {
@@ -87,7 +89,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, 840, 450)
+    const canvas = createCanvas(CANVAS_ID, { width: 840, height: 450 })
     const interactables = createInteractableSection()
 
     const shadingSelect = createWithLabel(

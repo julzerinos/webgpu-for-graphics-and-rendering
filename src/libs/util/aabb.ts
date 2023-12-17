@@ -2,7 +2,6 @@ import {
     absoluteMaxVectors,
     absoluteMinVectors,
     center,
-    isSmaller,
     subtract,
     toVec3,
     vec4,

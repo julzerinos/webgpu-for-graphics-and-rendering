@@ -13,14 +13,12 @@ import {
     doAabbsIntersect,
     flattenVector,
     vec3,
-    vec4,
 } from "."
 import { Vector } from "../../types"
 
 const max_objects = 4 // maximum number of objects in a leaf
 const max_level = 20 // maximum number of levels in the tree
 const f_eps = 1.0e-6
-const d_eps = 1.0e-12
 const TESTS = 4
 
 enum BspNodeType {

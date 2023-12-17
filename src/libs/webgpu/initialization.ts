@@ -1,4 +1,4 @@
-import { DataFormat } from "../../types"
+import { SingleFormat, VectorFormat } from "../../types"
 import { Mip } from "../util"
 import { byteLength } from "../util/byteLengths"
 
@@ -173,7 +173,7 @@ export const generateMultisampleBuffer = (
 export const genreateVertexBuffer = (
     device: GPUDevice,
     array: Float32Array,
-    format: DataFormat,
+    format: VectorFormat | SingleFormat,
     shaderLocation: number = 0,
     usage: GPUBufferUsageFlags = GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST
 ) => {

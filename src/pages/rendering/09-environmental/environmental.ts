@@ -14,7 +14,6 @@ import {
     createButton,
     createCanvas,
     createCanvasSection,
-    createColorPicker,
     createInteractableSection,
     createSelect,
     createText,
@@ -28,7 +27,6 @@ import {
 import {
     Colors,
     build_bsp_tree,
-    colorToVec4,
     flattenVector,
     getDrawingInfo,
     interleaveF32s,

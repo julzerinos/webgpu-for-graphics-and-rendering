@@ -2,9 +2,7 @@ import { LandingPageRoute } from "../../pages"
 import { IBreadcrumb, IRoute } from "../../types"
 
 export const route = (routes: IRoute[]): { route: IRoute; breadcrumbs: IBreadcrumb[] } => {
-    const paths = window.location.pathname.split("/").slice(import.meta.env.PROD ? 1 : 2)
-
-    // if (paths[0] === "test") return RunTests
+    const paths = window.location.pathname.split("/").slice(2)
 
     let foundRoute: IRoute = LandingPageRoute
     let routesToSearch: IRoute[] = routes
@@ -21,4 +19,8 @@ export const route = (routes: IRoute[]): { route: IRoute; breadcrumbs: IBreadcru
     }
 
     return { route: foundRoute, breadcrumbs }
+}
+
+export const redirect = (to: string) => {
+    location.href = "/webgpu-for-graphics-and-rendering/graphics/drawing" + to
 }

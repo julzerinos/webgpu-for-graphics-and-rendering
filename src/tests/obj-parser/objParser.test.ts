@@ -1,8 +1,10 @@
-import { getDrawingInfo, parseOBJ } from "../../libs/util"
+import { BspTreeResults, getDrawingInfo, parseOBJ } from "../../libs/util"
+// @ts-ignore
 import { OBJDoc } from "./OBJParserJS"
 
 import { build_bsp_tree } from "../../libs/util"
-import { BspTree, build_bsp_tree as build_js } from "./BspTree"
+// @ts-ignore
+import { build_bsp_tree as build_js } from "./BspTree" 
 
 export const runTest = async () => {
     const modelPath = "models/CornellBoxWithBlocks.obj"
@@ -78,7 +80,7 @@ const compare = (objTs: OBJDoc, objJs: any) => {
     for (const k in bspTreeTs) {
         if (bspTreeJs[k] === undefined) continue
 
-        console.log(k, bspTreeTs[k], bspTreeJs[k])
+        console.log(k, bspTreeTs[k as keyof BspTreeResults], bspTreeJs[k])
     }
 
     for (let i = 0; i < bspTreeTs.treeIds.length; i++) {

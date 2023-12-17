@@ -10,7 +10,6 @@ import {
     createBind,
     writeToBufferF32,
     generateDepthBuffer,
-    generateMultisampleBuffer,
 } from "../../../libs/webgpu"
 
 import {

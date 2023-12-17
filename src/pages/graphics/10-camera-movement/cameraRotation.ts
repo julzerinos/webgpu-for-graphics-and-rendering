@@ -23,13 +23,11 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
-    createRange,
     createSelect,
     createText,
     createTitle,
     createWithLabel,
     subscribeToCanvasDrag,
-    subscribeToInput,
     watchInput,
 } from "../../../libs/web"
 
@@ -42,13 +40,10 @@ import {
     parseOBJ,
     identity4x4,
     flattenMatrix,
-    toRadians,
     getDrawingInfo,
     createRotationYMatrix,
-    createRotationZMatrix,
     vectorMatrixMult,
     createRotationXMatrix,
-    elementWise,
     toVec3,
     mapRange,
     add,
@@ -58,14 +53,12 @@ import {
     scale,
     vec2,
     magnitude,
-    sqrMagnitude,
     vectorsEqual,
 } from "../../../libs/util"
 
 import shaderCode from "./shading.wgsl?raw"
 import {
     quatApply,
-    quatAsRotMat4x4,
     quatBetweenVectors,
     quatMultiply,
     unitQuaternion,
@@ -109,9 +102,6 @@ const execute: Executable = async () => {
         { depthStencil, multisample }
     )
 
-    const angle = toRadians(0)
-    const r = 4
-    const h = 0
     const initialEye = vec3(0, 0, 5)
     let eye = vec3(0, 0, 5)
     const initialAt = vec3(0)
@@ -302,7 +292,7 @@ const execute: Executable = async () => {
         )
     }
 
-    const frame = (time: number) => {
+    const frame = () => {
         if (animatedRotateStrength > 0) updateSpin()
         updateView()
 
@@ -331,7 +321,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, 512, 512)
+    const canvas = createCanvas(CANVAS_ID)
     const interactableSection = createInteractableSection()
 
     const movementType = createWithLabel(

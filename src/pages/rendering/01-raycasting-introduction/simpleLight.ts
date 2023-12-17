@@ -63,13 +63,10 @@ const execute: Executable = async () => {
         0,
         0,
     ])
-    const { bindGroup: lightSettingsBind, buffers: [lightSettingsBuffer] } = createBind(
-        device,
-        pipeline,
-        [lightSettings],
-        "UNIFORM",
-        1
-    )
+    const {
+        bindGroup: lightSettingsBind,
+        buffers: [lightSettingsBuffer],
+    } = createBind(device, pipeline, [lightSettings], "UNIFORM", 1)
 
     const draw = () => {
         writeToBufferF32(
@@ -114,7 +111,7 @@ const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) =>
     const description = createText("No description yet")
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, 512 + 128, 512 - 64)
+    const canvas = createCanvas(CANVAS_ID, { width: 512 + 128, height: 512 - 64 })
 
     const interactables = createInteractableSection()
 

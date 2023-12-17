@@ -159,7 +159,7 @@ export const generateMap = (): { map: TileType[][]; center: Vector2 } => {
     return { map, center }
 }
 
-const generateDebugMap = (): { map: TileType[][]; center: Vector2 } => {
+export const generateDebugMap = (): { map: TileType[][]; center: Vector2 } => {
     const map = Array.from(Array(DUNGEON_DIMENSION).fill(null), () =>
         Array(DUNGEON_DIMENSION).fill(TileType.EMPTY)
     ) as TileType[][]
@@ -381,7 +381,7 @@ export const createDungeonRender = async (
         ],
     })
 
-    const dungeonRenderPass = (encoder: GPUCommandEncoder, time: number) => {
+    const dungeonRenderPass = (encoder: GPUCommandEncoder) => {
         const colorAttachment: GPURenderPassColorAttachment = {
             view: msaaTextureView,
             resolveTarget: context.getCurrentTexture().createView(),

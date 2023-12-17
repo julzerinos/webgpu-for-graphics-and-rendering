@@ -2,13 +2,9 @@
 // OBJParser.js from OBJViewer.js (c) 2012 matsuda and itami, later modified by Jeppe Revall Frisvad, 2014/2023
 
 import {
-    AABB,
-    aabbUnion,
     createAabb,
     flattenVector,
     includeVertexInAabb,
-    isSmaller,
-    vec3,
     vec4,
 } from "."
 import { Vector3, Vector4 } from "../../types"

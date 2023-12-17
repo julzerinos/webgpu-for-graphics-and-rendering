@@ -10,8 +10,6 @@ const executeQueue: ExecutableQueue = []
 
 const { route: currentRoute, breadcrumbs } = route(allRoutes)
 
-console.log(breadcrumbs);
-
 app.append(createHeader(currentRoute, breadcrumbs))
 
 currentRoute.generator(app, executeQueue)
