@@ -1,11 +1,17 @@
 import { IRoute } from "../../../types"
 
-export const createText = (text: string): HTMLParagraphElement => {
-    const p = document.createElement("p")
-    p.innerHTML = text
-    p.className = "paragraph"
+export const createText = (text: string): HTMLSpanElement => {
+    const texts = text.split("\n\n")
+    const textContainer = document.createElement("div")
+    textContainer.className = "paragraph"
 
-    return p
+    for (const t of texts) {
+        const textElement = document.createElement("span")
+        textElement.innerHTML = t
+        textContainer.append(textElement)
+    }
+
+    return textContainer
 }
 
 export const createTitle = (title: string): HTMLHeadingElement => {
@@ -27,13 +33,18 @@ export const createWithLabel = (
     const label = document.createElement("label")
     label.textContent = labelText
 
+    wrapper.append(label)
     if (showValue && "value" in element) {
-        const setLabelText = () => (label.textContent = `${labelText} [${element.value}]`)
-        element.addEventListener("input", setLabelText)
-        setLabelText()
+        const value = document.createElement("label")
+        value.className = "value-label"
+        const setValueText = () => (value.textContent = `[ ${element.value} ]`)
+        element.addEventListener("input", setValueText)
+        setValueText()
+
+        wrapper.append(value)
     }
 
-    wrapper.append(label, element)
+    wrapper.append(element)
     return wrapper
 }
 

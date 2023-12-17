@@ -2,7 +2,7 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { flattenVector, vec2, vec3 } from "../../../libs/util/vector"
 
-import { createCanvas, createText, createTitle } from "../../../libs/web"
+import { createCanvas, createCanvasSection, createText, createTitle } from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
@@ -57,11 +57,24 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Triangles all the way down.")
-    const description = createText("This is a test description.")
-    const canvas = createCanvas("task2")
+    const title = createTitle("A formal introduction to the triangle")
+    const description = createText(`
+The triangle was mentioned in the previous section, but a passing mention does not do enough to emphasis the role this simple shape plays in the world of computer graphics.
+The triangle, a shape made of any three unique vertices, is the most commonly used building block of virtual worlds.
 
-    div.append(title, description, canvas)
+The reasons (beyond simply stating this is how it was always done) come from the mathematical simplicity of the shape.
+The triangle has the lowest number of vertices (points) which generate a flat surface polygon. The triangle also has a powerful feature which elevates it above its more complex cousins - Barycentric coordinates.
+
+The set of three factors are crucial to smoothly interpolate values over the surface of the triangle (across the "axes" of its three points). 
+Not only is this used to calculate the fragments which belong to the triangle between its points, but can be extended to support any attribute such as colors (see below) or as will soon be shown normals and texture coordinates.
+
+Almost any complex graphical shape is now a collection of a multiple of three vertex points waiting to be interpolated.
+`)
+
+    const canvas = createCanvas("task2")
+    const canvasSection = createCanvasSection()
+    canvasSection.append(canvas)
+    div.append(title, description, canvasSection)
 
     executeQueue.push(execute)
 }

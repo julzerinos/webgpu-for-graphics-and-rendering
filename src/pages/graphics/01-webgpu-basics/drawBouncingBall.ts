@@ -83,8 +83,17 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Nokia memories")
-    const description = createText("This is a test description.")
+    const title = createTitle("Interacting with a scene")
+    const description = createText(`
+Just as time can be provided to the GPU, so can any other relevant attribute, property or value which has to be controlled externally by the CPU.
+
+While a circle could be defined as fan of triangles defined by vertices laying on a circle, it is important to remember that circles are pointless.
+Pointless, but ever so important. No matter how many vertices define a circle, it will never be a resolution-independent circle.
+
+An alternative is to define circles in the conceptual space of the fragement shader as a boolean function of distance to the circle center. 
+To do this, the circle can only exist on the surface of another shape such as a quad. The black space in the canvas below is actually the color of quad. 
+The ball is being rendered on the quad's surface, much like a screen displaying a video.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas("task4")

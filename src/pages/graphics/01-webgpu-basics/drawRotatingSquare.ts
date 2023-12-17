@@ -3,7 +3,7 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 import { Square } from "../../../libs/util/shapes"
 import { flattenVector, vec2 } from "../../../libs/util/vector"
 
-import { createCanvas, createText, createTitle } from "../../../libs/web"
+import { createCanvas, createCanvasSection, createText, createTitle } from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
@@ -31,12 +31,10 @@ const execute: Executable = async () => {
         canvasFormat,
         shaderRotateWithTime
     )
-    const { bindGroup: timeBindGroup, buffers: [timeBuffer] } = createBind(
-        device,
-        pipeline,
-        [new Float32Array(1)],
-        "UNIFORM"
-    )
+    const {
+        bindGroup: timeBindGroup,
+        buffers: [timeBuffer],
+    } = createBind(device, pipeline, [new Float32Array(1)], "UNIFORM")
 
     const frame = (time: number) => {
         writeToBufferF32(device, timeBuffer, new Float32Array([time / 1e3]), 0)
@@ -61,11 +59,21 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Spin me right round")
-    const description = createText("This is a test description.")
+    const title = createTitle("Move, please")
+    const description = createText(`
+A static triangle is hardly anything to write home about. Getting the shapes to move (or better - react to input) is what makes this whole endevour worthwhile.
+The GPU does not have a concept of human time. To be fair, time is not much more than a constantly increasing linear value and should be just that.
+
+While vertex buffers are key to generate shapes in the virtual space, storage and uniform buffers are optionally used to provide auxiliary data to the GPU. 
+Time, just like any other variable, can then be fed into the mathematical algorithms defined in shaders to create a property function dependent on time.
+
+Trigonometric functions (especially sinusoidal waves) soon become a shader author's best friend.
+`)
     const canvas = createCanvas("task3")
 
-    div.append(title, description, canvas)
+    const canvasSection = createCanvasSection()
+    canvasSection.append(canvas)
+    div.append(title, description, canvasSection)
 
     executeQueue.push(execute)
 }
