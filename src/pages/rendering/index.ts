@@ -56,7 +56,7 @@ export const renderingRoutes: IRoute = {
             path: "meshes",
             name: "Mesh instantiation",
             description:
-                "The simplest appraoch of Writing mesh data into buffers to loop over in the render process.",
+                "The simplest appraoch of writing mesh data into buffers to loop over in the render process.",
             generator: Meshes,
         },
         {
