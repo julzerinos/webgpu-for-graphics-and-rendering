@@ -20,6 +20,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -74,7 +75,7 @@ const execute: Executable = async () => {
         "Euler rotation" | "Quaternion rotation" | "Dollying" | "Panning"
     >(MOV_TYPE)
 
-    const monkeyObj = await parseOBJ("models/monkey.obj", 1, false)
+    const monkeyObj = await parseOBJ(asset("models/monkey.obj"), 1, false)
     const monkeyDrawingInfo = getDrawingInfo(monkeyObj, { indicesIn3: true })
 
     const { buffer: indexBuffer } = genreateIndexBuffer(device, monkeyDrawingInfo.indices)
@@ -317,8 +318,20 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Camera movement")
-    const description = createText("No description yet")
+    const title = createTitle("Quaternions - engineering space magic")
+    const description = createText(`
+Quaternions get a bad reputation due their abstract complexity and use of spooky imaginary numbers. But looking past the quaternion mathematical definition, it helps to understand the concept and foremost, the purpose of the enigmatic quaternion.
+
+The quaternion addresses an issue which was mentioned earlier - Gimbal's lock. Using only three degrees of freedom to control rotation results in two axis "overpowering" the third - or in other words, rotations are local and impact each other.
+Quaternions allow "absolute" rotation where the reference is world space. 
+The fourth degree enables the quaternion to store more information about the rotation which in turn enables the rotation to always be in the correct direction relative to the camera or world space.
+
+In the example below it is easy to obfuscate up one of the axes of rotation (where only two are being manipulated). One half rotation around the y-axis will flip the direction of rotation, while the acting "force" did not change its form. Changing to quaternion rotation solves this issue. the applied rotation is always the same, no matter what the previous rotation was.
+
+The quaternion rotation is implemented with trackball movement which simulates the use of trackball peripheral device. The trackball allows the user to rotate in three directions unlike the mouse which is bound to the two dimensional plane. In the canvas below (when in quaternion rotation mode), the moving along the center axes of the canvas will rotated strictly about the respective axis, whereas movement along the edges of the canvas will generate more complex rotations involving the third rotation axis (depth).
+
+Two more camera movement options are implemented - panning and dollying - which are translational movements along the parallel plane and along the perpendicular plane respectively.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

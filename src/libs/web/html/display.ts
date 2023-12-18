@@ -63,7 +63,25 @@ export const createCanvas = (
         lowRes?: boolean
         overlay?: boolean
     } = {}
-): HTMLCanvasElement => {
+): HTMLElement => {
+    if (!navigator.gpu) {
+        const fallbackDiv = document.createElement("div")
+        fallbackDiv.className = "fallback"
+        fallbackDiv.style.setProperty("width", `${width ?? 512}px`)
+        fallbackDiv.style.setProperty("height", `${height ?? 512}px`)
+
+        const text = document.createElement("span")
+        text.textContent =
+            "WebGPU is not supported by this browser (or browser version). Try a different browser (eg. Chrome or Edge)."
+
+        const a = document.createElement("a")
+        a.text = "You can check the current state of WebGPU API support here."
+        a.href = "https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API"
+
+        fallbackDiv.append(text, a)
+        return fallbackDiv
+    }
+
     const canvas = document.createElement("canvas")
     canvas.width = width ?? 512
     canvas.height = height ?? 512

@@ -71,6 +71,18 @@ h1 {
     cursor: pointer;
 }
 
+.fallback {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: rgb(250, 140, 140) dashed 1px;
+    border-radius: 25px;
+}
+
+.fallback > * {
+    padding: 1rem;
+}
+
 /* Themes */
 
 @media (prefers-color-scheme: light) {
@@ -188,6 +200,8 @@ canvas.overlay {
     min-height: 5rem;
 
     counter-increment: css-counter 1;
+
+    transition: filter ease .25s;
 }
 
 .route-entry:hover {

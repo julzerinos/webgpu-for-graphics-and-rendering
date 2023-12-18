@@ -1,8 +1,8 @@
 import { ExecutableQueue, ViewGenerator } from "../../../types"
-import { default as cameraRotation } from "./cameraRotation"
+import { default as cameraMagic } from "./cameraMagic"
 
-export { cameraRotation }
+export { cameraMagic as cameraRotation }
 
 export const CameraMovement: ViewGenerator = (app: HTMLElement, executeQueue: ExecutableQueue) => {
-    cameraRotation(app, executeQueue)
+    cameraMagic(app, executeQueue)
 }

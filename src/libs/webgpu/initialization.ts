@@ -3,8 +3,6 @@ import { Mip } from "../util"
 import { byteLength } from "../util/byteLengths"
 
 export const initializeWebGPU = async (canvasId: string) => {
-    if (!navigator.gpu) window.alert("WebGPU is not enabled for this browser.")
-
     const gpu = navigator.gpu
     const adapter = await gpu.requestAdapter()
 
