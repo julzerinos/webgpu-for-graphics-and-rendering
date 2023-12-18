@@ -15,3 +15,4 @@ After cloning the repository run the following
 * `npm i` to install the required libraries (Typescript and Vite).
 * `npm run dev` to start the development server (which hosts the files locally, usually on `http://localhost:5173/webgpu-for-graphics-and-rendering/`)
 
+![](https://github.com/julzerinos/webgpu-for-graphics-and-rendering/blob/main/public/resources/render_cows.png?raw=true)
