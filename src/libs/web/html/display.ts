@@ -159,3 +159,14 @@ export const createHeader = (route: IRoute, breadcrumbs: IBreadcrumb[]): HTMLEle
 
     return div
 }
+
+export const createRelevantFilesLink = (sectionUrls: string[]) => {
+    const base =
+        "https://github.com/julzerinos/webgpu-for-graphics-and-rendering/tree/main/src/pages/"
+
+    const a = document.createElement("a")
+    a.href = base + sectionUrls[0]
+    a.text = " aaaaaa"
+
+    return a
+}

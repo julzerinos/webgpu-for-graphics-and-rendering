@@ -3,6 +3,7 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 import { initializeWebGPU, createPass, setupShaderPipeline, createBind } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -30,7 +31,9 @@ const execute: Executable = async () => {
 
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBoxWithBlocks.obj"))
+    const modelDrawingInfo = getDrawingInfo(
+        await parseOBJ(asset("models/CornellBoxWithBlocks.obj"))
+    )
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -103,8 +106,19 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Using the Binary Space Partitioning tree")
-    const description = createText("No description yet")
+    const title = createTitle("Back to the box")
+    const description = createText(`
+The binary space partitioning tree algorithm can be applied to practically any model, but there is a consideration which arises when using WebGPU - the limitation on the number of storage buffers.
+The BSP requires three arrays alone - one for the bounding box planes, one for the tree nodes and another for a mapping to the model triangles.
+
+A solution to the claustrophobic space limitations on storage buffers may be alleviated with the help of interleaving (or interweaving if you prefer). 
+The process is to mix (deterministically) two or more arrays into a single longer one, thereby sneaking it into the shader programs past the strict WebGPU bus customs.
+A basic approach is to take two arrays of the same length and place their elements in alternating sequence. 
+Luckily this doesn't require any complicated index manipulation, because the shader may be told to expect an array of data structure (structs) with two elements.
+But, with the use of uniform buffers to carry meta data, any number of arrays of different lengths may be in fact weaved together or even glued in sequential order. The only constraint then is the data type (eg. floats float with floats, integers integrate with integers).
+
+The example below not only recreates the Cornell box with the BSP tree, but also handles the weaving of the vertex and normal buffers as well as triangle indices and material indices together. This scene also includes an area light source model, but more about that in the next part.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

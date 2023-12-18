@@ -2,7 +2,13 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { initializeWebGPU, createPass, setupShaderPipeline } from "../../../libs/webgpu"
 
-import { createCanvas, createCanvasSection, createText, createTitle } from "../../../libs/web"
+import {
+    createCanvas,
+    createCanvasSection,
+    createRelevantFilesLink,
+    createText,
+    createTitle,
+} from "../../../libs/web"
 
 import { Colors } from "../../../libs/util"
 
@@ -24,6 +30,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    // const a = createRelevantFilesLink(["rendering/01-raycasting-introduction/raycastAnatomy.ts"])
+
     const title = createTitle("The anatomy of rendering")
     const description = createText(`
 Before one peers into the world of rendering, ray casting, path tracing and the deep depths of global illumination - one should understand the basic building block of the rendering system - the ray.
