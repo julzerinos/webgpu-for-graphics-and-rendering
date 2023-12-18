@@ -18,6 +18,7 @@ import {
     createTitle,
     watchInput,
     createBoolInput,
+    createRelevantFilesLink,
 } from "../../../libs/web"
 
 import { Colors } from "../../../libs/util"
@@ -107,6 +108,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/01-raycasting-introduction", [
+        "/simpleLight.ts",
+        "/simpleLight.wgsl",
+    ])
+
     const title = createTitle("Let there be light")
     const description = createText(`
 With the ability to query the world with ray casts, the most primitive intersecting shapes can be introduced. These are:
@@ -165,7 +171,7 @@ For each point of the intersection with an object's surface, that fragement may 
     )
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
     executeQueue.push(execute)
 }
 

@@ -16,6 +16,7 @@ import {
     createCanvasSection,
     createInteractableSection,
     createRange,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -133,6 +134,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/03-textures", ["/texturing.ts", "/texturing.wgsl"])
+
     const title = createTitle("Textures in rendering, jittering to solve aliasing")
     const description = createText(`
 In rendering textures are applied much like in the standard rasterization pipeline. 
@@ -182,7 +185,7 @@ At a later point random sampling will be introduced to offset the jitter generat
 
     interactables.append(textureSelect, textureScaleRange, textureOptionSelect, subdivisionRange)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

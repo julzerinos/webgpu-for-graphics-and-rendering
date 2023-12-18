@@ -6,7 +6,13 @@ import { setupEngine } from "./engine/engine"
 import { BufferedMesh, GamePlayer, GameState } from "./interfaces"
 import { updateGameState } from "./logic/gameState"
 import { createTorchesRenderPass, generateTorchesInstancedMesh } from "./logic/torch"
-import { createCanvasSection, createCanvas, createTitle, createText } from "../../../libs/web"
+import {
+    createCanvasSection,
+    createCanvas,
+    createTitle,
+    createText,
+    createRelevantFilesLink,
+} from "../../../libs/web"
 import { genreateVertexBuffer } from "../../../libs/webgpu"
 import { Executable, ViewGenerator, ExecutableQueue } from "../../../types"
 
@@ -103,6 +109,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics", ["/game", "/game/game.ts"])
+
     const title = createTitle("The WebGPU dungeon game")
     const intro = createText(`
 It's hard to call this a game, there are no challenges or obstacles to overcome - it's more a showcase of a WebGPU-based game engine. 
@@ -274,6 +282,7 @@ Percentage-closer filtering could later be employed to increase the quality of s
         intro,
         canvasSection,
         overviewTitle,
+        a,
         overview,
         dungeonTitle,
         dungeon,

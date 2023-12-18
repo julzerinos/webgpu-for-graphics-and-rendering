@@ -18,6 +18,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -379,6 +380,13 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/09-shadow-mapping", [
+        "/shadowMapping.ts",
+        "/planeMapped.wgsl",
+        "/teapotMapped.wgsl",
+        "/teapotShadowMapped.wgsl",
+    ])
+
     const title = createTitle("Tea time 2: the tea that wasn't")
     const description = createText(`
 Shadow mapping is another approach to handling shadows in the rasterization pipeline, but instead of using primitives to generate shadows, the other side of the system is utilized - cameras.
@@ -420,7 +428,7 @@ If a value exists, this means the teapot is visible at that position, and theref
     const shadowCanvas = createCanvas(CANVAS_ID + "-shadow")
     shadowCanvasSection.append(shadowCanvas)
 
-    div.append(title, description, canvasSection, shadowCanvasSection)
+    div.append(title, a, description, canvasSection, shadowCanvasSection)
 
     executeQueue.push(execute)
 }

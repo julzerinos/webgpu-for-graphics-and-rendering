@@ -19,6 +19,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -151,6 +152,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/06-textures", ["/earth.ts", "/earth.wgsl"])
+
     const title = createTitle("Earth ball")
     const description = createText(`
 Using the sphere algorithm from the previous section combined with the ability to apply textures, a simplified model of the Earth can be created.
@@ -170,7 +173,7 @@ Note: the earth texture is quite large and may take some time to load into the b
 
     interactableSection.append()
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

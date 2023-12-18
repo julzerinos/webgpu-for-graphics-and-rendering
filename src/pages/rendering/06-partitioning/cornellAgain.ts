@@ -7,6 +7,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -106,6 +107,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/06-partitioning", [
+        "/cornellAgain.ts",
+        "/partitioningWithInterleave.wgsl",
+    ])
+
     const title = createTitle("Back to the box")
     const description = createText(`
 The binary space partitioning tree algorithm can be applied to practically any model, but there is a consideration which arises when using WebGPU - the limitation on the number of storage buffers.
@@ -125,7 +131,7 @@ The example below not only recreates the Cornell box with the BSP tree, but also
     const interactables = createInteractableSection()
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

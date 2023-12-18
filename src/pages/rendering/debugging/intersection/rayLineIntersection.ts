@@ -17,6 +17,7 @@ import {
     createTitle,
     createInteractableSection,
     subscribeToInput,
+    createRelevantFilesLink,
 } from "../../../../libs/web"
 
 import { Colors } from "../../../../libs/util"
@@ -52,6 +53,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/debugging/", [
+        "intersection/rayLineIntersection.ts",
+        "intersection/rayLineIntersection.wgsl",
+    ])
+
     const title = createTitle("Creating ray-line intersection")
     const description = createText(`
 Ray-line intersection is slightly more difficult to grasp than ray-plane intersection, because lines have more combinations of possible events.
@@ -76,7 +82,7 @@ It is required to check that the distance between these two points is less than 
 
     interactableSection.append(thicknessSlider)
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
     executeQueue.push(execute)
 }
 

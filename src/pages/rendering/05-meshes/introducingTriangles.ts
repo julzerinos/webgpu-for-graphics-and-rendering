@@ -13,6 +13,7 @@ import {
     asset,
     createCanvas,
     createCanvasSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -64,6 +65,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/05-meshes", [
+        "/introducingTriangles.ts",
+        "/introducingTriangles.wgsl",
+    ])
+
     const title = createTitle("Replacing the triangle with a triangle")
     const description = createText(`
 As a first step towards the introduction of triangle-based mesh model data to the rendering system, we will first replace the triangle... with a triangle.
@@ -79,7 +85,7 @@ Inefficient? Absolutely, but that is a worry for a later chapter.
     const canvas = createCanvas(CANVAS_ID)
 
     canvasSection.append(canvas)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

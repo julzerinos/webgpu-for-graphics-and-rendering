@@ -16,6 +16,7 @@ import {
     createCanvasSection,
     createInteractableSection,
     createRange,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -252,6 +253,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/03-projection", ["/airplane.ts", "/airplane.wgsl"])
+
     const title = createTitle("About Gimbal's lock")
     const description = createText(`
 As we descend into the depths of computer graphics, rotations of objects in three dimensions will become a big part of creating interactive showcases.
@@ -283,7 +286,7 @@ One may think of these are homogeneous Euler angles.
     interactableSection.append(yawSlider, pitchSlider, rollSlider)
 
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

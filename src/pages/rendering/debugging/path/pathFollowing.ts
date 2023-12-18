@@ -14,6 +14,7 @@ import {
     createCanvasStack,
     createImage,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -279,6 +280,12 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/debugging/", [
+        "path/pathFollowing.ts",
+        "path/pathFollowing.wgsl",
+        "path/drawDebugRays.wgsl",
+    ])
+
     const canvas = createCanvas(CANVAS_ID)
     const debugCanvas = createCanvas(CANVAS_ID + "-overlay", { overlay: true })
     const canvasStack = createCanvasStack()
@@ -343,7 +350,7 @@ Setting the external overlay debug canvas in the end made more sense anyway, as 
 An extension to drawing rays would be their inclusion in progressive rendering in the form of displaying one of the paths taken by a ray at that coordinate and refreshing every few seconds.
 `)
 
-    div.append(title, description, canvasSection, pitfalls1, image, pitfalls2)
+    div.append(title, a, description, canvasSection, pitfalls1, image, pitfalls2)
     executeQueue.push(execute)
 }
 

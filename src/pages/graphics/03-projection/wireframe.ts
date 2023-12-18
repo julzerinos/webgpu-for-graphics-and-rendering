@@ -16,6 +16,7 @@ import {
     createCanvasSection,
     createInteractableSection,
     createRange,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -105,6 +106,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/03-projection", [
+        "/wireframe.ts",
+        "/wireframe.wgsl",
+    ])
+
     const title = createTitle("Projecting a cube")
     const description = createText(`
 Along the journey in the direction of 3D scenes from 2D shapes a key stop is orthographic projection, known for its use in early game development (or in modern, as a stylistic choice).
@@ -124,7 +130,7 @@ Wireframe rendering (using lines instead of triangles) is a simplification which
 
     interactableSection.append(rotationSlide)
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

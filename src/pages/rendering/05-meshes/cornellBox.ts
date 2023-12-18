@@ -13,6 +13,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -110,6 +111,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/05-meshes", ["/cornellBox.ts", "/cornellBox.wgsl"])
+
     const title = createTitle("Thinking inside the Cornell box")
     const description = createText(`
 Introducing another championing mascot of the computer graphics universe - the Cornell box - which we will be working with closely from now on.
@@ -131,7 +134,7 @@ This material data format can contain all sorts of variables such as the diffuse
 
     interactables.append(shadingSelect)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

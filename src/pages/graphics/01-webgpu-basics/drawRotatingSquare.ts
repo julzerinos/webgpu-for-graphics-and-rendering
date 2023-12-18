@@ -3,7 +3,13 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 import { Square } from "../../../libs/util/shapes"
 import { flattenVector, vec2 } from "../../../libs/util/vector"
 
-import { createCanvas, createCanvasSection, createText, createTitle } from "../../../libs/web"
+import {
+    createCanvas,
+    createCanvasSection,
+    createRelevantFilesLink,
+    createText,
+    createTitle,
+} from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
@@ -59,6 +65,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/01-webgpu-basics", [
+        "/drawRotatingSquare.ts",
+        "/shaderRotateWithTime.wgsl",
+    ])
+
     const title = createTitle("Move, please")
     const description = createText(`
 A static triangle is hardly anything to write home about. Getting the shapes to move (or better - react to input) is what makes this whole endevour worthwhile.
@@ -73,7 +84,7 @@ Trigonometric functions (especially sinusoidal waves) soon become a shader autho
 
     const canvasSection = createCanvasSection()
     canvasSection.append(canvas)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

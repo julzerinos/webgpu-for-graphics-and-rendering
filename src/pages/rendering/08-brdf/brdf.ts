@@ -17,6 +17,7 @@ import {
     createCanvasSection,
     createColorPicker,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -197,6 +198,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/08-brdf", ["/brdf.ts", "/brdf.wgsl"])
+
     const title = createTitle("Illuminating the situation")
     const description = createText(`
 In the previous section we were introduced to indirect illumination as a random event for the reflection of light on Lambertian surfaces.
@@ -234,7 +237,7 @@ It also dyes the rays travelling through it as it diminished certain wavelengths
     interactables.append(progressiveEnabled, sphereExtinctionPicker, restart)
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

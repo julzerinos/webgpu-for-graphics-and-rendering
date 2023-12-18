@@ -20,6 +20,7 @@ import {
     createColorPicker,
     createInteractableSection,
     createRange,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -241,6 +242,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/04-lighting", ["/lighting.ts", "/shading.wgsl"])
+
     const title = createTitle("Shining light on tetrahedrons")
     const description = createText(`
 Armed with the power of perspective projecting, we are able to tackle our first mesh - a sphere. But this is no regular sphere, it is a sphere created from a subdivided tetrahedron. This is an alternative to the other popular sphere-generation algorithm - the UV sphere, which is more akin to the traingle fan circle (triangles with roots at both of the sphere poles).
@@ -328,7 +331,7 @@ Between the two approaches to shading, Goroud is the definite winner in terms of
         lightEmission
     )
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

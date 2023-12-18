@@ -12,6 +12,7 @@ import {
     createText,
     createTitle,
     watchInput,
+    createRelevantFilesLink,
 } from "../../../libs/web"
 import {
     initializeWebGPU,
@@ -83,6 +84,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/01-webgpu-basics", [
+        "/drawBouncingBall.ts",
+        "/shaderDrawCircle.wgsl",
+    ])
+
     const title = createTitle("Interacting with a scene")
     const description = createText(`
 Just as time can be provided to the GPU, so can any other relevant attribute, property or value which has to be controlled externally by the CPU.
@@ -108,7 +114,7 @@ The ball is being rendered on the quad's surface, much like a screen displaying 
 
     interactableSection.append(heightInput, speedInput, sizeInput)
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

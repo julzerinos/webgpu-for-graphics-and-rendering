@@ -2,7 +2,13 @@ import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
 import { flattenVector, vec2, vec3 } from "../../../libs/util/vector"
 
-import { createCanvas, createCanvasSection, createText, createTitle } from "../../../libs/web"
+import {
+    createCanvas,
+    createCanvasSection,
+    createRelevantFilesLink,
+    createText,
+    createTitle,
+} from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
@@ -57,6 +63,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/01-webgpu-basics", [
+        "/drawTriangle.ts",
+        "/shaderColor.wgsl",
+    ])
+
     const title = createTitle("A formal introduction to the triangle")
     const description = createText(`
 The triangle was mentioned in the previous section, but a passing mention does not do enough to emphasis the role this simple shape plays in the world of computer graphics.
@@ -74,7 +85,7 @@ Almost any complex graphical shape is now a collection of a multiple of three ve
     const canvas = createCanvas("task2")
     const canvasSection = createCanvasSection()
     canvasSection.append(canvas)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

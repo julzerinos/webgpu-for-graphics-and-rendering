@@ -5,6 +5,7 @@ import { initializeWebGPU, createPass, setupShaderPipeline } from "../../../libs
 import {
     createCanvas,
     createCanvasSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -29,7 +30,10 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    // const a = createRelevantFilesLink(["rendering/01-raycasting-introduction/raycastAnatomy.ts"])
+    const a = createRelevantFilesLink("rendering/01-raycasting-introduction", [
+        "/raycastAnatomy.ts",
+        "/raycastAnatomy.wgsl",
+    ])
 
     const title = createTitle("The anatomy of rendering")
     const description = createText(`
@@ -46,7 +50,7 @@ And so, the camera ray is born. Shown below is each fragment (pixel) of the the 
     const canvasSection = createCanvasSection()
     canvasSection.append(canvas)
 
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

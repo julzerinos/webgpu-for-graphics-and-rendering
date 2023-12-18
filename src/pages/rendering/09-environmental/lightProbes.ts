@@ -15,6 +15,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -210,6 +211,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/09-environmental", [
+        "/lightProbes.ts",
+        "/lightProbes.wgsl",
+    ])
+
     const title = createTitle("Custom light probes")
     const description = createText(`
 With the setup ready, the reapot can be placed into any environment and reflect its lighting quite well.
@@ -244,7 +250,7 @@ but elements facing the doorway are slightly lit with the bottom also lit by the
     interactables.append(progressiveEnabled, modelShaderSelect, restart)
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

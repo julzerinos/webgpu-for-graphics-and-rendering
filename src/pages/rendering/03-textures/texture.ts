@@ -13,6 +13,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -57,6 +58,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/03-textures", ["/texture.ts", "/texture.wgsl"])
+
     const title = createTitle("Introducing textures")
     const description = createText(`
 Textures are image-based color maps for the surfaces of objects.
@@ -75,7 +78,7 @@ Textures are image-based color maps for the surfaces of objects.
 
     interactables.append(textureOptionSelect)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

@@ -16,6 +16,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -266,6 +267,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/09-environmental", [
+        "/environmental.ts",
+        "/environmental.wgsl",
+    ])
+
     const title = createTitle("Leaking into reality")
     const description = createText(`
 A strong suit of rendering is the ability to place artifical objects into real scenes and for them to imitate the scene's lighting and environment. 
@@ -279,6 +285,8 @@ Planes are the most simply to create, but hold out geometry could be used for an
 
 HDR images work well as environmental textures as they carry a lot of information about the scene light sources. 
 When using a low dynamic range map, a light source has to be modelled with the traditional setup (directional light).
+
+Note: the environmental HDR image is very large and may take time to load into the browser and device.
 `)
 
     const canvasSection = createCanvasSection()
@@ -327,7 +335,7 @@ When using a low dynamic range map, a light source has to be modelled with the t
     )
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

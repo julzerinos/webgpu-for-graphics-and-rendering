@@ -18,6 +18,7 @@ import {
     createCanvasSection,
     createInteractableSection,
     createRange,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -152,6 +153,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/05-meshes", ["/mesh.ts", "/shading.wgsl"])
+
     const title = createTitle("The Blender Monkey")
     const description = createText(`
 More interesting than primitive shapes are models created to represent specific objects. The entire graphics pipeline is made to support the display and animation of such models.
@@ -173,7 +176,7 @@ Each following fragment's depth value to compared to the current closest fragmen
 
     interactableSection.append(rotationAngleSlider)
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

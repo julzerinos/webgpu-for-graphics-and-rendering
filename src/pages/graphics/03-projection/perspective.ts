@@ -14,6 +14,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -136,6 +137,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/03-projection", [
+        "/perspective.ts",
+        "/perspective.wgsl",
+    ])
+
     const title = createTitle("Considering different perspectives")
     const description = createText(`
 The commonly used projection is perspective projection which imitates real life cameras and human eyes. 
@@ -156,7 +162,7 @@ The base case is one-point perspective projection (left), where the two other pr
     const interactableSection = createInteractableSection()
 
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

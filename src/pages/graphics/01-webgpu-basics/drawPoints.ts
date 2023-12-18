@@ -1,6 +1,12 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import { createCanvas, createCanvasSection, createText, createTitle } from "../../../libs/web"
+import {
+    createCanvas,
+    createCanvasSection,
+    createRelevantFilesLink,
+    createText,
+    createTitle,
+} from "../../../libs/web"
 import {
     initializeWebGPU,
     createPass,
@@ -44,6 +50,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/01-webgpu-basics", [
+        "/drawPoints.ts",
+        "/shaderBlack.wgsl",
+    ])
+
     const title = createTitle("Hello (GPU) world")
     const description = createText(`
 With WebGPU, even the simplest 'Hello world!' exercise is already met with an obstacle. 
@@ -54,13 +65,13 @@ The quads are transformed into a vertex buffer (flattened array of vector compon
 With this, the first step has been made. 
 Displaying anything on the screen is just a trivial extension of drawing some points, really.
         `)
-        
+
     const canvas = createCanvas("task1")
 
     const canvasSection = createCanvasSection()
     canvasSection.append(canvas)
 
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

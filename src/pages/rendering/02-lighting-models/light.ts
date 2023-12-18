@@ -18,6 +18,7 @@ import {
     createTitle,
     watchInput,
     createSelect,
+    createRelevantFilesLink,
 } from "../../../libs/web"
 
 import { Colors } from "../../../libs/util"
@@ -119,6 +120,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/02-lighting-models", ["/light.ts", "/light.wgsl"])
+
     const title = createTitle('Putting physics in "physically-based rendering"')
     const description = createText(`
 A completely black sphere consuming all light that is unfortunate enough to fall into its grasp is no fun. Let's change it to something more interesting, something physically-based rendering excels at - reflection and refraction.
@@ -193,7 +196,7 @@ While these simulations are still primitive and computationally simple, they may
     )
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
     executeQueue.push(execute)
 }
 

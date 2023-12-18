@@ -20,6 +20,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -255,6 +256,13 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/09-shadow-mapping", [
+        "/teapotShadows.ts",
+        "/plane.wgsl",
+        "/teapot.wgsl",
+        "/teapotShadow.wgsl",
+    ])
+
     const title = createTitle("Tea time")
     const description = createText(`
 Before venturing into the topic of shadow maps, another example of projection shadows (previous section) is shown to provide a basis of comparison.
@@ -281,7 +289,7 @@ This is required to let the projected shape mix colors with the fragements benea
 
     interactables.append(teapotMovement, lightMovement)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

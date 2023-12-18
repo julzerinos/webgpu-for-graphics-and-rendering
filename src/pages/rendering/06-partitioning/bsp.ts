@@ -1,17 +1,13 @@
 import { Executable, ExecutableQueue, ViewGenerator } from "../../../types"
 
-import {
-    initializeWebGPU,
-    createPass,
-    setupShaderPipeline,
-    createBind,
-} from "../../../libs/webgpu"
+import { initializeWebGPU, createPass, setupShaderPipeline, createBind } from "../../../libs/webgpu"
 
 import {
     asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -73,6 +69,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/06-partitioning", [
+        "/bsp.ts",
+        "/partitioning.wgsl",
+    ])
+
     const title = createTitle("Barking up the correct tree")
     const description = createText(`
 One of the standard spatial data structures which can be used to optimize ray intersections is the binary space partitioning tree (BSP).
@@ -106,7 +107,7 @@ Once a leaf node has been reached - that is a bounding box of the smallest size 
 
     // interactables.append(animationModifier)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

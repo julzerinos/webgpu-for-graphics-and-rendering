@@ -17,6 +17,7 @@ import {
     createText,
     createTitle,
     watchInput,
+    createRelevantFilesLink,
 } from "../../../libs/web"
 
 import { Colors } from "../../../libs/util"
@@ -88,6 +89,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/02-lighting-models", [
+        "/shadows.ts",
+        "/shadows.wgsl",
+    ])
+
     const title = createTitle("Let there be shade")
     const description = createText(`
 After implementing lighting, the next step is to introduce shade. An enourmous advantage rendering systems have over the rasterization pipeline is the ease with which simple physical phenomena such as obstruction of a light source can be generated.
@@ -118,7 +124,7 @@ starting new rays or continuing rays from defined points depending on the intera
     interactables.append(lightPositionX, lightPositionY, lightPositionZ)
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
     executeQueue.push(execute)
 }
 

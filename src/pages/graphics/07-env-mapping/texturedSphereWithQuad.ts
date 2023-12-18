@@ -20,6 +20,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -224,6 +225,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/07-env-mapping", [
+        "/texturedSphereWithQuad.ts",
+        "/texturedSphereWithQuad.wgsl",
+    ])
+
     const title = createTitle("A map to the environment")
     const description = createText(`
 An enviromental map can be represented as a single texture or, more conviniently, as a cube map - a set of six textures in each of the six directions of a cube.
@@ -258,7 +264,7 @@ In the fragment shader, a fragment's texture look up direction can be found by p
 
     interactableSection.append(selectReflection)
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

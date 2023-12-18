@@ -24,6 +24,7 @@ import {
     watchInput,
     createValueDisplay,
     createDisplaySetter,
+    createRelevantFilesLink,
 } from "../../../libs/web"
 
 import {
@@ -269,6 +270,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/02-interaction", ["/drawing.ts", "/shader.wgsl"])
+
     const title = createTitle("Drawing with WebGPU")
     const description = createText(`
 The basic test to validate any computer graphics framework is to check if it has all the tools to create a drawing application. A basic drawing program should be able to at least support drawing points, triangles and circles.
@@ -324,7 +327,7 @@ Apart from the vertex buffer, a secondary color (vertex) buffer is also manipula
         drawButton
     )
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

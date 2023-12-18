@@ -14,6 +14,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
     createWithLabel,
@@ -127,6 +128,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/06-partitioning", [
+        "/cornellWithGlass.ts",
+        "/cornellWithGlass.wgsl",
+    ])
+
     const title = createTitle("Light as an area")
     const description = createText(`
 So far lights have been either points or directions without physical representations. 
@@ -155,7 +161,7 @@ Jittering is also enabled to smoothen edges. It is still powered by pre-computed
     interactables.append(jitteringActive)
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

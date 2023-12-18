@@ -24,6 +24,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -318,6 +319,11 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/10-camera-movement", [
+        "/cameraMagic.ts",
+        "/shading.wgsl",
+    ])
+
     const title = createTitle("Quaternions - engineering space magic")
     const description = createText(`
 Quaternions get a bad reputation due their abstract complexity and use of spooky imaginary numbers. But looking past the quaternion mathematical definition, it helps to understand the concept and foremost, the purpose of the enigmatic quaternion.
@@ -349,7 +355,7 @@ Two more camera movement options are implemented - panning and dollying - which 
 
     interactableSection.append(movementType)
     canvasSection.append(canvas, interactableSection)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

@@ -14,6 +14,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -184,6 +185,13 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/07-progressive", [
+        "/cornellProgressive.ts",
+        "/progressiveSimple.wgsl",
+        "/progressiveSoftShadows.wgsl",
+        "/progressiveWithIndirect.wgsl",
+    ])
+
     const title = createTitle("Progressive rendering - the rendering ritual")
     const description = createText(`
 This section takes a big leap compared to the previous section. 
@@ -238,7 +246,7 @@ There is a considerable amount of noise in the inital renders. This is the price
     interactables.append(progressiveEnabled, shaderSelect)
 
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

@@ -18,6 +18,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -233,6 +234,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/08-shadows", ["/shadows.ts", "/shadows.wgsl"])
+
     const title = createTitle("Shadow as a shape")
     const description = createText(`
 Implementing shadows in the rasterization pipeline is no simple task. Shapes have very limited information about the existence of other shapes out of the box.
@@ -253,7 +256,7 @@ Further modification of the draw orders or implementations of draw layers would 
 
     interactables.append()
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

@@ -21,6 +21,7 @@ import {
     createValueDisplay,
     createDisplaySetter,
     asset,
+    createRelevantFilesLink,
 } from "../../../../libs/web"
 
 import {
@@ -359,6 +360,12 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/debugging/", [
+        "magnifying/magnifyingGlass.ts",
+        "magnifying/progressive.wgsl",
+        "magnifying/drawToDebugCanvas.wgsl",
+    ])
+
     const title = createTitle("The magnifying glass for the debugging detective")
     const description = createText(`
 The classic approach to debugging shaders is to output a variable as a color. We've all done it, as its the simplest tool at hand to quickly peer into the mind of the opaque machine that is the GPU.
@@ -439,7 +446,7 @@ In the example below:
     debugInteractables.append(pixelCountValueDisplay, debugValueDisplay)
     debugCanvasSection.append(debugCanvas, debugInteractables)
 
-    div.append(title, description, canvasSection, debugCanvasSection)
+    div.append(title, a, description, canvasSection, debugCanvasSection)
 
     executeQueue.push(execute)
 }

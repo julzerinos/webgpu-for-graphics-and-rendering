@@ -13,6 +13,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -86,6 +87,8 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("rendering/05-meshes", ["/utahTeapot.ts", "/utahTeapot.wgsl"])
+
     const title = createTitle("Introducing the Utah Teapot")
     const description = createText(`
 As the first rendered mesh we shall have no other than the computer graphics mascot itself - the Utah Teapot. Despite not even being a large mesh (by today's standards), the teapot already takes a moment to load into the GPU and for all the triangles to be tested for in the intersection phase of the rendering pipeline.
@@ -111,7 +114,7 @@ To maintain the smooth surface when rendering the shape, the vertex normals are 
 
     interactables.append(shadingSelect)
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

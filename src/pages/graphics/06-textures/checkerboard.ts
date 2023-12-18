@@ -14,6 +14,7 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
+    createRelevantFilesLink,
     createSelect,
     createText,
     createTitle,
@@ -117,6 +118,11 @@ const execute: Executable = async () => {
 
 const MIPMAP_SEL = "mipmap-select-checkerboard"
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
+    const a = createRelevantFilesLink("graphics/06-textures", [
+        "/checkerboard.ts",
+        "/checkerboard.wgsl",
+    ])
+
     const title = createTitle("The unseen end of the checkers board")
     const description = createText(`
 Applying texture to objects is rather trivial. The hard part comes with trying to make the texture work properly in the scene and fighting at the same time with the two elements of texture space immutability - magnification and minification or in simple words, when a texel and a pixel are not of the same size (or even aligned for that matter).
@@ -165,7 +171,7 @@ The latter layers (where the texture is the farthest from the camera and therefo
         mipmapOptionsSelect
     )
     canvasSection.append(canvas, interactables)
-    div.append(title, description, canvasSection)
+    div.append(title, a, description, canvasSection)
 
     executeQueue.push(execute)
 }

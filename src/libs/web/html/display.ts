@@ -160,15 +160,35 @@ export const createHeader = (route: IRoute, breadcrumbs: IBreadcrumb[]): HTMLEle
     return div
 }
 
-export const createRelevantFilesLink = (sectionUrls: string[]) => {
-    const base =
-        "https://github.com/julzerinos/webgpu-for-graphics-and-rendering/tree/main/src/pages/"
+export const createRelevantFilesLink = (sectionBase: string, sectionUrls: string[]) => {
+    const readable = `/${sectionBase}`
+    const base = `https://github.com/julzerinos/webgpu-for-graphics-and-rendering/tree/main/src/pages${readable}`
 
-    const a = document.createElement("a")
-    a.href = base + sectionUrls[0]
-    a.text = " aaaaaa"
+    const div = document.createElement("div")
+    div.className = "relevant-links"
 
-    return a
+    const relevant = document.createElement("span")
+    relevant.textContent = "Relevant source files"
+    div.append(relevant)
+
+    const ul = document.createElement("ul")
+    for (const u of sectionUrls) {
+        const span = document.createElement("span")
+        span.textContent = readable
+
+        const a = document.createElement("a")
+        a.href = base + u
+        a.text = u
+        a.target = "_blank"
+
+        const li = document.createElement("li")
+        li.append(span, a)
+        ul.append(li)
+    }
+
+    div.append(ul)
+
+    return div
 }
 
 export const createImage = (imgSrc: string): HTMLElement => {
