@@ -246,6 +246,27 @@ During the gameplay stage, the shadow pass always runs before object renders to 
 
     const imporvementsTitle = createTitle("Room for improvement")
     const improvements = createText(`
+The game (and game engine) is far from perfect. 
+In this section I would like to focus on the steps to make this a better engine, as the game aspect is a trivial extension.
+
+The first steps to creating a better engine would be to abstract and homogenize many of the functions in the system.
+Currently all of the objects are explicitly created and explicitly called in the render pass. 
+This should be instead replaced with a generic wrapper for any game object with a default material shader. 
+This would also require the creation of a standardized shader base template, which other shader files would have to adhere to.
+Shaders should be passed as a variable of the object, just as the rest of its data - mesh and other.
+
+There should be clear distinction between the game logic and game engine layers. 
+In the current form, game objects directly call interact with the WebGPU API. 
+While this helps keep things simple and allows for exact behaviours to be exactly defined for each object,
+there is a lot of responsibility vagueness and code duplicaiton which would lead to many more issues down the line.
+
+Regarding clear responsibility and ownership - it would be a benefit to declare and create buffers for reused objects and data. 
+This was partially set up with a player camera buffer created once (and updated only by the player) as well as the light information buffer controlled by the light system.
+In the final form the management and transfer of globally known buffers should be the responsiblity of a separate system.
+
+A final comment, the shadow maps have resolution issues which cause pixelated shadows. 
+Either their rsolution should be increased or their generating light source camera matrices adjusted to ensure better shadows.
+Percentage-closer filtering could later be employed to increase the quality of shadows. 
     `)
 
     div.append(
