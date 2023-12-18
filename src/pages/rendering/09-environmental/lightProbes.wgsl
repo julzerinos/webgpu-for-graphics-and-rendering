@@ -52,9 +52,9 @@ const air_refractive_index = 1.;
 const sphere_radius = 90;
 
 const up = vec3f(0., 1., 0.);
-const target_point = vec3f(0, 0, 0.);
-const origin_point = vec3f(0, 0, -1);
-const camera_constant =.4;
+const target_point = vec3f(0, 2, 0.);
+const origin_point = vec3f(0, 2, 7);
+const camera_constant =1;
 
 const sun_direction = normalize(vec3f(5, -.5, -.5));
 const sun_intensity = vec3f(.8, .8, .8);
@@ -368,8 +368,8 @@ fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> 
 {
     (*hit).has_hit = false;
 
-    var hit_plane = intersect_plane(*r, hit);
-    (*r).tmax = select((*r).tmax, (*hit).dist, hit_plane);
+    //var hit_plane = intersect_plane(*r, hit);
+    //(*r).tmax = select((*r).tmax, (*hit).dist, hit_plane);
 
     if (!intersect_min_max(r))
     {
@@ -478,10 +478,10 @@ fn shader(r : ptr < function, Ray>, hit : ptr < function, HitInfo>, seed : ptr <
 {
     (*hit).continue_trace = false;
 
-    if ((*hit).object == 1)
-    {
-        return holdout_shadow(r, hit, seed);
-    }
+    // if ((*hit).object == 1)
+    // {
+    //     return holdout_shadow(r, hit, seed);
+    // }
 
     switch (shader_type)
     {
@@ -530,7 +530,7 @@ fn main_fs(@builtin(position) fragcoord : vec4f, @location(0) coords : vec2f) ->
     var t = tea(launch_idx, scene_data.frame_num);
     let jitter = vec2f(rnd(&t), rnd(&t)) / f32(scene_data.canvas_height);
 
-    var uv = coords * vec2f(2, .5) + jitter;
+    var uv = coords * vec2f(1, .5) + jitter;
 
     var r : Ray;
     var hit : HitInfo;

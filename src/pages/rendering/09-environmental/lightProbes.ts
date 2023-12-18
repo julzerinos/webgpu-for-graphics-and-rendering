@@ -9,6 +9,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createBoolInput,
     createButton,
     createCanvas,
@@ -47,10 +48,10 @@ const execute: Executable = async () => {
 
     const { texture: environmentTextureHDR, sampler: environmentSamplerHDR } = await loadTexture(
         device,
-        "textures/burnt_warehouse.hdr.png"
+        asset("textures/burnt_warehouse.hdr.png")
     )
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/teapot.obj", .01))
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ(asset("models/teapot.obj"), 1))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -209,11 +210,17 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("light probe")
-    const description = createText("https://polyhaven.com/a/burnt_warehouse")
+    const title = createTitle("Custom light probes")
+    const description = createText(`
+With the setup ready, the reapot can be placed into any environment and reflect its lighting quite well.
+An HDR probe representing a burnt warehouse was selected (https://polyhaven.com/a/burnt_warehouse).
+
+This is a dark environment with a single doorway through which sunlight comes through. The teapot is shaded from the top and front,
+but elements facing the doorway are slightly lit with the bottom also lit by the reflections of light from the warehouse floor which is lit by the doorway sun rays.
+`)
 
     const canvasSection = createCanvasSection()
-    const canvas = createCanvas(CANVAS_ID, {width:1028})
+    const canvas = createCanvas(CANVAS_ID, { width: 1028 })
     const interactables = createInteractableSection()
 
     const progressiveEnabled = createWithLabel(

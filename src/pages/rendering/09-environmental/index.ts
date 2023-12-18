@@ -10,5 +10,5 @@ export const Environmental: ViewGenerator = (
     executeQueue: ExecutableQueue
 ) => {
     environmental(container, executeQueue)
-    // lightProbes(container, executeQueue)
+    lightProbes(container, executeQueue)
 }

@@ -10,6 +10,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createBoolInput,
     createButton,
     createCanvas,
@@ -50,14 +51,14 @@ const execute: Executable = async () => {
     )
     const { texture: environmentTextureLDR, sampler: environmentSamplerLDR } = await loadTexture(
         device,
-        "textures/luxo_pxr_campus.jpg"
+        asset("textures/luxo_pxr_campus.jpg")
     )
     const { texture: environmentTextureHDR, sampler: environmentSamplerHDR } = await loadTexture(
         device,
-        "textures/luxo_pxr_campus.hdr.png"
+        asset("textures/luxo_pxr_campus.hdr.png")
     )
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/teapot.obj", 1))
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ(asset("models/teapot.obj"), 1))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -265,8 +266,20 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("env")
-    const description = createText("No description yet")
+    const title = createTitle("Leaking into reality")
+    const description = createText(`
+A strong suit of rendering is the ability to place artifical objects into real scenes and for them to imitate the scene's lighting and environment. 
+Environment maps are used to create a skybox, but in a global illumination configuration they can also be used to query the environment for lighting.
+
+Shadows are more tricky, as they no longer have a shadow catching object. 
+The skybox is just fills out the empty void beneath the model as a background color would.
+To solve this "hold out" geometry is introduced. These are transparent objects which imitate objects visible in the scene (such as a plane for the ground).
+They are transparent as far as they are not shaded, where they otherwise apply a semi-transparent filter over whatever it is they are imitating.
+Planes are the most simply to create, but hold out geometry could be used for any shape.
+
+HDR images work well as environmental textures as they carry a lot of information about the scene light sources. 
+When using a low dynamic range map, a light source has to be modelled with the traditional setup (directional light).
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
