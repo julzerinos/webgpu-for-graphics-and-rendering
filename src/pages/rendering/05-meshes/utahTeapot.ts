@@ -9,6 +9,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -31,7 +32,7 @@ const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const utahTeapotObj = await parseOBJ("models/teapot.obj")
+    const utahTeapotObj = await parseOBJ(asset("models/teapot.obj"))
     const utahTeapotShape = objToShape(utahTeapotObj, {})
 
     const { bindGroup: utahTrapotStorage } = createBind(
@@ -86,7 +87,17 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("Introducing the Utah Teapot")
-    const description = createText("No description yet")
+    const description = createText(`
+As the first rendered mesh we shall have no other than the computer graphics mascot itself - the Utah Teapot. Despite not even being a large mesh (by today's standards), the teapot already takes a moment to load into the GPU and for all the triangles to be tested for in the intersection phase of the rendering pipeline.
+
+The teapot can be rendered in flat shading or vertex shading mode. A differentiation should be made at this point, as there are actually two types of surface normals to pick form. These are
+
+1) Render triangle normals - the triangle face normal as calculated during ray-triangle intersection. Thes could be seen as the "mathematically true" normals of the shape.
+
+2) Vertex normals - the normals as vertex attributes, provided together with the vertex buffer. These are the "artistically true" normals of the shape, as decided by the author of the shape.
+Usually these smoothed normals are algorithmically adjusted in 3D modelling software to avoid sharp edges. 
+To maintain the smooth surface when rendering the shape, the vertex normals are interpolated using the Barycentric coordainates of the points as interpolation factors.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID, { width: 840, height: 450 })

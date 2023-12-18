@@ -10,9 +10,9 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
-    createInteractableSection,
     createText,
     createTitle,
 } from "../../../libs/web"
@@ -39,7 +39,7 @@ const execute: Executable = async () => {
         1
     )
 
-    const imageData = await readImageData("textures/grass_minecraft.png")
+    const imageData = await readImageData(asset("textures/grass_minecraft.png"))
     const { texture: texture, sampler: sampler } = generateTexture(
         device,
         imageData.textureData,
@@ -65,13 +65,20 @@ const execute: Executable = async () => {
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
     const title = createTitle("Replacing the triangle with a triangle")
-    const description = createText("No description yet")
+    const description = createText(`
+As a first step towards the introduction of triangle-based mesh model data to the rendering system, we will first replace the triangle... with a triangle.
+Up to this point, all the shapes were conceptual - living only in the mind of the GPU, defined as mathematical parameterizations of objects.
+
+But interesting meshes are more commonly not mathematical monstrosities, but artistic sculptures carved in polygons. These have to be passed to the GPU from the CPU.
+The triangle in the scene below is defined as a vertex buffer, but passed to the GPU as a uniform/storage buffer. The shader loops over each of these triangles when intersecting a ray.
+
+Inefficient? Absolutely, but that is a worry for a later chapter.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
 
-    const interactables = createInteractableSection()
-    canvasSection.append(canvas, interactables)
+    canvasSection.append(canvas)
     div.append(title, description, canvasSection)
 
     executeQueue.push(execute)

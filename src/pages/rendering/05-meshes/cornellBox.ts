@@ -9,6 +9,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -31,7 +32,7 @@ const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
     const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-    const conrellBoxObj = await parseOBJ("models/CornellBoxWithBlocks.obj")
+    const conrellBoxObj = await parseOBJ(asset("models/CornellBoxWithBlocks.obj"))
     const cornellBoxShape = objToShape(conrellBoxObj, {})
     const materialsArray = new Float32Array(
         conrellBoxObj.mtls[0].materials.reduce(
@@ -109,8 +110,14 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Inside the Cornell box")
-    const description = createText("No description yet")
+    const title = createTitle("Thinking inside the Cornell box")
+    const description = createText(`
+Introducing another championing mascot of the computer graphics universe - the Cornell box - which we will be working with closely from now on.
+
+Another important set of data to pass to the GPU is information about the types of materials which exist in the scene. 
+3D objects in data form will usually contain or reference information about their surfaces. 
+This material data format can contain all sorts of variables such as the diffuse reflectance, specular reflectance, roughness and emissive color - such as the light in the box, which emits a strong white.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

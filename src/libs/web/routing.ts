@@ -25,7 +25,9 @@ export const redirect = (to: string) => {
     location.href = "/webgpu-for-graphics-and-rendering" + to
 }
 
-export const asset = (assetPath: string) =>
+export const asset = (assetPath: string, iframe?: boolean) =>
     import.meta.env.PROD
         ? `https://julzerinos.github.io/webgpu-for-graphics-and-rendering/${assetPath}`
-        : `/${assetPath}`
+        : `${
+              iframe ? "/webgpu-for-graphics-and-rendering" : ""
+          }/${assetPath}`

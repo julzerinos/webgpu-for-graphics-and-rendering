@@ -18,7 +18,7 @@ Mathematically this would require integrals (as in the examples below) to calcul
     const iframe = document.createElement("iframe")
     iframe.width = "100%"
     iframe.height = "1000px"
-    iframe.src = asset("webgpu-for-graphics-and-rendering/resources/worksheet.pdf")
+    iframe.src = asset("resources/worksheet.pdf", true)
 
     div.append(title, description, iframe)
 }
