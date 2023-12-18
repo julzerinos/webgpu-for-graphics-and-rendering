@@ -1,4 +1,5 @@
 import { add, vec2, vec3, loadTexture, Colors } from "../../../../libs/util"
+import { asset } from "../../../../libs/web"
 import {
     genreateVertexBuffer,
     setupShaderPipeline,
@@ -312,7 +313,10 @@ export const createDungeonRender = async (
     }: GameLightData,
     { playerPerspectiveBuffer, playerPositionBuffer }: GamePlayer
 ): Promise<Renderable> => {
-    const { texture, sampler } = await loadTexture(device, "game/dungeon_textures_albedo.png")
+    const { texture, sampler } = await loadTexture(
+        device,
+        asset("game/dungeon_textures_albedo.png")
+    )
 
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(
         device,

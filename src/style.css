@@ -76,6 +76,12 @@ h1 {
     border-radius: 25px;
 }
 
+.img-holder {
+    margin: 1rem 0;
+    display: flex;
+    justify-content: center;
+}
+
 .fallback > * {
     padding: 1rem;
 }

@@ -52,8 +52,18 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Ray line intersection")
-    const description = createText("No description yet")
+    const title = createTitle("Creating ray-line intersection")
+    const description = createText(`
+Ray-line intersection is slightly more difficult to grasp than ray-plane intersection, because lines have more combinations of possible events.
+It is quite difficult for two lines to actaully meet in 3D space - they have many oppurtunities not to. A better approach might be to not find the direct point of intersection,
+but rather the paramters of the line for which the points on the lines are closest to each other.
+
+The article "Intersection of two lines in three-space" by Ronald Goldman in the collection Graphics Gems (1995) describes the algorithm 
+which is the computerized appraoch of solving the lienar set of equations to finding these parameters. 
+It is important to remember two things - firstly, that the parameters have to stay between zero and one, that is the "intersection" is within the sections of both lines. 
+Secondly, the intersection might not be an intersection at all - but a point on each line for which the distance is minimal. 
+It is required to check that the distance between these two points is less than some set threshold for the thickness of the line.
+    `)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

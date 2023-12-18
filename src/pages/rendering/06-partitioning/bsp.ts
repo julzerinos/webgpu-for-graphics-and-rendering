@@ -5,7 +5,6 @@ import {
     createPass,
     setupShaderPipeline,
     createBind,
-    writeToBufferF32,
 } from "../../../libs/webgpu"
 
 import {
@@ -13,11 +12,8 @@ import {
     createCanvas,
     createCanvasSection,
     createInteractableSection,
-    createRange,
     createText,
     createTitle,
-    createWithLabel,
-    watchInput,
 } from "../../../libs/web"
 
 import { Colors, build_bsp_tree, getDrawingInfo, parseOBJ } from "../../../libs/util"
@@ -25,7 +21,7 @@ import { Colors, build_bsp_tree, getDrawingInfo, parseOBJ } from "../../../libs/
 import shaderCode from "./partitioning.wgsl?raw"
 
 const CANVAS_ID = "bsp"
-const ANIM_SPEED = "animation-speed-bsp"
+// const ANIM_SPEED = "animation-speed-bsp"
 
 const execute: Executable = async () => {
     const { device, context, canvasFormat } = await initializeWebGPU(CANVAS_ID)
@@ -52,7 +48,7 @@ const execute: Executable = async () => {
     )
     const {
         bindGroup: aaabUniform,
-        buffers: [_, timeBuffer],
+        buffers: [_],
     } = createBind(device, pipeline, [bspTreeResults.aabb, new Float32Array([950.5])], "UNIFORM", 2)
 
     // let totalTime = 0

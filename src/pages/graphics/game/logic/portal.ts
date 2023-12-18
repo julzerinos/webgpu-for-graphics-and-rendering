@@ -12,6 +12,7 @@ import {
     loadTexture,
     flattenMatrix,
 } from "../../../../libs/util"
+import { asset } from "../../../../libs/web"
 import {
     genreateIndexBuffer,
     genreateVertexBuffer,
@@ -80,7 +81,7 @@ export const createPortalRender = async (
     portalMesh: Mesh,
     { playerPerspectiveBuffer }: GamePlayer
 ): Promise<Renderable> => {
-    const { texture, sampler } = await loadTexture(device, "game/portal.png")
+    const { texture, sampler } = await loadTexture(device, asset("game/portal.png"))
 
     const { buffer: indexBuffer } = genreateIndexBuffer(device, portalMesh.triangles!)
     const { buffer: vertexBuffer, bufferLayout: vertexBufferLayout } = genreateVertexBuffer(

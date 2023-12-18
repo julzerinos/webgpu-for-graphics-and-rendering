@@ -33,6 +33,7 @@ struct Aabb {
 @group(2) @binding(1) var<uniform> jitters : array<vec4f, 4>;
 @group(2) @binding(2) var<uniform> mouse_uv : vec4f;
 @group(2) @binding(3) var<uniform> light_indices_count : u32;
+@group(2) @binding(4) var<uniform> store_line_type : u32;
 
 struct Line {
     a : vec3f,
@@ -545,14 +546,15 @@ fn render(coords : vec2f) -> vec4f
 
                 if (i == 0 && is_mouse_pixel(uv+.5))
                 {
-                    ray_path[hit.depth] = Line(r.origin, r.origin + r.direction * r.tmax);
+                    hit.position = r.origin + r.direction * r.tmax;
+                    store_line(r, hit);
                 }
                 break;
             }
 
             if (i == 0 && is_mouse_pixel(uv+.5))
             {
-                ray_path[hit.depth] = Line(r.origin, hit.position);
+                store_line(r, hit);
             }
 
             var next_light_result = shader(&r, &hit);
@@ -591,4 +593,17 @@ fn main_fs(@location(0) coords : vec2f) -> @location(0) vec4f
 fn is_mouse_pixel(coords01 : vec2f) -> bool
 {
     return length(round(mouse_uv.xy * 512) - round(coords01 * 512)) <= .0;
+}
+
+fn store_line(ray : Ray, hit : HitInfo)
+{
+    if (store_line_type == 1 && hit.depth >0)
+    {
+        return;
+    }
+
+    let line_a = select(ray.origin, hit.position, store_line_type == 1);
+    let line_b = select(hit.position, hit.position + 100 * hit.normal, store_line_type == 1);
+
+    ray_path[hit.depth] = Line(line_a, line_b);
 }

@@ -5,7 +5,6 @@ import { initializeWebGPU, createPass, setupShaderPipeline } from "../../../libs
 import {
     createCanvas,
     createCanvasSection,
-    createRelevantFilesLink,
     createText,
     createTitle,
 } from "../../../libs/web"

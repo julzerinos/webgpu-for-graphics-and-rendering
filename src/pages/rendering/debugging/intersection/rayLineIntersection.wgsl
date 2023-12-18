@@ -135,7 +135,7 @@ fn intersect_sphere(r : Ray, hit : ptr < function, HitInfo>, center : vec3f, rad
 }
 fn intersect_scene(r : ptr < function, Ray>, hit : ptr < function, HitInfo>) -> bool
 {
-    let line = Line(vec3f(-2, .5, 0), vec3f(2, .5, 0), line_thickness);
+    let line = Line(vec3f(-2, .5, 0), vec3f(1.25, .5, 0), line_thickness);
     var has_hit_line = intersect_line(*r, hit, line);
     (*r).tmax = select((*r).tmax, (*hit).dist, has_hit_line);
 

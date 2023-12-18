@@ -10,7 +10,7 @@ export const DebuggingRendering: ViewGenerator = (
     container: HTMLElement,
     executeQueue: ExecutableQueue
 ) => {
-    // rayLineIntersection(container, executeQueue)
-    // pathFollowing(container, executeQueue)
+    rayLineIntersection(container, executeQueue)
+    pathFollowing(container, executeQueue)
     magnifyingGlass(container, executeQueue)
 }

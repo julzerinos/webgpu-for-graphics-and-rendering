@@ -20,6 +20,7 @@ import {
     subscribeToCanvasDrag,
     createValueDisplay,
     createDisplaySetter,
+    asset,
 } from "../../../../libs/web"
 
 import {
@@ -48,7 +49,9 @@ const execute: Executable = async () => {
     const pixelValueDisplaySetter = createDisplaySetter("pixel-value-debug")
     const pixelCountDisplaySetter = createDisplaySetter("pixel-count-debug")
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBoxWithBlocks.obj"))
+    const modelDrawingInfo = getDrawingInfo(
+        await parseOBJ(asset("models/CornellBoxWithBlocks.obj"))
+    )
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -197,7 +200,7 @@ const execute: Executable = async () => {
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     })
 
-    let pixelCount = 16
+    let pixelCount = 64
     const pixelCountBuffer = device.createBuffer({
         size: new Uint32Array(1).byteLength,
         usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
@@ -292,6 +295,8 @@ const execute: Executable = async () => {
         device.queue.submit([encoder.finish()])
     }
 
+    updateMouseUv({ x: 256, y: 256 })
+
     subscribeToCanvasDrag(
         CANVAS_ID,
         {
@@ -354,8 +359,57 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Progressive rendering, the basics")
-    const description = createText("No description yet")
+    const title = createTitle("The magnifying glass for the debugging detective")
+    const description = createText(`
+The classic approach to debugging shaders is to output a variable as a color. We've all done it, as its the simplest tool at hand to quickly peer into the mind of the opaque machine that is the GPU.
+This approach, as handy as it is, has many drawbacks. First and foremost - color is not a human-friendly value in terms of numbers. 
+The sole reason that HSL and similar color models exist is because the machine favorite RGB is too difficult to parse for humans. 
+It provides an idea of relative value but that may often be far from what is needed most. 
+The second issue is negative values - or rather - the lack of their representation. Colors simply do not function in negative number spaces.
+While a taking the absolute value may be solve this, it often hides the transition point. 
+Another solution is to cleverly map the value to another range, but that is yet another issue in itself entirely - lack of sense of range.
+The color has a rigid range between zero and one for each of its channels. 
+It is extremely difficult (and frustrating) to map a variable of unknown range, moreso when that variable happens to be an unexpected erroneous value.
+
+The creation of a friendly, easy to utilize method of reading the value in a human friendly approach just may be the powerless shader author's best tool in shed when dealing with difficult to comprehend algorithms.
+
+Following the approach from the previous part, the primary goal is to minimize the development impact on production source code. 
+The setup should be an easy to plug into an existing project and trivial to setup.
+An external debug canvas is used to display the debug variable and a storage buffer is used as the data transfer middleman.
+
+Inside the production shader a new function is introduced: store_debug_value; which aims to work much like the more familiar Javascript console log.
+The function takes only one parameter - a vector of size four. Each pixel in the production shader is permitted one such vector to store a requested debug value.
+Inside the implementation of the function the integer pixel coordinates are calculated from the fragment coordinates. 
+The pixel coordiantes are used to set the debug value at the appropriate position in the flattened debug_canvas storage buffer. 
+There are two requirements to make this function work, these are (1) the canvas dimensions must be available either as uniform values or hardcoded and 
+(2) a var<private> variable named fragment_uv which is set to the fragment coordinates (mapped to the range of zero to one).
+
+The next step is re-rendering the debug values in the debug canvas. This is simply reading from the flat debug_canvas storage buffer, querying the buffer with a flattened index from the pixel coordinates.
+While simple enough, simply redrawing the canvas is not helpful. Two configuration variables are required to make the magnifying glass function - pixel_count and mouse_uv.
+These can be somehow gathered from interaction with the canvas, but must be passed as uniform values to the draw debug shader. 
+They are used to properly query the storage buffer with a local area of pixel count size around the mouse click position. 
+The magnifying glass canvas is ready. 
+
+A question arises whether is makes sense to write the entire production canvas-worth of values when only a subset is requested in the magnifying glass, but the benefits which arise from this severely outweigh the costs.
+When using this appraoch in a progressive render setup, the render may be stopped and the debug canvas may be scrolled to view all possible corners of the debug values at one's leisure.
+The efficiency cost is a moot point anyway, as these methods are created to be used in development and removed once the produciton render is fully prepared.
+
+The cherry on top comes from the use of a two-way storage buffer. 
+As the buffer has to pass through the CPU before it reaches the debug canvas, it may as well be queried in the CPU for the exact debug value stored by a position. 
+The same inverse mapping has to be used as in the shader to retrieve the exact value of the pixel hovered over in the debug canvas.
+
+Finally, the shader author is ready to tackle any numerical issues in their shaders. Right after they finally understand how to properly muliply the path factor in global illumination.
+
+In the example below:
+
+1) Enable progressive rendering.
+
+2) Click on the production canvas to select a debugging position.
+
+3) Click and drag on the debugging canvas to modify the magnifying glass scope (between 2 - 512 pixels wide).
+
+4) Hover over a pixel in the debugging canvas to display its value.
+`)
 
     const canvas = createCanvas(CANVAS_ID)
 

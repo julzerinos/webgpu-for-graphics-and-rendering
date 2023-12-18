@@ -170,3 +170,13 @@ export const createRelevantFilesLink = (sectionUrls: string[]) => {
 
     return a
 }
+
+export const createImage = (imgSrc: string): HTMLElement => {
+    const div = document.createElement("div")
+    div.className = "img-holder"
+    const img = document.createElement("img")
+    img.src = imgSrc
+
+    div.append(img)
+    return div
+}
