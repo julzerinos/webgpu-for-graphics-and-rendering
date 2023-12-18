@@ -65,6 +65,7 @@ h1 {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    text-align: justify;
 }
 
 .navigation {
@@ -201,7 +202,7 @@ canvas.overlay {
 
     counter-increment: css-counter 1;
 
-    transition: filter ease .25s;
+    transition: filter ease 0.25s;
 }
 
 .route-entry:hover {

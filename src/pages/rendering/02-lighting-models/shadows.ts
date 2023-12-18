@@ -88,8 +88,14 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("A simple lighting system")
-    const description = createText("No description yet")
+    const title = createTitle("Let there be shade")
+    const description = createText(`
+After implementing lighting, the next step is to introduce shade. An enourmous advantage rendering systems have over the rasterization pipeline is the ease with which simple physical phenomena such as obstruction of a light source can be generated.
+
+As you may have guessed at this point, light obstruction is also a ray, but it is cast from the intersection point in the direction of the light source. 
+This is another way of querying the scene for information and as will be shown in the next example, 
+starting new rays or continuing rays from defined points depending on the interaction type is the bread and butter of path tracing.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID, { width: 512 + 128, height: 512 - 64 })
