@@ -129,18 +129,13 @@ The game is made with Typescript and WebGPU. It is comprised of a few key system
 While this is an example of a game engine, it would have to be expanded and abstracted to be truly called an engine, as currently it is tailored to support the dungeon game. More on that later.
 
 The game's key systems are: 
-
-1) Dungeon map generation, which include creating a procedurally generated layout, creating the dungeon mesh in runtime and selecting the locations for lights to appear in the game.
-
-2) The player system, which include camera movement and rotation.
-
-3) Tiles and torches, which generate tile templates for the dungeon depending on how many walls should be open, as well as bounding the player inside the legal space (collision).
-
-4) The game state (and portal) which trigger an event upon reaching the objective.
-
-and of course, the most important system
-
-5) The lighting system, which tracks active lights, generates shadow maps and controls light transition.
+<ol>
+<li>Dungeon map generation, which include creating a procedurally generated layout, creating the dungeon mesh in runtime and selecting the locations for lights to appear in the game.</li>
+<li>The player system, which include camera movement and rotation.</li>
+<li>Tiles and torches, which generate tile templates for the dungeon depending on how many walls should be open, as well as bounding the player inside the legal space (collision).</li>
+<li>The game state (and portal) which trigger an event upon reaching the objective.</li>
+<li>The lighting system, which tracks active lights, generates shadow maps and controls light transition.</li>
+</ol>
 
 The game engine is an obejct which stores all the vital information about the game and resources requried for game components to function. 
 It is responsible for access to the GPU device and stores a reference to the game canvas and the multisample state. 
@@ -149,24 +144,20 @@ Additionally, it will hold the global z-buffer shared among all render objects. 
 The stages of the game can be categorized into two parts.
 
 I. Initialization (run once)
-
-- The engine is prepared (game canvas initialized, WebGPU prepared).
-
-- The game map is generated. 
-
-- Lights are defined and prepared in the light system. 
-
-- Every object prepares its mesh (vertex and other attribute buffers).
+<ul>
+<li>The engine is prepared (game canvas initialized, WebGPU prepared).</li>
+<li>The game map is generated. </li>
+<li>Lights are defined and prepared in the light system. </li>
+<li>Every object prepares its mesh (vertex and other attribute buffers).</li>
+</ul>
 
 II. Gameplay (run in a loop)
-
-- The frame function is called.
-
-- Input is checked and applied.
-
-- The shadow map pass is run.
-
-- The objects render pass is run.
+<ul>
+<li>The frame function is called.</li>
+<li>Input is checked and applied.</li>
+<li>The shadow map pass is run.</li>
+<li>The objects render pass is run.</li>
+</ul>
 `)
 
     const dungeonTitle = createTitle("The dungeon system")

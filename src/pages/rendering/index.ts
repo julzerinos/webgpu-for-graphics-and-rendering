@@ -9,6 +9,7 @@ import { SpatialPartitioning } from "./06-partitioning"
 import { Progressive } from "./07-progressive"
 import { BRDF } from "./08-brdf"
 import { Environmental } from "./09-environmental"
+import { ProductionRendering } from "./10-production"
 import { DebuggingRendering } from "./debugging"
 
 export const Rendering: ViewGenerator = (container: HTMLElement, executeQueue: ExecutableQueue) => {
@@ -91,8 +92,8 @@ export const renderingRoutes: IRoute = {
             path: "10-production-rendering",
             name: "Production rendering",
             description: "A short discussion of production rendering with example from Blender.",
-            generator: () => {},
-        }, // TODO add images
+            generator: ProductionRendering,
+        },
         {
             path: "debugging",
             name: "An approach to debugging (project)",
