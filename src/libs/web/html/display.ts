@@ -97,8 +97,8 @@ export const routesIndex = (route: IRoute): HTMLElement => {
     const wrapper = document.createElement("div")
     wrapper.className = `routes ${route.path}`
 
-    const routeTitle = document.createElement("a")
-    routeTitle.text = route.path
+    const routeTitle = document.createElement("span")
+    routeTitle.textContent = route.path
     routeTitle.className = "underline"
     wrapper.append(routeTitle)
 
