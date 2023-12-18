@@ -11,6 +11,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -49,8 +50,8 @@ const execute: Executable = async () => {
 
     const loadImages = async (textureMode: GPUAddressMode) => {
         const imageLoaders = [
-            readImageData("textures/grass.jpg"),
-            readImageData("textures/grass_minecraft.png"),
+            readImageData(asset("textures/grass.jpg")),
+            readImageData(asset("textures/grass_minecraft.png")),
         ]
         const imageData = await Promise.all(imageLoaders)
 
@@ -132,8 +133,24 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Applying textures in rendering")
-    const description = createText("No description yet")
+    const title = createTitle("Textures in rendering, jittering to solve aliasing")
+    const description = createText(`
+In rendering textures are applied much like in the standard rasterization pipeline. 
+Either provided uv coordinates are used to extract the color from the texture (as vertex attributes) or a mathematical equation is used to retrieve a deterministic result.
+In the case of the plane, this process is simplified to mapping the plane coordiantes directly to uv coordinates with a linear scale factor.
+
+A powerful tool to combat aliasing in renders is introduced in the form of stratified jittering. This is the proces of subdividing a fragment (pixel) into a grid. 
+These cells (substrata) each query the scene with their own ray cast offset by a random amount (a jitter). 
+The values of all of the cells are later averaged to create a smoothened single color.
+
+The result is dampening the effects of aliasing. 
+Edges will have contributions from each color in the vicinity, as some jittered rays may, for example, miss an object and contribute the color of the background.
+Texture magnification and minification are also addressed by jittering. In the example below, for the grass.jpg texture, the grainy overlay in the distance vanishes when the jittering count is increased.
+This is more pronounced for large resolutions of the subdivision grid, but comes at a computational cost, as the number of ray casts for each pixel rises quadratically.
+
+At this point all the jitters are precalculated on the CPU and provided to the GPU in the form of a uniform (or storage) buffer. 
+At a later point random sampling will be introduced to offset the jitter generation to the GPU instead.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

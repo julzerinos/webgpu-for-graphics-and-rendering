@@ -9,6 +9,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createCanvas,
     createCanvasSection,
     createInteractableSection,
@@ -33,7 +34,9 @@ const execute: Executable = async () => {
     const draw = async (textureBehavior: string) => {
         const pipeline = setupShaderPipeline(device, [], canvasFormat, shaderCode, "triangle-strip")
 
-        const { textureData, height, width } = await readImageData("textures/grass_minecraft.png")
+        const { textureData, height, width } = await readImageData(
+            asset("textures/grass_minecraft.png")
+        )
         const { texture, sampler } = generateTexture(device, textureData, width, height, {
             addressModeU: textureBehavior as GPUAddressMode,
             addressModeV: textureBehavior as GPUAddressMode,
@@ -54,8 +57,10 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("What is a texture")
-    const description = createText("No description yet")
+    const title = createTitle("Introducing textures")
+    const description = createText(`
+Textures are image-based color maps for the surfaces of objects.
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)
