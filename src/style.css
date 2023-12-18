@@ -14,10 +14,10 @@
     -webkit-text-size-adjust: 100%;
 }
 
-/* button {
+button {
     border-radius: 8px;
     border: 1px solid transparent;
-    padding: 0.6em 1.2em;
+    padding: 0.4em 0.3em;
     font-size: 1em;
     font-weight: 500;
     font-family: inherit;
@@ -26,12 +26,8 @@
     transition: border-color 0.25s;
 }
 button:hover {
-    border-color: #646cff;
+    border-color: white;
 }
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-} */
 
 /* Layout */
 
@@ -82,6 +78,10 @@ h1 {
 
 .fallback > * {
     padding: 1rem;
+}
+
+iframe {
+    margin-top: 2rem;
 }
 
 /* Themes */

@@ -3,6 +3,7 @@ import { ExecutableQueue, IRoute, ViewGenerator } from "../../types"
 import { RaycastingIntroduction } from "./01-raycasting-introduction"
 import { LightingModels } from "./02-lighting-models"
 import { TextureMapping } from "./03-textures"
+import { MeasuringLight } from "./04-photometry-and-radiology"
 import { Meshes } from "./05-meshes"
 import { SpatialPartitioning } from "./06-partitioning"
 import { Progressive } from "./07-progressive"
@@ -50,7 +51,7 @@ export const renderingRoutes: IRoute = {
             name: "Radiometry and photometry",
             description:
                 "Understanding the process of measuring light through examples of photometric and radiometric equations.",
-            generator: () => {},
+            generator: MeasuringLight,
         },
         {
             path: "meshes",
