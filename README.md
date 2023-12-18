@@ -8,6 +8,8 @@ Each of these sections are created in plain Typescript with the following struct
 
 ## Deployment
 
+This project requires a working installation of Node and npm.
+
 After cloning the repository run the following
 
 * `npm i` to install the required libraries (Typescript and Vite).
