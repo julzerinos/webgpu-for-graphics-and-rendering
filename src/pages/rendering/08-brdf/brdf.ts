@@ -10,6 +10,7 @@ import {
 } from "../../../libs/webgpu"
 
 import {
+    asset,
     createBoolInput,
     createButton,
     createCanvas,
@@ -49,7 +50,7 @@ const execute: Executable = async () => {
     const getProgressiveEnabled = watchInput<boolean>(PROG_ENB, "checked")
     const getSphereExtinctionCoefficient = watchInput<string>(SPHERE_EXT)
 
-    const modelDrawingInfo = getDrawingInfo(await parseOBJ("models/CornellBox.obj"))
+    const modelDrawingInfo = getDrawingInfo(await parseOBJ(asset("models/CornellBox.obj")))
     const bspTreeResults = build_bsp_tree(modelDrawingInfo)
 
     const interleavedVerticesNormals = interleaveF32s([
@@ -196,8 +197,24 @@ const execute: Executable = async () => {
 }
 
 const view: ViewGenerator = (div: HTMLElement, executeQueue: ExecutableQueue) => {
-    const title = createTitle("Progressive rendering, the basics")
-    const description = createText("No description yet")
+    const title = createTitle("Illuminating the situation")
+    const description = createText(`
+In the previous section we were introduced to indirect illumination as a random event for the reflection of light on Lambertian surfaces.
+This is a key part of global illumination in which the path light takes is more complicated than a set of deterministic equations.
+
+While mirrors remain with the same behaviour in global illumination, refractive mediums are far more interesting. 
+They have not one, but two decision points for what may happen to a ray intersecting with the medium's surface. 
+The first situation is ray reflection. In an earlier section, the refractive sphere was shaded with a combination of a specular and refractive material to achieve a glossy look.
+This can be repalced with the more appropriate behaviour - some rays do not refract, but are instead reflected and strike a light source, which is then visible on the refractive material's surface.
+This is known as Fresnel reflectance. This also results in an interesting phenomenon on the bottom of the sphere. 
+Rays reflected from the Lambertian floor refract into the sphere and strike the light source on the other side.
+
+The second event ioccurs inside the sphere (but computationally at the other end). Rays which have refracted inside the glass sphere may not reach the end.
+They are instead absorbed by the glass itself. 
+Bouguer's law of exponential attenuation applies to decide if a ray should become extinct or if it has the energy to travel beyond the refractive medium.
+The extinction coefficient is the variable which controls the absorbing strength of the medium. 
+It also dyes the rays travelling through it as it diminished certain wavelengths (in other words, the extinction is biased towards certain wavelengths).
+`)
 
     const canvasSection = createCanvasSection()
     const canvas = createCanvas(CANVAS_ID)

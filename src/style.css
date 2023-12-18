@@ -117,7 +117,7 @@ iframe {
     width: 100%;
     max-height: 512px;
     padding: 0 1rem;
-    max-width: 10rem;
+    max-width: fit-content;
 }
 
 .label-group {
